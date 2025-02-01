@@ -204,10 +204,10 @@ packages:
     dependency: "direct main"
     description:
       name: frame_msg
-      sha256: "903c62056f95d1fd1e6692cafed071c1d48893ad02cfba609349605e17a32a1a"
+      sha256: "36db1a4616e14cecdd15034c72021a5b801f94712a461c5a1809a67eb2bbe8eb"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.1"
+    version: "0.0.3"
   image:
     dependency: transitive
     description:
