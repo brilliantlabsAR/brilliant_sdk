@@ -34,6 +34,14 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    // start up if the Frame can be found
+    tryScanAndConnectAndStart(andRun: true);
+  }
+
+  @override
   Future<void> run() async {
     currentState = ApplicationState.running;
     if (mounted) setState(() {});
