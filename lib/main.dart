@@ -5,8 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
 
 import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:simple_frame_app/tx/code.dart';
-import 'package:simple_frame_app/tx/sprite.dart';
+import 'package:frame_msg/tx/code.dart';
+import 'package:frame_msg/tx/sprite.dart';
 
 
 void main() => runApp(const MainApp());
@@ -57,7 +57,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         });
 
         // and send initial text to Frame
-        await frame!.sendMessage(TxSprite.fromPngBytes(msgCode: 0x20, pngBytes: pngBytes));
+        var msg = TxSprite.fromPngBytes(msgCode: 0x20, pngBytes: pngBytes);
+        await frame!.sendMessage(msg.msgCode, msg.pack());
       }
       else {
         currentState = ApplicationState.ready;
@@ -73,7 +74,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   Future<void> cancel() async {
     // remove the displayed image
-    await frame!.sendMessage(TxCode(msgCode: 0x10, value: 1));
+    var msg = TxCode(msgCode: 0x10, value: 1);
+    await frame!.sendMessage(msg.msgCode, msg.pack());
     _image = null;
 
     currentState = ApplicationState.ready;
