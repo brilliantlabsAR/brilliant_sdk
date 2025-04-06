@@ -65,8 +65,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         });
 
         // and send initial text to Frame
-        var msg = TxSprite.fromPngBytes(msgCode: 0x20, pngBytes: pngBytes);
-        await frame!.sendMessage(msg.msgCode, msg.pack());
+        var msg = TxSprite.fromPngBytes(pngBytes: pngBytes);
+        await frame!.sendMessage(0x20, msg.pack());
       }
       else {
         currentState = ApplicationState.ready;
@@ -82,8 +82,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   Future<void> cancel() async {
     // remove the displayed image
-    var msg = TxCode(msgCode: 0x10, value: 1);
-    await frame!.sendMessage(msg.msgCode, msg.pack());
+    var msg = TxCode(value: 1);
+    await frame!.sendMessage(0x10, msg.pack());
     _image = null;
 
     currentState = ApplicationState.ready;
