@@ -84,7 +84,7 @@ function app_loop()
 					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=8})
 				else
 					-- Halo
-					pcall(frame.microphone.start, {sample_rate=16000, bit_depth=16, channels=1})
+					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=8, channels=1})
 				end
 				streaming = true
 				show_text("Streaming Audio")

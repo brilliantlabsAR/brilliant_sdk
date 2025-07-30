@@ -104,7 +104,15 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     if (!_player.isPlaying) {
       _log.info('Playing audio clip at index $index, length: ${audioBytes.length} bytes');
       try {
-        await _player.startPlayer(fromDataBuffer: audioBytes, codec: Codec.pcm16, sampleRate: 16000, numChannels: 1, whenFinished: _stopAudio);
+        // because the audio player can only play PCM16, convert the 8-bit audio to 16-bit
+        final convertedBytes = Uint8List(audioBytes.length * 2);
+        for (int i = 0; i < audioBytes.length; i++) {
+          // Convert 8-bit audio to 16-bit by duplicating the byte and shifting it
+          final sample = audioBytes[i];
+          convertedBytes[i * 2] = sample; // MSB
+          convertedBytes[i * 2 + 1] = sample; // LSB
+        }
+        await _player.startPlayer(fromDataBuffer: convertedBytes, codec: Codec.pcm16, sampleRate: 8000, numChannels: 1, whenFinished: _stopAudio);
       } on Exception catch (e) {
         _log.severe('Error starting audio player: $e');
       }
