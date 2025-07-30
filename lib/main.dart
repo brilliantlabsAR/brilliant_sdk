@@ -201,8 +201,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
               itemBuilder: (context, index) {
                 return Card(
                   child: ListTile(
-                    // TODO showing as 16-bit, 16kHz, mono
-                    title: Text('Audio Clip ${index + 1} (${(_rawAudioClips[index].length/2/16000.0).toStringAsFixed(2)}s)'),
+                    title: Text('Audio Clip ${index + 1} (${(_rawAudioClips[index].length/8000.0).toStringAsFixed(2)}s)'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min, // Ensures the row takes up minimum space
                       children: [
