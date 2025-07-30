@@ -3,13 +3,18 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:raw_sound/raw_sound_player.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:frame_msg/rx/audio.dart';
 import 'package:simple_frame_app/simple_frame_app.dart';
 import 'package:frame_msg/tx/code.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-void main() => runApp(const MainApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await FlutterBluePlus.setLogLevel(LogLevel.info);
+  runApp(const MainApp());
+}
 
 final _log = Logger("MainApp");
 
@@ -24,7 +29,7 @@ class MainApp extends StatefulWidget {
 class MainAppState extends State<MainApp> with SimpleFrameAppState {
   StreamSubscription<Uint8List>? audioClipStreamSubs;
   final List<Uint8List> _rawAudioClips = [];
-  final _player = RawSoundPlayer();
+  final _player = FlutterSoundPlayer();
   int? _playingIndex;
 
   MainAppState() {
@@ -38,18 +43,14 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   void initState() {
     super.initState();
-    // use a small buffer to allow short clips to be played - raw_sound won't play clips smaller than bufferSize bytes
-    _player.initialize(bufferSize: 4096, nChannels: 1, sampleRate: 8000, pcmType: RawSoundPCMType.PCMI16).then((value) {
-      setState(() {
-        // Trigger rebuild to update UI
-      });
-    });
+    tryScanAndConnectAndStart(andRun: false);
   }
 
   @override
   void dispose() async {
     await audioClipStreamSubs?.cancel();
-    await _player.release();
+    await _player.stopPlayer();
+    await _player.closePlayer();
     super.dispose();
   }
 
@@ -97,17 +98,24 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   /// Play the audio from the selected recording
   Future<void> _playAudio(Uint8List audioBytes, int index) async {
     if (!_player.isPlaying) {
-      await _player.play();
+
+      try {
+        await _player.openPlayer();
+        await _player.startPlayer(fromDataBuffer: audioBytes, codec: Codec.pcm8, sampleRate: 8000, numChannels: 1);
+      } on Exception catch (e) {
+        _log.severe('Error starting audio player: $e');
+      }
+
       setState(() {
         _playingIndex = index;
       });
     }
 
-    if (_player.isPlaying) {
+    //if (_player.isPlaying) {
       // TODO skip the pop at the beginning of the recording? or not?
       //await _player.feed(Uint8List.fromList(audioBytes.skip(2700).toList()));
-      await _player.feed(Uint8List.fromList(audioBytes));
-    }
+      //await _player.feedUint8FromStream(audioBytes);
+    //}
 
     // no obvious callback from raw_sound when playback finishes, so since we know
     // how long the clip is, we can wait then update the UI (show play button instead of stop)
@@ -126,7 +134,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   /// Cancel the playing of the selected recording
   Future<void> _stopAudio() async {
     if (_player.isPlaying) {
-      await _player.stop();
+      await _player.stopPlayer();
       setState(() {
         _playingIndex = null;
       });

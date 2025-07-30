@@ -19,18 +19,37 @@ data.parsers[CLEAR_MSG] = code.parse_code
 data.parsers[START_AUDIO_MSG] = code.parse_code
 data.parsers[STOP_AUDIO_MSG] = code.parse_code
 
+function show_text(text)
+	if frame.HARDWARE_VERSION == "Frame" then
+		frame.display.text(text, 1, 1)
+		frame.display.show()
+	else
+		-- Halo
+		frame.display.text(text, 50, 50, 0xFFFFFF)
+	end
+end
+
+function clear_display()
+	if frame.HARDWARE_VERSION == "Frame" then
+		frame.display.text(" ", 1, 1)
+		frame.display.show()
+	else
+		-- Halo
+		frame.display.clear(0x000000)
+	end
+end
+
 
 -- Main app loop
 function app_loop()
-	-- clear the display
-	frame.display.text(" ", 1, 1)
-	frame.display.show()
+	clear_display()
     local last_batt_update = 0
 	local streaming = false
 	local audio_data = ''
 	local mtu = frame.bluetooth.max_length()
 	-- data buffer needs to be even for reading from microphone
 	if mtu % 2 == 1 then mtu = mtu - 1 end
+	print("Frame app started")
 
 	while true do
 		-- process any raw data items, if ready
@@ -43,7 +62,11 @@ function app_loop()
 				local i = 0
 				for line in data.app_data[TEXT_MSG].string:gmatch("([^\n]*)\n?") do
 					if line ~= "" then
-						frame.display.text(line, 1, i * 60 + 1)
+						if frame.HARDWARE_VERSION == "Frame" then
+							frame.display.text(line, 1, i * 60 + 1)
+						else
+							frame.display.text(line, 50, 50 + i * 60, 0xFFFFFF)
+						end
 						i = i + 1
 					end
 				end
@@ -51,28 +74,27 @@ function app_loop()
 			end
 
 			if (data.app_data[CLEAR_MSG] ~= nil) then
-				-- clear the display
-				frame.display.text(" ", 1, 1)
-				frame.display.show()
-
+				clear_display()
 				data.app_data[CLEAR_MSG] = nil
 			end
 
 			if (data.app_data[START_AUDIO_MSG] ~= nil) then
 				audio_data = ''
-				pcall(frame.microphone.start, {sample_rate=8000, bit_depth=16})
+				if frame.HARDWARE_VERSION == "Frame" then
+					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=8})
+				else
+					-- Halo
+					pcall(frame.microphone.start, {sample_rate=16000, bit_depth=16, channels=1})
+				end
 				streaming = true
-				frame.display.text("Streaming Audio", 1, 1)
-				frame.display.show()
+				show_text("Streaming Audio")
 
 				data.app_data[START_AUDIO_MSG] = nil
 			end
 
 			if (data.app_data[STOP_AUDIO_MSG] ~= nil) then
 				pcall(frame.microphone.stop)
-				-- clear the display
-				frame.display.text(" ", 1, 1)
-				frame.display.show()
+				clear_display()
 
 				data.app_data[STOP_AUDIO_MSG] = nil
 			end
@@ -103,7 +125,8 @@ function app_loop()
 		end
 
         -- periodic battery level updates, 120s for a camera app
-        last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
+		-- TODO check timekeeping functions, this is returning true every iteration (0.1s)
+        --last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
 
 		if not streaming then frame.sleep(0.1) end
 	end

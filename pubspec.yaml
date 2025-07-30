@@ -9,12 +9,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  frame_msg: ^2.0.0
+  frame_ble:
+    path: ../frame_ble
+  frame_msg:
+    path: ../frame_msg
   logging: ^1.2.0
-  raw_sound:
-    git: https://github.com/HintAzuma/flutter_raw_sound
+  flutter_sound: ^9.2.13
   share_plus: ^10.1.0
-  simple_frame_app: ^7.0.0
+  simple_frame_app:
+    path: ../simple_frame_app
 
 dev_dependencies:
   flutter_test:
