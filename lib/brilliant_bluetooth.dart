@@ -150,35 +150,49 @@ class BrilliantBluetooth {
     List<BluetoothService> services = await device.discoverServices();
 
     for (var service in services) {
-      // If Frame
+      // If the device has the Frame service
       if (service.serviceUuid == Guid('7a230001-5475-a6a4-654c-8431f6ad49c4')) {
-        _log.fine("Found Frame service");
+        _log.fine("Found Service");
+        finalDevice.maxStringLength = device.mtuNow - 3;
+        finalDevice.maxDataLength = device.mtuNow - 4;
+        finalDevice.type = BrilliantDeviceType.frame;
+
         for (var characteristic in service.characteristics) {
           if (characteristic.characteristicUuid ==
               Guid('7a230002-5475-a6a4-654c-8431f6ad49c4')) {
-            _log.fine("Found Frame TX characteristic");
+            _log.fine("Found TX characteristic");
             finalDevice.txChannel = characteristic;
           }
           if (characteristic.characteristicUuid ==
               Guid('7a230003-5475-a6a4-654c-8431f6ad49c4')) {
-            _log.fine("Found Frame RX characteristic");
+            _log.fine("Found RX characteristic");
             finalDevice.rxChannel = characteristic;
 
             await characteristic.setNotifyValue(true);
             _log.fine("Enabled RX notifications");
+          }
+          if (characteristic.characteristicUuid ==
+              Guid('7a230004-5475-a6a4-654c-8431f6ad49c4')) {
+            _log.fine("Found Audio TX characteristic");
+            finalDevice.audioTxChannel = characteristic;
 
-            finalDevice.maxStringLength = device.mtuNow - 3;
-            finalDevice.maxDataLength = device.mtuNow - 4;
-            _log.fine(() => "Max string length: ${finalDevice.maxStringLength}");
-            _log.fine(() => "Max data length: ${finalDevice.maxDataLength}");
+            finalDevice.type = BrilliantDeviceType.halo;
+            _log.fine("Device type: ${finalDevice.type}");
+
+            // TODO Halo seems to report 517 but really might be less
+            finalDevice.maxStringLength = finalDevice.maxStringLength! - 2;
+            finalDevice.maxDataLength = finalDevice.maxDataLength! - 2;
           }
         }
+
+        _log.fine(() => "Max string length: ${finalDevice.maxStringLength}");
+        _log.fine(() => "Max data length: ${finalDevice.maxDataLength}");
       }
-       if (service.serviceUuid == Guid('fe59')) {
+      if (service.serviceUuid == Guid('fe59')) {
         _log.fine("Found DFU service");
         finalDevice.state = BrilliantConnectionState.dfuConnected;
         return finalDevice;
-       }
+      }
     }
 
     // TODO ugly hack: need to work out what to await here to ensure the Frame is ready
