@@ -8,13 +8,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:frame_msg/rx/audio.dart';
 import 'package:simple_frame_app/simple_frame_app.dart';
 import 'package:frame_msg/tx/code.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await FlutterBluePlus.setLogLevel(LogLevel.info);
-  runApp(const MainApp());
-}
+void main() => runApp(const MainApp());
 
 final _log = Logger("MainApp");
 
@@ -30,6 +25,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   StreamSubscription<Uint8List>? audioClipStreamSubs;
   final List<Uint8List> _rawAudioClips = [];
   final _player = FlutterSoundPlayer();
+  bool _playerIsInited = false;
   int? _playingIndex;
 
   MainAppState() {
@@ -43,6 +39,13 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   void initState() {
     super.initState();
+    _player.openPlayer().then((value) {
+      _log.info('Audio player initialized');
+      setState(() {
+        _playerIsInited = true;
+      });
+    });
+
     tryScanAndConnectAndStart(andRun: false);
   }
 
@@ -51,6 +54,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     await audioClipStreamSubs?.cancel();
     await _player.stopPlayer();
     await _player.closePlayer();
+
     super.dispose();
   }
 
@@ -98,10 +102,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   /// Play the audio from the selected recording
   Future<void> _playAudio(Uint8List audioBytes, int index) async {
     if (!_player.isPlaying) {
-
+      _log.info('Playing audio clip at index $index, length: ${audioBytes.length} bytes');
       try {
-        await _player.openPlayer();
-        await _player.startPlayer(fromDataBuffer: audioBytes, codec: Codec.pcm8, sampleRate: 8000, numChannels: 1);
+        await _player.startPlayer(fromDataBuffer: audioBytes, codec: Codec.pcm16, sampleRate: 16000, numChannels: 1, whenFinished: _stopAudio);
       } on Exception catch (e) {
         _log.severe('Error starting audio player: $e');
       }
@@ -110,35 +113,18 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         _playingIndex = index;
       });
     }
-
-    //if (_player.isPlaying) {
-      // TODO skip the pop at the beginning of the recording? or not?
-      //await _player.feed(Uint8List.fromList(audioBytes.skip(2700).toList()));
-      //await _player.feedUint8FromStream(audioBytes);
-    //}
-
-    // no obvious callback from raw_sound when playback finishes, so since we know
-    // how long the clip is, we can wait then update the UI (show play button instead of stop)
-    // but be aware that the user might have stopped playback early, so bail out
-    int clipDurationMs = (audioBytes.length/16.0).toInt();
-    int waited = 0;
-
-    while (_player.isPlaying && waited < clipDurationMs) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      waited += 100;
+    else {
+      _log.warning('Audio player is already playing another clip');
     }
-
-    await _stopAudio();
   }
 
   /// Cancel the playing of the selected recording
   Future<void> _stopAudio() async {
-    if (_player.isPlaying) {
-      await _player.stopPlayer();
-      setState(() {
-        _playingIndex = null;
-      });
-    }
+    _log.info('Stopping audio player');
+    await _player.stopPlayer();
+    setState(() {
+      _playingIndex = null;
+    });
   }
 
   Future<void> _shareClip(Uint8List rawAudioBytes) async {
@@ -207,7 +193,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
               itemBuilder: (context, index) {
                 return Card(
                   child: ListTile(
-                    title: Text('Audio Clip ${index + 1} (${(_rawAudioClips[index].length/2/8000.0).toStringAsFixed(2)}s)'),
+                    // TODO showing as 16-bit, 16kHz, mono
+                    title: Text('Audio Clip ${index + 1} (${(_rawAudioClips[index].length/2/16000.0).toStringAsFixed(2)}s)'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min, // Ensures the row takes up minimum space
                       children: [
