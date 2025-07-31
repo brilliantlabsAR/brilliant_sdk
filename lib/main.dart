@@ -99,19 +99,29 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     await frame!.sendMessage(0x31, TxCode().pack());
   }
 
+  /// Converts 8-bit signed PCM to 16-bit signed PCM
+  /// [input] - Uint8List of signed 8-bit samples
+  /// [endian] - Endian.little or Endian.big (Endian.little for flutter on Android, for example)
+  Uint8List convertSigned8bitToSigned16bitPCM(Uint8List input, Endian endian) {
+    Int8List signed8 = input.buffer.asInt8List();
+    final output = ByteData(input.length * 2); // 2 bytes per sample
+
+    for (int i = 0; i < input.length; i++) {
+      int value16 = (signed8[i] << 8); // Scale and sign extend
+      output.setInt16(i * 2, value16, endian);
+    }
+
+    return output.buffer.asUint8List();
+  }
+
   /// Play the audio from the selected recording
   Future<void> _playAudio(Uint8List audioBytes, int index) async {
     if (!_player.isPlaying) {
       _log.info('Playing audio clip at index $index, length: ${audioBytes.length} bytes');
       try {
-        // because the audio player can only play PCM16, convert the 8-bit audio to 16-bit
-        final convertedBytes = Uint8List(audioBytes.length * 2);
-        for (int i = 0; i < audioBytes.length; i++) {
-          // Convert 8-bit audio to 16-bit by duplicating the byte and shifting it
-          final sample = audioBytes[i];
-          convertedBytes[i * 2] = sample; // MSB
-          convertedBytes[i * 2 + 1] = sample; // LSB
-        }
+        // because the audio player can only play PCM16, convert the 8-bit signed audio (in a Uint8List!) to 16-bit signed (in a Uint8List!)
+        final convertedBytes = convertSigned8bitToSigned16bitPCM(audioBytes, Endian.little);
+
         await _player.startPlayer(fromDataBuffer: convertedBytes, codec: Codec.pcm16, sampleRate: 8000, numChannels: 1, whenFinished: _stopAudio);
       } on Exception catch (e) {
         _log.severe('Error starting audio player: $e');
