@@ -12,21 +12,30 @@ import 'brilliant_connection_state.dart';
 
 final _log = Logger("Bluetooth");
 
+enum BrilliantDeviceType {
+  frame,
+  halo,
+  unknown,
+}
+
 class BrilliantDevice {
 
   BluetoothDevice device;
   BrilliantConnectionState state;
   int? maxStringLength;
   int? maxDataLength;
+  BrilliantDeviceType type;
 
   BluetoothCharacteristic? txChannel;
   BluetoothCharacteristic? rxChannel;
+  BluetoothCharacteristic? audioTxChannel;
 
   BrilliantDevice({
     required this.state,
     required this.device,
     this.maxStringLength,
     this.maxDataLength,
+    this.type = BrilliantDeviceType.unknown,
   });
 
   // to enable reconnect()
@@ -115,6 +124,12 @@ class BrilliantDevice {
     await Future.delayed(const Duration(milliseconds: 200));
   }
 
+  Future<void> sendRemoveSignal() async {
+    _log.info("Sending remove signal");
+    await sendString("\x05", awaitResponse: false, log: false);
+    await Future.delayed(const Duration(milliseconds: 200));
+  }
+
   Future<String?> sendString(
     String string, {
     bool awaitResponse = true,
@@ -126,31 +141,49 @@ class BrilliantDevice {
       }
 
       if (state != BrilliantConnectionState.connected) {
-        throw ("Device is not connected");
+        throw BrilliantBluetoothException("Device is not connected");
       }
 
-      if (string.length > maxStringLength!) {
-        throw ("Payload exceeds allowed length of $maxStringLength");
+      final maxLength = maxStringLength;
+      if (maxLength == null || string.length > maxLength) {
+        throw BrilliantBluetoothException("Payload exceeds allowed length of ${maxLength ?? 'unknown'}");
       }
 
-      await txChannel!.write(utf8.encode(string), withoutResponse: true);
-
-      if (awaitResponse == false) {
-        return null;
+      final tx = txChannel;
+      final rx = rxChannel;
+      if (tx == null || (awaitResponse && rx == null)) {
+        throw BrilliantBluetoothException("Required channels not available");
       }
 
-      final response = await rxChannel!.onValueReceived
-          .timeout(const Duration(seconds: 10))
-          .first;
+      // Set up the response listener before writing
+      Future<String>? responseFuture;
+      if (awaitResponse) {
+        responseFuture = rx!.onValueReceived
+            .timeout(const Duration(seconds: 10))
+            .first
+            .then((response) => utf8.decode(response));
+      }
 
-      return utf8.decode(response);
+      // Now perform the write
+      await tx.write(utf8.encode(string), withoutResponse: false, allowLongWrite: true);
+
+      // Wait for the response if needed
+      if (awaitResponse && responseFuture != null) {
+        return await responseFuture;
+      }
+
+      return null;
     } catch (error) {
       _log.warning("Couldn't send string. $error");
-      return Future.error(BrilliantBluetoothException(error.toString()));
+      rethrow;
     }
   }
 
   Future<void> sendData(List<int> data) async {
+    sendDataOnCharacteristic(data, txChannel!);
+  }
+
+  Future<void> sendDataOnCharacteristic(List<int> data, BluetoothCharacteristic char) async {
     try {
       _log.finer(() => "Sending ${data.length} bytes of plain data");
       _log.finest(data);
@@ -165,15 +198,25 @@ class BrilliantDevice {
 
       var finalData = data.toList()..insert(0, 0x01);
 
-      await txChannel!.write(finalData, withoutResponse: true);
+      await char.write(finalData, withoutResponse: true);
     } catch (error) {
       _log.warning("Couldn't send data. $error");
       return Future.error(BrilliantBluetoothException(error.toString()));
     }
   }
 
-  /// Same as sendData but user includes the 0x01 header byte to avoid extra memory allocation
+  Future<void> sendAudioData(Uint8List data) async {
+    if (audioTxChannel != null) {
+      sendDataRawOnCharacteristic(data, audioTxChannel!);
+    }
+  }
+
   Future<void> sendDataRaw(Uint8List data) async {
+    sendDataRawOnCharacteristic(data, txChannel!);
+  }
+
+  /// Same as sendData but user includes the 0x01 header byte to avoid extra memory allocation
+  Future<void> sendDataRawOnCharacteristic(Uint8List data, BluetoothCharacteristic char) async {
     try {
       _log.finer(() => "Sending ${data.length - 1} bytes of plain data");
       _log.finest(data);
@@ -191,7 +234,7 @@ class BrilliantDevice {
       }
 
       // TODO check throughput difference using withoutResponse: false
-      await txChannel!.write(data, withoutResponse: false);
+      await char.write(data, withoutResponse: false);
     } catch (error) {
       _log.warning("Couldn't send data. $error");
       return Future.error(BrilliantBluetoothException(error.toString()));
@@ -313,10 +356,11 @@ class BrilliantDevice {
       file = file.replaceAll('"', '\\"');
 
       var resp = await sendString(
-          "f=frame.file.open('$fileName', 'w');print('\x02')",
+          'f=frame.file.open("$fileName", "w");print(2)',
+          awaitResponse: true,
           log: false);
 
-      if (resp != "\x02") {
+      if (resp != "2") {
         throw ("Error opening file: $resp");
       }
 
@@ -336,18 +380,18 @@ class BrilliantDevice {
 
         String chunk = file.substring(index, index + chunkSize);
 
-        resp = await sendString("f:write('$chunk');print('\x02')", log: false);
+        resp = await sendString("f:write('$chunk');print(2)", awaitResponse: true, log: false);
 
-        if (resp != "\x02") {
+        if (resp != "2") {
           throw ("Error writing file: $resp");
         }
 
         index += chunkSize;
       }
 
-      resp = await sendString("f:close();print('\x02')", log: false);
+      resp = await sendString("f:close();print(2)", awaitResponse: true, log: false);
 
-      if (resp != "\x02") {
+      if (resp != "2") {
         throw ("Error closing file: $resp");
       }
 
