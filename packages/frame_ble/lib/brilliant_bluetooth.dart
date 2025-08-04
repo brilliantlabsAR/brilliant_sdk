@@ -115,14 +115,20 @@ class BrilliantBluetooth {
         // note: changed so that sdk users (apps) directly specify reconnect behaviour
         // otherwise there are spurious reconnects even after programmatically disconnecting
         timeout: const Duration(days: 365),
+        //autoConnect: true,
         autoConnect: Platform.isIOS ? true : false,
         mtu: null,
+      ).catchError((e) {
+          _log.info(() => "Error connecting: ${e.toString()}");
+        }
       );
 
-      final connectionState = await device.connectionState.firstWhere((state) =>
-          state == BluetoothConnectionState.connected ||
+      final connectionState = await device.connectionState.firstWhere((state) {
+          _log.info(() => "Connection state: $state, reason: ${device.disconnectReason?.description}");
+          return state == BluetoothConnectionState.connected ||
           (state == BluetoothConnectionState.disconnected &&
-              device.disconnectReason != null));
+              device.disconnectReason != null);
+      });
 
       _log.info(() => "Found reconnectable device: $uuid");
 
@@ -140,6 +146,8 @@ class BrilliantBluetooth {
   static Future<BrilliantDevice> enableServices(BluetoothDevice device) async {
     if (Platform.isAndroid) {
       await device.requestMtu(512);
+      await device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
+      await device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.noPreferred);
     }
 
     BrilliantDevice finalDevice = BrilliantDevice(
@@ -199,7 +207,8 @@ class BrilliantBluetooth {
     // Don't let BrilliantBluetooth.connect complete until the Frame is ready
     await Future.delayed(const Duration(milliseconds: 100));
 
-    if (finalDevice.txChannel != null && finalDevice.rxChannel != null) {
+    if (finalDevice.txChannel != null && finalDevice.rxChannel != null &&
+      (finalDevice.type == BrilliantDeviceType.frame || finalDevice.audioTxChannel != null)) {
       finalDevice.state = BrilliantConnectionState.connected;
       return finalDevice;
     }

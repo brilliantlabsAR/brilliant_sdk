@@ -121,6 +121,13 @@ class BrilliantDevice {
   Future<void> sendResetSignal() async {
     _log.info("Sending reset signal");
     await sendString("\x04", awaitResponse: false, log: false);
+    if (type == BrilliantDeviceType.halo) {
+      // Halo may take longer to reset
+      await Future.delayed(const Duration(milliseconds: 3000));
+    } else {
+      // Frame takes ~200ms reset
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
     await Future.delayed(const Duration(milliseconds: 200));
   }
 
