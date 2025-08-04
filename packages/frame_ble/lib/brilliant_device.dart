@@ -111,6 +111,15 @@ class BrilliantDevice {
     await Future.delayed(const Duration(milliseconds: 200));
   }
 
+  /// Checks if Lua is running by sending a simple print command and expecting no response.
+  /// If Lua is running, it will not respond to the print command within the short timeout, and we return true.
+  /// If Lua is not running, it will respond with the printed output and we return false.
+  Future<bool> isLuaRunning() async{
+    final response = await sendString("print(1)", awaitResponse: true, log: true)
+        .timeout(const Duration(milliseconds: 200), onTimeout: () => null);
+    return response == null;
+  }
+
   Future<void> sendBreakSignal() async {
     _log.info("Sending break signal");
     await sendString("\x03", awaitResponse: false, log: false);
