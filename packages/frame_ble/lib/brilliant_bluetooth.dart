@@ -145,8 +145,9 @@ class BrilliantBluetooth {
 
   static Future<BrilliantDevice> enableServices(BluetoothDevice device) async {
     if (Platform.isAndroid) {
+      // TODO in future Halo should be paired as well, but for now we only pair Frame
       // try to avoid the double pop-up on Android
-      await device.createBond();
+      //await device.createBond();
       await device.requestMtu(512);
       await device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
       await device.setPreferredPhy(txPhy: (Phy.le2m.mask | Phy.le1m.mask), rxPhy: (Phy.le2m.mask | Phy.le1m.mask), option: PhyCoding.noPreferred);
@@ -165,7 +166,23 @@ class BrilliantBluetooth {
         _log.fine("Found Service");
         finalDevice.maxStringLength = device.mtuNow - 3;
         finalDevice.maxDataLength = device.mtuNow - 4;
+        // initialize as Frame by default, override if Halo is detected
         finalDevice.type = BrilliantDeviceType.frame;
+
+        // peek first to see if the device has a Halo characteristic with characteristic.characteristicUuid == Guid('7a230004-5475-a6a4-654c-8431f6ad49c4')
+        // to override the type
+        if (service.characteristics.any((c) => c.characteristicUuid == Guid('7a230004-5475-a6a4-654c-8431f6ad49c4'))) {
+          _log.fine("Device is a Halo");
+          finalDevice.type = BrilliantDeviceType.halo;
+        }
+        else {
+          _log.fine("Device is a Frame");
+          if (Platform.isAndroid) {
+            // try to avoid the double pop-up on Android
+            // TODO in future Halo should be paired as well, but for now we only pair Frame
+            await device.createBond();
+          }
+        }
 
         for (var characteristic in service.characteristics) {
           if (characteristic.characteristicUuid ==
