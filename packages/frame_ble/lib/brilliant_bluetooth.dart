@@ -145,9 +145,11 @@ class BrilliantBluetooth {
 
   static Future<BrilliantDevice> enableServices(BluetoothDevice device) async {
     if (Platform.isAndroid) {
+      // try to avoid the double pop-up on Android
+      await device.createBond();
       await device.requestMtu(512);
       await device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
-      await device.setPreferredPhy(txPhy: Phy.le2m.mask, rxPhy: Phy.le2m.mask, option: PhyCoding.noPreferred);
+      await device.setPreferredPhy(txPhy: (Phy.le2m.mask | Phy.le1m.mask), rxPhy: (Phy.le2m.mask | Phy.le1m.mask), option: PhyCoding.noPreferred);
     }
 
     BrilliantDevice finalDevice = BrilliantDevice(
@@ -176,8 +178,35 @@ class BrilliantBluetooth {
             _log.fine("Found RX characteristic");
             finalDevice.rxChannel = characteristic;
 
-            await characteristic.setNotifyValue(true);
-            _log.fine("Enabled RX notifications");
+            // Try to enable notifications for RX characteristic
+            // If pairing keys are not set, this will fail so we catch the error
+            // and report it as a BrilliantBluetoothException
+            //try {
+              await characteristic.setNotifyValue(true);
+              _log.fine("Enabled RX notifications");
+            // catch FlutterBluePlusException to handle cases where notifications cannot be enabled, e.g. pairing issues
+            // } on FlutterBluePlusException catch (e) {
+            //   _log.warning("Failed to enable RX notifications: $e");
+            //   if (e.platform == ErrorPlatform.android && e.code != null && e.code == 133) {
+            //     _log.warning("This may be due to the device not being paired or the pairing keys not being set.");
+            //     try {
+            //       // Attempt to remove bond if it exists
+            //       if (await device.bondState.first == BluetoothBondState.bonded) {
+            //         _log.info("Removing bond for device: ${device.platformName}");
+            //         await device.removeBond();
+            //         await device.createBond();
+            //         await characteristic.setNotifyValue(true);
+            //         _log.fine("Enabled RX notifications after removing bond");
+            //       }
+            //     } catch (removeBondError) {
+            //       _log.warning("Failed to remove bond: $removeBondError; while trying to overcome setNotifyValue error: $e");
+            //       throw BrilliantBluetoothException("Failed to enable RX notifications: $e");
+            //     }
+            //   } else {
+            //     // TODO handle iOS case when pairing keys are not set correctly, other error codes
+            //     throw BrilliantBluetoothException("Failed to enable RX notifications: $e");
+            //   }
+            // }
           }
           if (characteristic.characteristicUuid ==
               Guid('7a230004-5475-a6a4-654c-8431f6ad49c4')) {
