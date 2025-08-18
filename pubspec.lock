@@ -219,14 +219,14 @@ packages:
   frame_ble:
     dependency: "direct main"
     description:
-      path: "../frame_ble"
+      path: "../brilliant_sdk_flutter/packages/frame_ble"
       relative: true
     source: path
     version: "3.0.0"
   frame_msg:
     dependency: "direct main"
     description:
-      path: "../frame_msg"
+      path: "../brilliant_sdk_flutter/packages/frame_msg"
       relative: true
     source: path
     version: "2.0.0"

@@ -49,6 +49,9 @@ function app_loop()
 	local mtu = frame.bluetooth.max_length()
 	-- data buffer needs to be even for reading from microphone
 	if mtu % 2 == 1 then mtu = mtu - 1 end
+	if frame.HARDWARE_VERSION ~= "Frame" then
+		mtu = 200
+	end
 	print("Frame app started")
 
 	while true do
@@ -84,7 +87,7 @@ function app_loop()
 					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=8})
 				else
 					-- Halo
-					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=8, channels=1})
+					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=8, gain=5})
 				end
 				streaming = true
 				show_text("Streaming Audio")
@@ -112,14 +115,16 @@ function app_loop()
 				if audio_data == nil then
 					-- send an end-of-stream message back to the phone
 					pcall(frame.bluetooth.send, string.char(AUDIO_DATA_FINAL_MSG))
-					frame.sleep(0.0025)
 					streaming = false
 					break
 
 				-- send the data that was read
 				elseif audio_data ~= '' then
 					pcall(frame.bluetooth.send, string.char(AUDIO_DATA_NON_FINAL_MSG) .. audio_data)
-					frame.sleep(0.0025)
+
+				-- no more data for now
+				else
+					break
 				end
 			end
 		end
