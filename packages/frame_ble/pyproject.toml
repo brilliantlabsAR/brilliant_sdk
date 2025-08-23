@@ -12,7 +12,7 @@ build-backend = "hatchling.build"
 name = "frame-ble"
 version = "1.1.1"
 dependencies = [
-    "bleak>=0.22.3",
+    "bleak >= 0.22.3, < 1.0.0",
 ]
 authors = [
     { name = "CitizenOne" },
