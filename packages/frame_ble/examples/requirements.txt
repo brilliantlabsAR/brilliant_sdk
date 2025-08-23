@@ -1,2 +1,2 @@
-frame-ble
-bleak
+-e ..
+bleak~=0.22.3

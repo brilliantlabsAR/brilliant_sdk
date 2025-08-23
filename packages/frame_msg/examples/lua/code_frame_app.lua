@@ -9,8 +9,12 @@ data.parsers[USER_CODE_FLAG] = code.parse_code
 
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text('Frame App Started', 1, 1)
+		frame.display.show()
+	else
+		frame.display.text('Frame App Started', 50, 50, 0xFFFFFF)
+	end
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
@@ -26,8 +30,12 @@ function app_loop()
 
 					if data.app_data[USER_CODE_FLAG] ~= nil then
 						local code = data.app_data[USER_CODE_FLAG]
-						frame.display.text('Code received: ' .. tostring(code.value), 1, 1)
-						frame.display.show()
+						if frame.HARDWARE_VERSION == 'Frame' then
+							frame.display.text('Code received: ' .. tostring(code.value), 1, 1)
+							frame.display.show()
+						else
+							frame.display.text('Code received: ' .. tostring(code.value), 50, 50, 0xFFFFFF)
+						end
 
 						-- clear the object and run the garbage collector right away
 						data.app_data[USER_CODE_FLAG] = nil
@@ -44,8 +52,12 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			if frame.HARDWARE_VERSION == 'Frame' then
+				frame.display.text(' ', 1, 1)
+				frame.display.show()
+			else
+				frame.display.clear(0x000000)
+			end
 			break
 		end
 	end

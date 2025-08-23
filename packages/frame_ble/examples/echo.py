@@ -13,10 +13,12 @@ async def main():
         # await_print: wait for a print() to ensure the Lua has executed, not just that the command was sent successfully
 
         # Print literals or computed Lua expressions
+        await frame.send_lua("print(123)", await_print=True)
         await frame.send_lua("print('echo!')", await_print=True)
         await frame.send_lua("print(5*5*5)", await_print=True)
 
         # Frame Lua API is available in these commands; see https://docs.brilliant.xyz/frame/building-apps-lua/
+        await frame.send_lua("print(frame.HARDWARE_VERSION)", await_print=True)
         await frame.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
         await frame.send_lua("print(frame.battery_level())", await_print=True)
 
