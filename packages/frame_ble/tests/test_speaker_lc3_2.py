@@ -17,7 +17,7 @@ async def main():
     await b.send_lua("frame.bluetooth.receive_callback(ble_event)")
     await asyncio.sleep(1.0)
     # 2. Load LC3 audio frames (each frame is 60 bytes)
-    with open("audio/female_w1_16000.lc3", "rb") as f:
+    with open("tests/audio/female_w1_8k_s16.lc3", "rb") as f:
         data = f.read()
     #bitrate 32000 / 800 = 40 bytes per second
     frame_size = 400  # LC3 @ 8kHz / 10ms / 32kbps

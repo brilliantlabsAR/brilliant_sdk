@@ -14,7 +14,7 @@ async def main():
     await b.send_lua("frame.speaker.volume(10)")
 
 
-    with open("audio/female_w1_8k_s8.pcm", "rb") as f:
+    with open("tests/audio/female_w1_8k_s8.pcm", "rb") as f:
         data = f.read()
 
     frame_size = 320
