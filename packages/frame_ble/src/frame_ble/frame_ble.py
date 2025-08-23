@@ -252,7 +252,7 @@ class FrameBle:
         """
         mtu = self._client.mtu_size - 3
         for i in range(0, len(data), mtu):
-            chunk = data[i:i + mtu]
+            chunk = memoryview(data)[i:i + mtu]
             await self._client.write_gatt_char(self._audio_tx_characteristic, chunk)
 
     async def send_reset_signal(self, show_me=False):
