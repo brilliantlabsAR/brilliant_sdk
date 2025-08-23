@@ -1,9 +1,9 @@
 import asyncio
-from frameutils import Bluetooth
+from frame_ble import FrameBle
 
 
 async def main():
-    bluetooth = Bluetooth()
+    bluetooth = FrameBle()
 
     await bluetooth.connect(
         print_response_handler=lambda string: print(f"Print: {string}"),

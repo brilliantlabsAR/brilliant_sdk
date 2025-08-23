@@ -1,5 +1,5 @@
 from aioconsole import ainput
-from frameutils import Bluetooth
+from frame_ble import FrameBle
 import asyncio
 import time
 
@@ -60,7 +60,7 @@ async def main():
     """
 
     # Connect to bluetooth and upload file
-    b = Bluetooth()
+    b = FrameBle()
     await b.connect(
         print_response_handler=lambda s: print(s),
         data_response_handler=receive_data,
@@ -68,7 +68,7 @@ async def main():
 
     print("Uploading script")
 
-    await b.upload_file(lua_script, "main.lua")
+    await b.upload_file_from_string(lua_script, "main.lua")
     await b.send_reset_signal()
 
     # Wait until a keypress

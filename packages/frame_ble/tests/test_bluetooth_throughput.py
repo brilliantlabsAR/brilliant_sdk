@@ -1,7 +1,7 @@
 import asyncio
 import time
 from aioconsole import ainput
-from frameutils import Bluetooth
+from frame_ble import FrameBle
 
 total_data_received = 0
 last_data_time = time.time()
@@ -38,7 +38,7 @@ async def main():
     end
     """
 
-    b = Bluetooth()
+    b = FrameBle()
 
     await b.connect(data_response_handler=receive_data)
 

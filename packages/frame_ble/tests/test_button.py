@@ -3,11 +3,11 @@ Tests the Frame specific Lua button library over Bluetooth.
 """
 
 import asyncio
-from frameutils import Bluetooth
+from frame_ble import FrameBle
 
 
 async def main():
-    b = Bluetooth()
+    b = FrameBle()
 
     await b.connect(print_response_handler=lambda s: print(s))
 

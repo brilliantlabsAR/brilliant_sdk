@@ -1,5 +1,5 @@
 import asyncio
-from frameutils import Bluetooth
+from frame_ble import FrameBle
 import time
 
 # Convert frame data to a Lua-compatible hexadecimal string
@@ -7,7 +7,7 @@ def bin2lua_hex(data: bytes) -> str:
     return '"' + ''.join(f'\\x{b:02x}' for b in data) + '"'
 
 async def main():
-    b = Bluetooth()
+    b = FrameBle()
     await b.connect()
 
     # 1. Configure the speaker in LC3 mode
@@ -16,7 +16,7 @@ async def main():
     
 
     # 2. Load LC3 audio frames (each frame is 60 bytes)
-    with open("/home/lht/fl/alif/applications/frame/tests/female_w1_16000.lc3", "rb") as f:
+    with open("audio/female_w1_16000.lc3", "rb") as f:
         data = f.read()
     #bitrate 32000 / 800 = 40 bytes per second
     frame_size = 400  # LC3 @ 8kHz / 10ms / 32kbps

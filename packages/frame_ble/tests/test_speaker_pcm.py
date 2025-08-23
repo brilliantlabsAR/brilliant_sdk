@@ -1,12 +1,12 @@
 import asyncio
-from frameutils import Bluetooth
+from frame_ble import FrameBle
 
 # Convert frame data to a Lua-compatible hexadecimal string
 def bin2lua_hex(data: bytes) -> str:
     return '"' + ''.join(f'\\x{b:02x}' for b in data) + '"'
 
 async def main():
-    b = Bluetooth()
+    b = FrameBle()
     await b.connect()
 
     # 1. Configure the speaker in pcm mode
@@ -14,7 +14,7 @@ async def main():
     await b.send_lua("frame.speaker.volume(10)")
 
 
-    with open("/home/lht/fl/alif/applications/frame/tests/female_w1_8k_s8.pcm", "rb") as f:
+    with open("audio/female_w1_8k_s8.pcm", "rb") as f:
         data = f.read()
 
     frame_size = 320
