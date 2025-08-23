@@ -246,6 +246,15 @@ class FrameBle:
             except asyncio.TimeoutError:
                 raise Exception("device didn't respond")
 
+    async def send_audio(self, data: bytearray):
+        """
+        Sends audio data to the device. Splits if necessary.
+        """
+        mtu = self._client.mtu_size - 3
+        for i in range(0, len(data), mtu):
+            chunk = data[i:i + mtu]
+            await self._client.write_gatt_char(self._audio_tx_characteristic, chunk)
+
     async def send_reset_signal(self, show_me=False):
         """
         Sends a reset signal to the device which will reset the Lua virtual
