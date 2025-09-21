@@ -16,9 +16,9 @@ async def main():
         if frame._type == BrilliantDeviceType.HALO:
             await frame.send_lua("frame.display.clear();print(0)", await_print=True)
             # 4 colours, darkest to lightest
-            cols = [0x61A4EA, 0x72B5F9, 0x9FCBFF, 0xECF3FF]
+            cols = [0x000000, 0x61A4EA, 0x72B5F9, 0x9FCBFF, 0xECF3FF]
             for i in range(0, 4):
-                await frame.send_lua(f"frame.display.text('NOA', 1, {4-i}, {cols[i]});print(0)", await_print=True)
+                await frame.send_lua(f"frame.display.text('NOA', 1, {4-i}, {cols[i+1]});print(0)", await_print=True)
 
             # website font bitmap
             N = [0b11000110, 0b11100110, 0b11110110, 0b11011110, 0b11001110, 0b11000110]
@@ -34,10 +34,13 @@ async def main():
 
             # convert to a string of hex values, e.g. "\xC6\xE6\xF6..."
             bitmap_str = "".join([f"\\x{b:02X}" for b in bitmap])
+            
+            # write cols into a string of hex values, e.g. "\x00\x61\xA4..."
+            palette_str = "".join([f"\\x{(c>>16)&0xFF:02X}\\x{(c>>8)&0xFF:02X}\\x{(c>>0)&0xFF:02X}" for c in cols])
 
             # send the bitmap to the display 
-            for i in range(0, 3):
-                await frame.send_lua(f"frame.display.bitmap(1, {64-i*16 + 20}, 24, 2, {i+1}, '{bitmap_str}', {{x_scale=16, y_scale=16}});print(0)", await_print=True)
+            for i in range(0, 4):
+                await frame.send_lua(f"frame.display.bitmap(1, {64-i*16 + 20}, 24, 2, {i}, '{bitmap_str}', {{x_scale=16, y_scale=16, palette_data='{palette_str}'}});print(0)", await_print=True)
 
         else:
             await frame.send_lua("frame.display.text('Hello, Frame!', 1, 1);frame.display.show();print(0)", await_print=True)
