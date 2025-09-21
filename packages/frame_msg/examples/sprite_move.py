@@ -22,7 +22,7 @@ async def main():
         await frame.print_short_text('Loading...')
 
         # send the std lua files to Frame that handle data accumulation and sprite parsing and placement
-        await frame.upload_stdlua_libs(lib_names=['data', 'sprite', 'sprite_coords'])
+        await frame.upload_stdlua_libs(lib_names=['data', 'code', 'sprite', 'sprite_coords'])
 
         # Send the main lua application from this project to Frame that will run the app
         await frame.upload_frame_app(local_filename="lua/sprite_game_app.lua")
@@ -51,10 +51,10 @@ async def main():
         # Note that the frameside app is expecting a message of type TxSpriteCoords on msgCode 0x40
         # and a message of type TxCode on msgCode 0x50 to draw everything
         for _ in range(10):
-            # place sprite 0x20 at a random position on the 640x400 display,
+            # place sprite 0x20 at a random position on the 640x400/320x240 display,
             # given that the sprite is 200x200 pixels and the top-left corner is at (1,1)
-            x = randint(1, 441)
-            y = randint(1, 201)
+            x = randint(1, 120)
+            y = randint(1, 40)
             coords = TxSpriteCoords(0x20, x, y, 0)
 
             # place the sprite at the new position
