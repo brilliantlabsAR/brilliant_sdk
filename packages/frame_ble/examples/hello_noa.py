@@ -32,7 +32,7 @@ async def main():
                 bitmap.append(O[i])
                 bitmap.append(A[i])
 
-            # convert to a string of hex values, e.g. "0xC60xE6,0xF6,..."
+            # convert to a string of hex values, e.g. "\xC6\xE6\xF6..."
             bitmap_str = "".join([f"\\x{b:02X}" for b in bitmap])
 
             # send the bitmap to the display 
