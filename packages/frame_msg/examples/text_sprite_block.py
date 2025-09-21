@@ -40,7 +40,7 @@ async def main():
 
         # Send the text for display on Frame
         # Note that the frameside app is expecting a message of type TxTextSpriteBlock on msgCode 0x20
-        tsb = TxTextSpriteBlock(width=600,
+        tsb = TxTextSpriteBlock(width=320,
                                 font_size=40,
                                 max_display_rows=7,
                                 text="Hello, friend!\nこんにちは、友人！\n朋友你好！\nПривет, друг!\n안녕, 친구!",
@@ -52,11 +52,12 @@ async def main():
         # then send all the slices
         for spr in tsb.sprites:
             await frame.send_message(0x20, spr.pack())
+            await asyncio.sleep(1)
 
-        await asyncio.sleep(5.0)
+        await asyncio.sleep(1.0)
 
         # right-to-left script is also supported
-        tsb = TxTextSpriteBlock(width=600,
+        tsb = TxTextSpriteBlock(width=320,
                                 font_size=40,
                                 max_display_rows=2,
                                 text="שלום, חבר!",
