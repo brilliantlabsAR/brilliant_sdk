@@ -95,6 +95,7 @@ async def main():
         # put the original global palette back (16-colours)
         await restore_default_palette(frame)
 
+        await frame.send_lua("frame.display.clear();print(0)", await_print=True)
         await frame.send_lua("frame.display.bitmap(48, 96, 24, 16, 0, string.rep('\\x01\\x23\\x45\\x67\\x89\\xAB\\xCD\\xEF\\x01\\x23\\x45\\x67', 1), {x_scale=8, y_scale=8})print(0)", await_print=True)
 
         await asyncio.sleep(2)
