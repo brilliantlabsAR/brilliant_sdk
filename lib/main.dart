@@ -105,11 +105,11 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Frame Sprite Viewer',
+      title: 'Sprite Viewer',
       theme: ThemeData.dark(),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Frame Sprite Viewer'),
+          title: const Text('Sprite Viewer'),
           actions: [getBatteryWidget()]
         ),
         body: Padding(
