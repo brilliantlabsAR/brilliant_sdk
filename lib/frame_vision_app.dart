@@ -21,9 +21,9 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
   // camera settings
   int qualityIndex = 4;
   final List<String> qualityValues = ['VERY_LOW', 'LOW', 'MEDIUM', 'HIGH', 'VERY_HIGH'];
-  int resolution = 720;
+  int resolution = 640;
   int pan = 0;
-  bool upright = true;
+  bool upright = false;
   bool _isAutoExposure = true;
 
   // autoexposure/gain parameters
@@ -178,7 +178,7 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
       await frame!.sendMessage(0x0d, captureSettings.pack());
 
       // synchronously await the image response (and add jpeg header if necessary)
-      Uint8List imageData = await RxPhoto(quality: qualityValues[currQualIndex], resolution: currRes, isRaw: requestRaw, upright: upright).attach(frame!.dataResponse).first;
+      Uint8List imageData = await RxPhoto(quality: qualityValues[currQualIndex], resolution: currRes, isRaw: false, upright: upright).attach(frame!.dataResponse).first;
 
       // received a whole-image Uint8List with jpeg header included
       _stopwatch.stop();
