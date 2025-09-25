@@ -30,5 +30,5 @@ flutter:
     - packages/frame_msg/lua/battery.min.lua
     - packages/frame_msg/lua/code.min.lua
     - packages/frame_msg/lua/data.min.lua
-    - packages/frame_msg/lua/sprite.min.lua
-    - assets/frame_app.min.lua
+    - packages/frame_msg/lua/image_sprite_block.min.lua
+    - assets/frame_app.lua

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:frame_msg/tx/image_sprite_block.dart';
 import 'package:logging/logging.dart';
 
 import 'package:simple_frame_app/simple_frame_app.dart';
@@ -64,9 +65,20 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
           _image = Image.memory(pngBytes);
         });
 
-        // and send initial text to Frame
-        var msg = TxSprite.fromPngBytes(pngBytes: pngBytes);
-        await frame!.sendMessage(0x20, msg.pack());
+        // make the sprite
+        var sprite = TxSprite.fromPngBytes(pngBytes: pngBytes);
+
+        var isb = TxImageSpriteBlock(image: sprite, spriteLineHeight: 10);
+        // send the header first
+        await frame!.sendMessage(0x20, isb.pack());
+
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // then send all the slices
+        for (var line in isb.spriteLines) {
+          await frame!.sendMessage(0x20, line.pack());
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
       }
       else {
         currentState = ApplicationState.ready;
