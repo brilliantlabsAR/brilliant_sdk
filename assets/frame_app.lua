@@ -78,8 +78,11 @@ function app_loop()
 					end
 				end
 
-				-- periodic battery level updates, 120s for a camera app
-				last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
+				-- periodic battery level updates
+				-- TODO work out what's happening with the Halo clock
+				if frame.HARDWARE_VERSION == 'Frame' then
+					last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
+				end
 				-- can't sleep for long, might be lots of incoming bluetooth data to process
 				frame.sleep(0.001)
 			end
