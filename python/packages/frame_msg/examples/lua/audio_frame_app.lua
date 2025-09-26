@@ -10,8 +10,12 @@ data.parsers[AUDIO_SUBS_MSG] = code.parse_code
 
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text('Frame App Started', 1, 1)
+		frame.display.show()
+	else
+		frame.display.text('Frame App Started', 50, 50, 0xFFFFFF)
+	end
 
 	local streaming = false
 
@@ -30,19 +34,29 @@ function app_loop()
 					if (data.app_data[AUDIO_SUBS_MSG] ~= nil) then
 
 						if data.app_data[AUDIO_SUBS_MSG].value == 1 then
+							-- 'start' message
 							audio_data = ''
 							streaming = true
 							audio.start()
-							frame.display.text("\u{F0010}", 300, 1)
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.text("\u{F0010}", 300, 1)
+								frame.display.show()
+							else
+								frame.display.text("Rec", 50, 50, 0xFFFFFF)
+							end
 						else
 							-- 'stop' message
 							-- don't set streaming = false here, it will be set
 							-- when all the audio data is flushed
 							audio.stop()
-							frame.display.text(" ", 1, 1)
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.text(" ", 1, 1)
+								frame.display.show()
+							else
+								frame.display.clear(0x000000)
+							end
 						end
 
-						frame.display.show()
 						data.app_data[AUDIO_SUBS_MSG] = nil
 					end
 
@@ -76,8 +90,12 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			if frame.HARDWARE_VERSION == 'Frame' then
+				frame.display.text(" ", 1, 1)
+				frame.display.show() 
+			else
+				frame.display.clear(0x000000)
+			end
 			break
 		end
 	end

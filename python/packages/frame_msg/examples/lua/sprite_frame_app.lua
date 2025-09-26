@@ -7,10 +7,37 @@ USER_SPRITE = 0x20
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[USER_SPRITE] = sprite.parse_sprite
 
+-- draw the specified text on the display
+function print_text(text)
+    local i = 0
+    for line in text:gmatch('([^\n]*)\n?') do
+        if line ~= "" then
+            frame.display.text(line, 1, i * 60 + 1)
+            i = i + 1
+        end
+    end
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.show()
+	end
+end
+
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION ~= 'Frame' then
+		frame.display.power_save(false)
+		frame.display.show(true)
+	end
+
+	print_text('Frame App Started')
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
@@ -27,12 +54,16 @@ function app_loop()
 					if data.app_data[USER_SPRITE] ~= nil then
 						local spr = data.app_data[USER_SPRITE]
 
-						-- set the palette in case it's different to the standard palette
-						sprite.set_palette(spr.num_colors, spr.palette_data)
-
 						-- show the sprite
-						frame.display.bitmap(1, 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
-						frame.display.show()
+						clear_display()
+						if frame.HARDWARE_VERSION == 'Frame' then
+							-- set the palette in case it's different to the standard palette
+							sprite.set_palette(spr.num_colors, spr.palette_data)
+							frame.display.bitmap(1, 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
+							frame.display.show()
+						else
+							frame.display.bitmap(1, 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+						end
 
 						-- clear the object and run the garbage collector right away
 						data.app_data[USER_SPRITE] = nil
@@ -49,8 +80,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

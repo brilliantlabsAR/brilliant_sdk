@@ -21,7 +21,16 @@ function _M.set_palette(num_colors, palette_data)
 	-- we usually wouldn't want to reassign VOID, so the first entry should be black but we won't force it
 	for i=1,num_colors do
 		local col_offset = (i - 1) * 3
-		frame.display.assign_color(colors[i],
+
+		-- Frame indexes are the color names, Halo indexes are 1-16
+		local index
+		if frame.HARDWARE_VERSION == 'Frame' then
+			index = colors[i]
+		else
+			index = i
+		end
+
+		frame.display.assign_color(index,
 			string.byte(palette_data, col_offset + 1),
 			string.byte(palette_data, col_offset + 2),
 			string.byte(palette_data, col_offset + 3))

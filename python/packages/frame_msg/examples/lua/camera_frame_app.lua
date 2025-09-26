@@ -8,16 +8,24 @@ CAPTURE_SETTINGS_MSG = 0x0d
 data.parsers[CAPTURE_SETTINGS_MSG] = camera.parse_capture_settings
 
 function clear_display()
-    frame.display.text(" ", 1, 1)
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
 end
 
 function show_flash()
-    frame.display.bitmap(241, 191, 160, 2, 0, string.rep("\xFF", 400))
-    frame.display.bitmap(311, 121, 20, 2, 0, string.rep("\xFF", 400))
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.bitmap(241, 191, 160, 2, 0, string.rep("\xFF", 400))
+		frame.display.bitmap(311, 121, 20, 2, 0, string.rep("\xFF", 400))
+		frame.display.show()
+		frame.sleep(0.04)
+	else
+		frame.display.clear(0xFFFFFF)
+		frame.display.clear(0x000000)
+	end
 end
 
 -- Main app loop
@@ -50,7 +58,7 @@ function app_loop()
 
 				end
 
-				if camera.is_auto_exp then
+				if frame.HARDWARE_VERSION == 'Frame' and camera.is_auto_exp then
 					camera.run_auto_exposure()
 				end
 
@@ -61,9 +69,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream
 			print(err)
-			frame.display.text(" ", 1, 1)
-			frame.display.show()
-			frame.sleep(0.04)
+			clear_display()
 			break
 		end
 	end

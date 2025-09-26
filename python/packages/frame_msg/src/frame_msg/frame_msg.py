@@ -1,7 +1,7 @@
 from typing import List
 from importlib.resources import files
 
-from frame_ble import FrameBle
+from frame_ble import FrameBle, BrilliantDeviceType
 from typing import Callable
 
 class FrameMsg:
@@ -67,7 +67,13 @@ class FrameMsg:
         prior to the main frame_app starting (e.g. immediately after connection).
         """
         sanitized_text = text.replace("'", "\\'").replace("\n", "")
-        await self.ble.send_lua(f"frame.display.text('{sanitized_text}',1,1);frame.display.show();print(0)", await_print=True)
+        lua_command = ""
+        if (self.ble.type == BrilliantDeviceType.FRAME):
+            lua_command = f"frame.display.text('{sanitized_text}',1,1);frame.display.show();print(0)"
+        else:
+            lua_command = f"frame.display.clear();frame.display.text('{sanitized_text}',1,1);print(0)"
+
+        await self.ble.send_lua(lua_command, await_print=True)
 
     async def upload_stdlua_libs(self, lib_names: List[str]=['data'], minified: bool=True):
         """Send the specified standard frame-msg Lua files to Frame that are used by the frame_app, e.g. ['data', 'camera'] """

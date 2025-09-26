@@ -13,10 +13,34 @@ data.parsers[SPRITE_0] = sprite.parse_sprite
 data.parsers[SPRITE_COORDS] = sprite_coords.parse_sprite_coords
 data.parsers[CODE_DRAW] = code.parse_code
 
+-- draw the specified text on the display
+function print_text(text)
+    local i = 0
+    for line in text:gmatch('([^\n]*)\n?') do
+        if line ~= "" then
+            frame.display.text(line, 1, i * 60 + 1)
+            i = i + 1
+        end
+    end
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.show()
+	end
+end
+
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION ~= 'Frame' then
+		frame.display.power_save(false)
+	end
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
@@ -29,16 +53,21 @@ function app_loop()
 
 				-- one or more full messages received
 				if items_ready > 0 then
+					frame.sleep(0.1)
 
-					-- sprite resource saved for later drawing
-					-- also updates Frame's palette to match the sprite
+					-- sprite resource retained for later drawing
 					if data.app_data[SPRITE_0] ~= nil then
 						local spr = data.app_data[SPRITE_0]
 
-						-- set Frame's palette to match the sprite in case it's different to the standard palette
-						sprite.set_palette(spr.num_colors, spr.palette_data)
+						-- also updates Frame's palette to match the sprite
+						if frame.HARDWARE_VERSION == 'Frame' then
+							-- set Frame's palette to match the sprite in case it's different to the standard palette
+							sprite.set_palette(spr.num_colors, spr.palette_data)
 
-						collectgarbage('collect')
+							collectgarbage('collect')
+						end
+
+						-- don't clear the sprite, we want to draw it later
 					end
 
 					-- place a sprite on the display (backbuffer)
@@ -47,7 +76,12 @@ function app_loop()
 						local spr = data.app_data[coords.code]
 
 						if spr ~= nil then
-							frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data)
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data)
+							else
+								frame.display.clear()
+								frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data, {palette_data=spr.palette_data})
+							end
 						else
 							print('Sprite not found: ' .. tostring(coords.code))
 						end
@@ -73,8 +107,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

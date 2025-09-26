@@ -12,6 +12,7 @@ data.parsers[TEXT_SPRITE_BLOCK] = text_sprite_block.parse_text_sprite_block
 function app_loop()
 	frame.display.text('Frame App Started', 1, 1)
 	frame.display.show()
+	frame.display.set_brightness(0)
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
@@ -34,14 +35,18 @@ function app_loop()
 							-- either we have all the sprites, or we want to do progressive/incremental rendering
 							if tsb.progressive_render or (tsb.active_sprites == tsb.total_sprites) then
 
-								-- for index = 1, tsb.active_sprites do
-								-- 		local spr = tsb.sprites[index]
-								-- 		local y_offset = 50 * (index - 1) -- TODO get proper offsets
+								-- clear the display first, Halo doesn't automatically clear
+								if frame.HARDWARE_VERSION ~= 'Frame' then
+									frame.display.clear()
+								end
 
-								-- 		frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
-								-- end
 								for index, spr in ipairs(tsb.sprites) do
-									frame.display.bitmap(1, tsb.offsets[index].y + 1, spr.width, 2^spr.bpp, 0+index, spr.pixel_data)
+									print('Drawing sprite index ' .. tostring(index) .. ' at y=' .. tostring(tsb.offsets[index].y+1) .. ' spr.width=' .. tostring(spr.width) .. ' bpp=' .. tostring(spr.bpp) .. ' num_colors=' .. tostring(2^spr.bpp))
+									for i = 0, 0 do
+										local new_width = spr.width + i
+										frame.display.bitmap(1, tsb.offsets[index].y + 1, new_width, 2^spr.bpp, 0+index-1, spr.pixel_data)
+										frame.sleep(0.5)
+									end
 								end
 
 								frame.display.show()
