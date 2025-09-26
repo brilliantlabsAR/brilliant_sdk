@@ -54,10 +54,11 @@ function _M.parse_image_sprite_block(data, prev)
 		local sprite = {}
 		sprite.width = string.byte(data, 1) << 8 | string.byte(data, 2)
 		sprite.height = string.byte(data, 3) << 8 | string.byte(data, 4)
-		sprite.bpp = string.byte(data, 5)
-		sprite.num_colors = string.byte(data, 6)
-		sprite.palette_data = string.sub(data, 7, 7 + sprite.num_colors * 3 - 1)
-		sprite.pixel_data = string.sub(data, 7 + sprite.num_colors * 3)
+		sprite.compressed = string.byte(data, 5) > 0
+		sprite.bpp = string.byte(data, 6)
+		sprite.num_colors = string.byte(data, 7)
+		sprite.palette_data = string.sub(data, 8, 8 + sprite.num_colors * 3 - 1)
+		sprite.pixel_data = string.sub(data, 8 + sprite.num_colors * 3)
 
 		-- add this sprite to the current slot
 		prev.sprites[prev.current_sprite_index] = sprite
@@ -72,7 +73,16 @@ function _M.set_palette(num_colors, palette_data)
 	-- we usually wouldn't want to reassign VOID, so the first entry should be black but we won't force it
 	for i=1,num_colors do
 		local col_offset = (i - 1) * 3
-		frame.display.assign_color(colors[i],
+
+		-- Frame indexes are the color names, Halo indexes are 1-16
+		local index
+		if frame.HARDWARE_VERSION == 'Frame' then
+			index = colors[i]
+		else
+			index = i
+		end
+
+		frame.display.assign_color(index,
 			string.byte(palette_data, col_offset + 1),
 			string.byte(palette_data, col_offset + 2),
 			string.byte(palette_data, col_offset + 3))

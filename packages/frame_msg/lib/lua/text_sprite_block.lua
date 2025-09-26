@@ -46,10 +46,11 @@ function _M.parse_text_sprite_block(data, prev)
 		local sprite = {}
 		sprite.width = string.byte(data, 1) << 8 | string.byte(data, 2)
 		sprite.height = string.byte(data, 3) << 8 | string.byte(data, 4)
-		sprite.bpp = string.byte(data, 5)
-		sprite.num_colors = string.byte(data, 6)
-		sprite.palette_data = string.sub(data, 7, 7 + sprite.num_colors * 3 - 1)
-		sprite.pixel_data = string.sub(data, 7 + sprite.num_colors * 3)
+		sprite.compressed = string.byte(data, 5) > 0
+		sprite.bpp = string.byte(data, 6)
+		sprite.num_colors = string.byte(data, 7)
+		sprite.palette_data = string.sub(data, 8, 8 + sprite.num_colors * 3 - 1)
+		sprite.pixel_data = string.sub(data, 8 + sprite.num_colors * 3)
 
 		-- add this sprite to the end
 		prev.sprites[prev.last_sprite_index] = sprite
