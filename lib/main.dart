@@ -72,12 +72,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         // send the header first
         await frame!.sendMessage(0x20, isb.pack());
 
-        await Future.delayed(const Duration(milliseconds: 500));
-
         // then send all the slices
         for (var line in isb.spriteLines) {
           await frame!.sendMessage(0x20, line.pack());
-          await Future.delayed(const Duration(milliseconds: 500));
         }
       }
       else {

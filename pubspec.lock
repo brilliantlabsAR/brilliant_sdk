@@ -197,7 +197,7 @@ packages:
     description:
       path: "packages/frame_ble"
       ref: next
-      resolved-ref: b0a19113aeca959350c26d54029bd3b5699db33c
+      resolved-ref: e985ab9e26dd81862ec5232bea649756840b1b36
       url: "https://github.com/brilliantlabsAR/brilliant_sdk_flutter"
     source: git
     version: "3.0.0"
@@ -206,7 +206,7 @@ packages:
     description:
       path: "packages/frame_msg"
       ref: next
-      resolved-ref: b0a19113aeca959350c26d54029bd3b5699db33c
+      resolved-ref: e985ab9e26dd81862ec5232bea649756840b1b36
       url: "https://github.com/brilliantlabsAR/brilliant_sdk_flutter"
     source: git
     version: "2.0.0"
@@ -325,9 +325,11 @@ packages:
   simple_frame_app:
     dependency: "direct main"
     description:
-      path: "../simple_brilliant_app"
-      relative: true
-    source: path
+      path: "."
+      ref: next
+      resolved-ref: "44146cbff37f1114c338666cae72cf2bad5b4afb"
+      url: "https://github.com/brilliantlabsAR/simple_brilliant_app"
+    source: git
     version: "7.1.0"
   sky_engine:
     dependency: transitive

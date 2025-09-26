@@ -29,7 +29,7 @@ function app_loop()
 		frame.display.set_brightness(0)
 	end
 
-    print('Frame App Started')	
+    print('Frame App Started')
 
 	while true do
 		rc, err = pcall(
@@ -41,16 +41,13 @@ function app_loop()
 				if items_ready > 0 then
 
 					if (data.app_data[IMAGE_SPRITE_BLOCK] ~= nil) then
-						print('Got image sprite block')
 						-- show the image sprite block
 						local isb = data.app_data[IMAGE_SPRITE_BLOCK]
 
 						-- it can be that we haven't got any sprites yet, so only proceed if we have a sprite
 						if isb.current_sprite_index > 0 then
-							print(isb.current_sprite_index)
 							-- either we have all the sprites, or we want to do progressive/incremental rendering
 							if isb.progressive_render or (isb.active_sprites == isb.total_sprites) then
-								print('Rendering image sprite block')
 
 								for index = 1, isb.active_sprites do
 									local spr = isb.sprites[index]

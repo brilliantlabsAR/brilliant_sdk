@@ -12,8 +12,12 @@ dependencies:
     sdk: flutter
   logging: ^1.2.0
   simple_frame_app:
-    path: ../simple_brilliant_app
+    #path: ../simple_brilliant_app
+    git:
+      url: https://github.com/brilliantlabsAR/simple_brilliant_app
+      ref: next
   frame_msg:
+    #path: ../brilliant_sdk_flutter/packages/frame_msg
     git:
       url: https://github.com/brilliantlabsAR/brilliant_sdk_flutter
       path: packages/frame_msg
