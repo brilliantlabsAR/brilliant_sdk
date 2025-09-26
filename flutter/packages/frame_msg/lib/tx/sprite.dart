@@ -290,6 +290,7 @@ class TxSprite extends TxMsg {
     int widthLsb = _width & 0xFF;
     int heightMsb = _height >> 8;
     int heightLsb = _height & 0xFF;
+    int compressed = 0; // no compression supported yet
     int bpp = 0;
     Uint8List packed;
     switch (_numColors) {
@@ -313,16 +314,16 @@ class TxSprite extends TxMsg {
     // preallocate the list of bytes to send - sprite header, palette, pixel data
     // (packed.length already adds the extra byte if WxH is not divisible by 8)
     Uint8List payload =
-        Uint8List.fromList(List.filled(6 + _numColors * 3 + packed.length, 0));
+        Uint8List.fromList(List.filled(7 + _numColors * 3 + packed.length, 0));
 
     // NB: palette data could be numColors=12 x 3 (RGB) bytes even if bpp is 4 (max 16 colors)
     // hence we provide both numColors and bpp here.
     // sendMessage will prepend the data byte, msgCode to each packet
     // and the Uint16 payload length to the first packet
     payload
-        .setAll(0, [widthMsb, widthLsb, heightMsb, heightLsb, bpp, _numColors]);
-    payload.setAll(6, _paletteData);
-    payload.setAll(6 + _numColors * 3, packed);
+        .setAll(0, [widthMsb, widthLsb, heightMsb, heightLsb, compressed, bpp, _numColors]);
+    payload.setAll(7, _paletteData);
+    payload.setAll(7 + _numColors * 3, packed);
 
     return payload;
   }

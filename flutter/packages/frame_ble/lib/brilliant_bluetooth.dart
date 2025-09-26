@@ -115,14 +115,20 @@ class BrilliantBluetooth {
         // note: changed so that sdk users (apps) directly specify reconnect behaviour
         // otherwise there are spurious reconnects even after programmatically disconnecting
         timeout: const Duration(days: 365),
+        //autoConnect: true,
         autoConnect: Platform.isIOS ? true : false,
         mtu: null,
+      ).catchError((e) {
+          _log.info(() => "Error connecting: ${e.toString()}");
+        }
       );
 
-      final connectionState = await device.connectionState.firstWhere((state) =>
-          state == BluetoothConnectionState.connected ||
+      final connectionState = await device.connectionState.firstWhere((state) {
+          _log.info(() => "Connection state: $state, reason: ${device.disconnectReason?.description}");
+          return state == BluetoothConnectionState.connected ||
           (state == BluetoothConnectionState.disconnected &&
-              device.disconnectReason != null));
+              device.disconnectReason != null);
+      });
 
       _log.info(() => "Found reconnectable device: $uuid");
 
@@ -139,7 +145,12 @@ class BrilliantBluetooth {
 
   static Future<BrilliantDevice> enableServices(BluetoothDevice device) async {
     if (Platform.isAndroid) {
+      // TODO in future Halo should be paired as well, but for now we only pair Frame
+      // try to avoid the double pop-up on Android
+      //await device.createBond();
       await device.requestMtu(512);
+      await device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
+      await device.setPreferredPhy(txPhy: (Phy.le2m.mask | Phy.le1m.mask), rxPhy: (Phy.le2m.mask | Phy.le1m.mask), option: PhyCoding.noPreferred);
     }
 
     BrilliantDevice finalDevice = BrilliantDevice(
@@ -150,42 +161,100 @@ class BrilliantBluetooth {
     List<BluetoothService> services = await device.discoverServices();
 
     for (var service in services) {
-      // If Frame
+      // If the device has the Frame service
       if (service.serviceUuid == Guid('7a230001-5475-a6a4-654c-8431f6ad49c4')) {
-        _log.fine("Found Frame service");
+        _log.fine("Found Service");
+        finalDevice.maxStringLength = device.mtuNow - 3;
+        finalDevice.maxDataLength = device.mtuNow - 4;
+        // initialize as Frame by default, override if Halo is detected
+        finalDevice.type = BrilliantDeviceType.frame;
+
+        // peek first to see if the device has a Halo characteristic with characteristic.characteristicUuid == Guid('7a230004-5475-a6a4-654c-8431f6ad49c4')
+        // to override the type
+        if (service.characteristics.any((c) => c.characteristicUuid == Guid('7a230004-5475-a6a4-654c-8431f6ad49c4'))) {
+          _log.fine("Device is a Halo");
+          finalDevice.type = BrilliantDeviceType.halo;
+        }
+        else {
+          _log.fine("Device is a Frame");
+          if (Platform.isAndroid) {
+            // try to avoid the double pop-up on Android
+            // TODO in future Halo should be paired as well, but for now we only pair Frame
+            await device.createBond();
+          }
+        }
+
         for (var characteristic in service.characteristics) {
           if (characteristic.characteristicUuid ==
               Guid('7a230002-5475-a6a4-654c-8431f6ad49c4')) {
-            _log.fine("Found Frame TX characteristic");
+            _log.fine("Found TX characteristic");
             finalDevice.txChannel = characteristic;
           }
           if (characteristic.characteristicUuid ==
               Guid('7a230003-5475-a6a4-654c-8431f6ad49c4')) {
-            _log.fine("Found Frame RX characteristic");
+            _log.fine("Found RX characteristic");
             finalDevice.rxChannel = characteristic;
 
-            await characteristic.setNotifyValue(true);
-            _log.fine("Enabled RX notifications");
+            // Try to enable notifications for RX characteristic
+            // If pairing keys are not set, this will fail so we catch the error
+            // and report it as a BrilliantBluetoothException
+            //try {
+              await characteristic.setNotifyValue(true);
+              _log.fine("Enabled RX notifications");
+            // catch FlutterBluePlusException to handle cases where notifications cannot be enabled, e.g. pairing issues
+            // } on FlutterBluePlusException catch (e) {
+            //   _log.warning("Failed to enable RX notifications: $e");
+            //   if (e.platform == ErrorPlatform.android && e.code != null && e.code == 133) {
+            //     _log.warning("This may be due to the device not being paired or the pairing keys not being set.");
+            //     try {
+            //       // Attempt to remove bond if it exists
+            //       if (await device.bondState.first == BluetoothBondState.bonded) {
+            //         _log.info("Removing bond for device: ${device.platformName}");
+            //         await device.removeBond();
+            //         await device.createBond();
+            //         await characteristic.setNotifyValue(true);
+            //         _log.fine("Enabled RX notifications after removing bond");
+            //       }
+            //     } catch (removeBondError) {
+            //       _log.warning("Failed to remove bond: $removeBondError; while trying to overcome setNotifyValue error: $e");
+            //       throw BrilliantBluetoothException("Failed to enable RX notifications: $e");
+            //     }
+            //   } else {
+            //     // TODO handle iOS case when pairing keys are not set correctly, other error codes
+            //     throw BrilliantBluetoothException("Failed to enable RX notifications: $e");
+            //   }
+            // }
+          }
+          if (characteristic.characteristicUuid ==
+              Guid('7a230004-5475-a6a4-654c-8431f6ad49c4')) {
+            _log.fine("Found Audio TX characteristic");
+            finalDevice.audioTxChannel = characteristic;
 
-            finalDevice.maxStringLength = device.mtuNow - 3;
-            finalDevice.maxDataLength = device.mtuNow - 4;
-            _log.fine(() => "Max string length: ${finalDevice.maxStringLength}");
-            _log.fine(() => "Max data length: ${finalDevice.maxDataLength}");
+            finalDevice.type = BrilliantDeviceType.halo;
+            _log.fine("Device type: ${finalDevice.type}");
+
+            // TODO Halo seems to report 517 but really might be less
+            finalDevice.maxStringLength = finalDevice.maxStringLength! - 2;
+            finalDevice.maxDataLength = finalDevice.maxDataLength! - 2;
           }
         }
+
+        _log.fine(() => "Max string length: ${finalDevice.maxStringLength}");
+        _log.fine(() => "Max data length: ${finalDevice.maxDataLength}");
       }
-       if (service.serviceUuid == Guid('fe59')) {
+      if (service.serviceUuid == Guid('fe59')) {
         _log.fine("Found DFU service");
         finalDevice.state = BrilliantConnectionState.dfuConnected;
         return finalDevice;
-       }
+      }
     }
 
     // TODO ugly hack: need to work out what to await here to ensure the Frame is ready
     // Don't let BrilliantBluetooth.connect complete until the Frame is ready
     await Future.delayed(const Duration(milliseconds: 100));
 
-    if (finalDevice.txChannel != null && finalDevice.rxChannel != null) {
+    if (finalDevice.txChannel != null && finalDevice.rxChannel != null &&
+      (finalDevice.type == BrilliantDeviceType.frame || finalDevice.audioTxChannel != null)) {
       finalDevice.state = BrilliantConnectionState.connected;
       return finalDevice;
     }
