@@ -197,7 +197,7 @@ packages:
     description:
       path: "packages/frame_ble"
       ref: next
-      resolved-ref: e985ab9e26dd81862ec5232bea649756840b1b36
+      resolved-ref: "496f898a49cfbd0d158650b19fc76ca9930982b0"
       url: "https://github.com/brilliantlabsAR/brilliant_sdk_flutter"
     source: git
     version: "3.0.0"
@@ -206,7 +206,7 @@ packages:
     description:
       path: "packages/frame_msg"
       ref: next
-      resolved-ref: e985ab9e26dd81862ec5232bea649756840b1b36
+      resolved-ref: "496f898a49cfbd0d158650b19fc76ca9930982b0"
       url: "https://github.com/brilliantlabsAR/brilliant_sdk_flutter"
     source: git
     version: "2.0.0"
@@ -327,7 +327,7 @@ packages:
     description:
       path: "."
       ref: next
-      resolved-ref: "44146cbff37f1114c338666cae72cf2bad5b4afb"
+      resolved-ref: cd97569aeb136060d1db02332d39e00b8ce7886a
       url: "https://github.com/brilliantlabsAR/simple_brilliant_app"
     source: git
     version: "7.1.0"
