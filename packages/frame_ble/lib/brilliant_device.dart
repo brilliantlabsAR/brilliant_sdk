@@ -196,43 +196,22 @@ class BrilliantDevice {
   }
 
   Future<void> sendData(List<int> data) async {
-    sendDataOnCharacteristic(data, txChannel!);
-  }
-
-  Future<void> sendDataOnCharacteristic(List<int> data, BluetoothCharacteristic char) async {
-    try {
-      _log.finer(() => "Sending ${data.length} bytes of plain data");
-      _log.finest(data);
-
-      if (state != BrilliantConnectionState.connected) {
-        throw ("Device is not connected");
-      }
-
-      if (data.length > maxDataLength!) {
-        throw ("Payload exceeds allowed length of $maxDataLength");
-      }
-
-      var finalData = data.toList()..insert(0, 0x01);
-
-      await char.write(finalData, withoutResponse: true);
-    } catch (error) {
-      _log.warning("Couldn't send data. $error");
-      return Future.error(BrilliantBluetoothException(error.toString()));
-    }
+    final Uint8List byteData = Uint8List.fromList(data..insert(0, 0x01));
+    await sendDataRawOnCharacteristic(byteData, txChannel!);
   }
 
   Future<void> sendAudioData(Uint8List data) async {
     if (audioTxChannel != null) {
-      sendDataRawOnCharacteristic(data, audioTxChannel!);
+      await sendDataRawOnCharacteristic(data, audioTxChannel!, awaitResponse: false);
     }
   }
 
   Future<void> sendDataRaw(Uint8List data) async {
-    sendDataRawOnCharacteristic(data, txChannel!);
+    await sendDataRawOnCharacteristic(data, txChannel!);
   }
 
   /// Same as sendData but user includes the 0x01 header byte to avoid extra memory allocation
-  Future<void> sendDataRawOnCharacteristic(Uint8List data, BluetoothCharacteristic char) async {
+  Future<void> sendDataRawOnCharacteristic(Uint8List data, BluetoothCharacteristic char, {bool awaitResponse = true}) async {
     try {
       _log.finer(() => "Sending ${data.length - 1} bytes of plain data");
       _log.finest(data);
@@ -249,8 +228,22 @@ class BrilliantDevice {
         throw ("Data packet missing 0x01 header");
       }
 
-      // TODO check throughput difference using withoutResponse: false
-      await char.write(data, withoutResponse: false);
+      if (awaitResponse) {
+        // Perform the write and wait for the application-level response concurrently.
+        // This prevents a race condition where a very fast device could respond
+        // before we start listening for it.
+        await Future.wait([
+          char.write(data, withoutResponse: false),
+          dataResponse
+              .timeout(const Duration(seconds: 5), onTimeout: (event) {
+                throw const BrilliantBluetoothException("Timeout waiting for data response");
+              })
+              .first,
+        ]);
+      } else {
+        // don't wait for a bluetooth ack or an application-level ack
+        await char.write(data, withoutResponse: true);
+      }
     } catch (error) {
       _log.warning("Couldn't send data. $error");
       return Future.error(BrilliantBluetoothException(error.toString()));
