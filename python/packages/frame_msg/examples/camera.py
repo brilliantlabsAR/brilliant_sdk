@@ -51,7 +51,7 @@ async def main():
         print("Capturing a photo")
 
         # Request the photo by sending a TxCaptureSettings message
-        await frame.send_message(0x0d, TxCaptureSettings(resolution=720).pack())
+        await frame.send_message(0x0d, TxCaptureSettings(resolution=640).pack())
 
         # get the jpeg bytes as soon as they're ready
         jpeg_bytes = await asyncio.wait_for(photo_queue.get(), timeout=10.0)

@@ -3,7 +3,12 @@ import os
 
 from bleak import BleakClient, BleakScanner, BleakError
 from typing import Final
+from enum import Enum
 
+class BrilliantDeviceType(Enum):
+    FRAME = "Frame"
+    HALO = "Halo"
+    UNKNOWN = "Unknown"
 
 class FrameBle:
     """
@@ -14,6 +19,7 @@ class FrameBle:
     _SERVICE_UUID = "7a230001-5475-a6a4-654c-8431f6ad49c4"
     _TX_CHARACTERISTIC_UUID = "7a230002-5475-a6a4-654c-8431f6ad49c4"
     _RX_CHARACTERISTIC_UUID = "7a230003-5475-a6a4-654c-8431f6ad49c4"
+    _AUDIO_TX_CHARACTERISTIC_UUID = "7a230005-5475-a6a4-654c-8431f6ad49c4"
 
     def __init__(self):
         self._awaiting_print_response = False
@@ -23,9 +29,18 @@ class FrameBle:
         self._data_response = asyncio.Queue()
         self._tx_characteristic = None
         self._rx_characteristic = None
+        self._audio_tx_characteristic = None
         self._user_data_response_handler = lambda: None
         self._user_disconnect_handler = lambda: None
         self._user_print_response_handler = lambda: None
+        self._type = BrilliantDeviceType.UNKNOWN
+
+    @property
+    def type(self):
+        """
+        Returns the type of the Brilliant device.
+        """
+        return self._type
 
     def _disconnect_handler(self, _):
         self._user_disconnect_handler()
@@ -125,6 +140,15 @@ class FrameBle:
             self._RX_CHARACTERISTIC_UUID,
         )
 
+        self._audio_tx_characteristic = service.get_characteristic(
+            self._AUDIO_TX_CHARACTERISTIC_UUID,
+        )
+
+        if self._tx_characteristic is not None:
+            self._type = BrilliantDeviceType.HALO
+        else:
+            self._type = BrilliantDeviceType.FRAME
+
         try:
             await self._client.start_notify(
                 self._RX_CHARACTERISTIC_UUID,
@@ -222,6 +246,15 @@ class FrameBle:
             except asyncio.TimeoutError:
                 raise Exception("device didn't respond")
 
+    async def send_audio(self, data: bytearray):
+        """
+        Sends audio data to the device. Splits if necessary.
+        """
+        mtu = self._client.mtu_size - 3
+        for i in range(0, len(data), mtu):
+            chunk = memoryview(data)[i:i + mtu]
+            await self._client.write_gatt_char(self._audio_tx_characteristic, chunk)
+
     async def send_reset_signal(self, show_me=False):
         """
         Sends a reset signal to the device which will reset the Lua virtual
@@ -230,6 +263,17 @@ class FrameBle:
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
         await self._transmit(bytearray(b"\x04"), show_me=show_me)
+        # need to give it a moment after the Lua VM reset before it can handle any requests
+        await asyncio.sleep(0.2)
+
+    async def send_remove_signal(self, show_me=False):
+        """
+        Sends a remove signal to the device which will remove the main.lua file from Halo.
+        This is only applicable to Halo devices.
+
+        If `show_me=True`, the exact bytes send to the device will be printed.
+        """
+        await self._transmit(bytearray(b"\x05"), show_me=show_me)
         # need to give it a moment after the Lua VM reset before it can handle any requests
         await asyncio.sleep(0.2)
 
