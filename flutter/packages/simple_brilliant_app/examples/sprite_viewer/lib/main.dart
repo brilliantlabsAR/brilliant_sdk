@@ -50,23 +50,22 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     try {
       // Open the file picker
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['png'],
+        type: FileType.image,
       );
 
       if (result != null) {
         File file = File(result.files.single.path!);
 
         // Read the file content
-        Uint8List pngBytes = await file.readAsBytes();
+        Uint8List imageBytes = await file.readAsBytes();
 
         // Update the UI
         setState(() {
-          _image = Image.memory(pngBytes);
+          _image = Image.memory(imageBytes);
         });
 
         // make the sprite
-        var sprite = TxSprite.fromPngBytes(pngBytes: pngBytes);
+        var sprite = TxSprite.fromImageBytes(imageBytes: imageBytes);
 
         var isb = TxImageSpriteBlock(image: sprite, spriteLineHeight: 10);
         // send the header first
