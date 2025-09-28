@@ -1,6 +1,6 @@
 local data = require('data.min')
 local battery = require('battery.min')
-local camera = require('camera.min')
+local camera = require('camera')
 local code = require('code.min')
 local plain_text = require('plain_text.min')
 
@@ -28,7 +28,6 @@ function handle_tap()
 		-- send the error back on the stdout stream
 		print(err)
 	end
-
 end
 
 -- draw the current text on the display
@@ -39,7 +38,7 @@ function print_text()
 			if frame.HARDWARE_VERSION == "Frame" then
 				frame.display.text(line, 1, i * 60 + 1)
 			else
-				frame.display.text(line, 50, 50 + i * 60, 0xFFFFFF)
+				frame.display.text(line, 1, i * 60 + 1, 0xFFFFFF)
 			end
             i = i + 1
         end
