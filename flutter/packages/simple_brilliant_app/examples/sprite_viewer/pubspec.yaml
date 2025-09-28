@@ -1,0 +1,38 @@
+name: frame_sprite_viewer
+description: "Basic image and sprite viewer for Brilliant Labs Halo and Frame"
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  file_picker: ^8.1.2
+  flutter:
+    sdk: flutter
+  logging: ^1.2.0
+  simple_frame_app:
+    #path: ../simple_brilliant_app
+    git:
+      url: https://github.com/brilliantlabsAR/simple_brilliant_app
+      ref: next
+  frame_msg:
+    #path: ../brilliant_sdk_flutter/packages/frame_msg
+    git:
+      url: https://github.com/brilliantlabsAR/brilliant_sdk_flutter
+      path: packages/frame_msg
+      ref: next
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - packages/frame_msg/lua/battery.min.lua
+    - packages/frame_msg/lua/code.min.lua
+    - packages/frame_msg/lua/data.min.lua
+    - packages/frame_msg/lua/image_sprite_block.min.lua
+    - assets/frame_app.lua
