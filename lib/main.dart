@@ -29,7 +29,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
   final List<Uint8List> _jpegBytes = [];
 
   MainAppState() {
-    Logger.root.level = Level.INFO;
+    Logger.root.level = Level.FINE;
     Logger.root.onRecord.listen((record) {
       debugPrint('${record.level.name}: ${record.time}: ${record.message}');
     });
@@ -59,7 +59,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
   @override
   Future<void> onTap(int taps) async {
     switch (taps) {
-      case 2:
+      // TODO Halo only seems to pass 1 tap
+      case 1:
         // check if there's processing in progress already and drop the request if so
         if (!_processing) {
           _processing = true;

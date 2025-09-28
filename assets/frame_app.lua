@@ -36,29 +36,48 @@ function print_text()
     local i = 0
     for line in data.app_data[TEXT_MSG].string:gmatch("([^\n]*)\n?") do
         if line ~= "" then
-            frame.display.text(line, 1, i * 60 + 1)
+			if frame.HARDWARE_VERSION == "Frame" then
+				frame.display.text(line, 1, i * 60 + 1)
+			else
+				frame.display.text(line, 50, 50 + i * 60, 0xFFFFFF)
+			end
             i = i + 1
         end
     end
+	if frame.HARDWARE_VERSION == "Frame" then
+		frame.display.show()
+	end
 end
 
 function clear_display()
-    frame.display.text(" ", 1, 1)
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == "Frame" then
+		frame.display.text(" ", 1, 1)
+		frame.display.show()
+	else
+		-- Halo
+		frame.display.clear(0x000000)
+	end
 end
 
 function show_flash()
-    frame.display.bitmap(241, 191, 160, 2, 0, string.rep("\xFF", 400))
-    frame.display.bitmap(311, 121, 20, 2, 0, string.rep("\xFF", 400))
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == "Frame" then
+		frame.display.bitmap(241, 191, 160, 2, 0, string.rep("\xFF", 400))
+		frame.display.bitmap(311, 121, 20, 2, 0, string.rep("\xFF", 400))
+		frame.display.show()
+		frame.sleep(0.04)
+	--else
+		-- TODO for Halo
+	end
 end
 
 -- Main app loop
 function app_loop()
 	clear_display()
     local last_batt_update = 0
+	if frame.HARDWARE_VERSION ~= "Frame" then
+		frame.camera.power_save(false)
+	end
+	print("Frame app started")
 
 	while true do
         rc, err = pcall(
@@ -71,7 +90,12 @@ function app_loop()
 					if (data.app_data[CAPTURE_SETTINGS_MSG] ~= nil) then
 						-- visual indicator of capture and send
 						show_flash()
-						rc, err = pcall(camera.capture_and_send, data.app_data[CAPTURE_SETTINGS_MSG])
+						local rc, err
+						if frame.HARDWARE_VERSION == "Frame" then
+							rc, err = pcall(camera.capture_and_send, data.app_data[CAPTURE_SETTINGS_MSG])
+						else
+							rc, err = pcall(camera.capture_and_send, {resolution = 640, quality = data.app_data[CAPTURE_SETTINGS_MSG].quality})
+						end
 						clear_display()
 
 						if rc == false then
@@ -82,20 +106,24 @@ function app_loop()
 					end
 
 					if (data.app_data[AUTO_EXP_SETTINGS_MSG] ~= nil) then
-						rc, err = pcall(camera.set_auto_exp_settings, data.app_data[AUTO_EXP_SETTINGS_MSG])
+						if frame.HARDWARE_VERSION == "Frame" then
+							rc, err = pcall(camera.set_auto_exp_settings, data.app_data[AUTO_EXP_SETTINGS_MSG])
 
-						if rc == false then
-							print(err)
+							if rc == false then
+								print(err)
+							end
 						end
 
 						data.app_data[AUTO_EXP_SETTINGS_MSG] = nil
 					end
 
 					if (data.app_data[MANUAL_EXP_SETTINGS_MSG] ~= nil) then
-						rc, err = pcall(camera.set_manual_exp_settings, data.app_data[MANUAL_EXP_SETTINGS_MSG])
+						if frame.HARDWARE_VERSION == "Frame" then
+							rc, err = pcall(camera.set_manual_exp_settings, data.app_data[MANUAL_EXP_SETTINGS_MSG])
 
-						if rc == false then
-							print(err)
+							if rc == false then
+								print(err)
+							end
 						end
 
 						data.app_data[MANUAL_EXP_SETTINGS_MSG] = nil
@@ -103,7 +131,6 @@ function app_loop()
 
 					if (data.app_data[TEXT_MSG] ~= nil and data.app_data[TEXT_MSG].string ~= nil) then
 						print_text()
-						frame.display.show()
 
 						data.app_data[TEXT_MSG] = nil
 					end
@@ -125,11 +152,13 @@ function app_loop()
 
 				end
 
-				-- periodic battery level updates, 120s for a camera app
-				last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
+				-- periodic battery level updates, 120s for a camera app, and auto exposure
+				if frame.HARDWARE_VERSION == "Frame" then
+					last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
 
-				if camera.is_auto_exp then
-					camera.run_auto_exposure()
+					if camera.is_auto_exp then
+						camera.run_auto_exposure()
+					end
 				end
 
 				frame.sleep(0.1)
@@ -139,9 +168,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream
 			print(err)
-			frame.display.text(" ", 1, 1)
-			frame.display.show()
-			frame.sleep(0.04)
+			clear_display()
 			break
 		end
 	end
