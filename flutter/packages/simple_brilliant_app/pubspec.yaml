@@ -6,7 +6,7 @@ homepage:
 repository: https://github.com/CitizenOneX/simple_frame_app
 
 environment:
-  sdk: '>=3.4.4 <4.0.0'
+  sdk: '>=3.6.0 <4.0.0'
   flutter: ">=1.17.0"
 
 dependencies:
@@ -16,17 +16,9 @@ dependencies:
   image: ^4.2.0
   logging: ^1.2.0
   frame_msg:
-    #path: ../brilliant_sdk_flutter/packages/frame_msg
-    git:
-      url: https://github.com/brilliantlabsAR/brilliant_sdk_flutter
-      path: packages/frame_msg
-      ref: next
+    path: ../frame_msg
   frame_ble:
-    #path: ../brilliant_sdk_flutter/packages/frame_ble
-    git:
-      url: https://github.com/brilliantlabsAR/brilliant_sdk_flutter
-      path: packages/frame_ble
-      ref: next
+    path: ../frame_ble
 
 dev_dependencies:
   flutter_test:

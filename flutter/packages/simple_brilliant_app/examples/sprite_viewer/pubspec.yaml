@@ -1,10 +1,10 @@
-name: frame_sprite_viewer
+name: sprite_viewer
 description: "Basic image and sprite viewer for Brilliant Labs Halo and Frame"
 publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: '>=3.4.4 <4.0.0'
+  sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
   file_picker: ^8.1.2
@@ -12,16 +12,11 @@ dependencies:
     sdk: flutter
   logging: ^1.2.0
   simple_frame_app:
-    #path: ../simple_brilliant_app
-    git:
-      url: https://github.com/brilliantlabsAR/simple_brilliant_app
-      ref: next
+    # Note: We use a path dependency because the example apps & library packages are bundled together.
+    # In *your* app you should use a versioned dependency from pub.dev
+    path: ../../
   frame_msg:
-    #path: ../brilliant_sdk_flutter/packages/frame_msg
-    git:
-      url: https://github.com/brilliantlabsAR/brilliant_sdk_flutter
-      path: packages/frame_msg
-      ref: next
+    path: ../../../frame_msg
 
 dev_dependencies:
   flutter_test:
