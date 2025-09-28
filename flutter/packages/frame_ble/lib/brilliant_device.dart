@@ -104,11 +104,18 @@ class BrilliantDevice {
 
   Future<void> clearDisplay() async {
     _log.fine("Sending clearDisplay");
-    await sendString(
-        'frame.display.bitmap(1,1,4,2,15,"\\xFF") frame.display.show()',
-        awaitResponse: false,
-        log: false);
-    await Future.delayed(const Duration(milliseconds: 200));
+    if (type == BrilliantDeviceType.halo) {
+      await sendString(
+          'frame.display.clear()print(1)',
+          awaitResponse: true,
+          log: false);
+    }
+    else{
+      await sendString(
+          'frame.display.bitmap(1,1,4,2,15,"\\xFF")frame.display.show()print(1)',
+          awaitResponse: true,
+          log: false);
+    }
   }
 
   /// Checks if Lua is running by sending a simple print command and expecting no response.
