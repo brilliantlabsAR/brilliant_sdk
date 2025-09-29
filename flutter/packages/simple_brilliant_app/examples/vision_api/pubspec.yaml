@@ -1,5 +1,5 @@
-name: frame_vision_api
-description: "Captures an image from Brilliant Labs Frame and sends it to a user-specified API for processing"
+name: vision_api
+description: "Captures an image from Brilliant Labs Halo and Frame and sends it to a user-specified API for processing"
 publish_to: 'none'
 version: 0.1.0
 
@@ -11,14 +11,20 @@ dependencies:
     sdk: flutter
   flutter_blue_plus: ^1.34.5
   flutter_foreground_task: ^6.5.0
-  frame_msg: ^2.0.0
   http: ^1.2.2
   http_parser: ^4.0.2
   image: ^4.3.0
   logging: ^1.3.0
   share_plus: ^10.1.0
   shared_preferences: ^2.3.2
-  simple_frame_app: ^7.0.0
+  simple_frame_app:
+    # Note: We use a path dependency because the example apps & library packages are bundled together.
+    # In *your* app you should use a versioned dependency from pub.dev
+    path: ../../
+  frame_ble:
+    path: ../../../frame_ble
+  frame_msg:
+    path: ../../../frame_msg
 
 dev_dependencies:
   flutter_test:

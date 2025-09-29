@@ -290,12 +290,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
     startForegroundService();
     return WithForegroundTask(
       child: MaterialApp(
-        title: 'API - Frame Vision',
+        title: 'API - Vision',
         theme: ThemeData.dark(),
         home: Scaffold(
           resizeToAvoidBottomInset: true,
           appBar: AppBar(
-            title: const Text('API - Frame Vision'),
+            title: const Text('API - Vision'),
             actions: [getBatteryWidget()]
           ),
           drawer: getCameraDrawer(),
