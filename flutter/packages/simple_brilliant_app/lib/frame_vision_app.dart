@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:frame_msg/rx/photo.dart';
 import 'package:frame_msg/rx/tap.dart';
+import 'package:frame_msg/rx/click.dart';
 import 'package:frame_msg/tx/capture_settings.dart';
 import 'package:frame_msg/tx/manual_exp_settings.dart';
 import 'package:frame_msg/tx/auto_exp_settings.dart';
@@ -43,8 +44,9 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
   int manualGreenGain = 64; // 0 <= val <= 1023
   int manualBlueGain = 140; // 0 <= val <= 1023
 
-  // tap subscription
+  // tap/click subscriptions
   StreamSubscription<int>? _tapSubs;
+  StreamSubscription<ClickType>? _clickSubs;
 
   /// abstract method that is called at the end of run() to give the implementing class
   /// a chance to print some instructions (or perform some other final setup)
@@ -58,6 +60,10 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
   /// abstract method that must be implemented by the class mixing in frame_vision_app
   /// to capture a photo and perform some action on a 1-, 2-, 3-, n-tap etc.
   Future<void> onTap(int taps);
+
+  /// abstract method that must be implemented by the class mixing in frame_vision_app
+  /// to capture a photo and perform some action on a single, double or long click.
+  Future<void> onClick(ClickType type);
 
   /// Implements simple_frame_app run() by listening for taps
   /// and handing off to a tapHandler() function
@@ -80,11 +86,26 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
       }
     );
 
-    // let Frame know to subscribe for taps and send them to us
+    // same TxCode(1) for both click and tap subscriptions
     final code = TxCode(value: 1);
+
+    // let Frame know to subscribe for taps and send them to us
     await frame!.sendMessage(0x10, code.pack());
 
-    // prompt the user to begin tapping or other app-specific setup
+    // listen for clicks for e.g. single/double/long click
+    _clickSubs?.cancel();
+    _clickSubs = RxClick().attach(frame!.dataResponse)
+      .listen((type) async {
+        _log.fine(() => 'click type: $type');
+        // call the click handler in the implementing class
+        onClick(type);
+      }
+    );
+
+    // let Frame know to subscribe for clicks and send them to us
+    await frame!.sendMessage(0x11, code.pack());
+
+    // prompt the user to begin tapping/clicking or other app-specific setup
     await onRun();
 
     // run() completes but we stay in ApplicationState.running because the tap listener is active
@@ -213,9 +234,10 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
     // perform app-specific cleanup
     await onCancel();
 
-    // let Frame know to stop sending taps
+    // let Frame know to stop sending taps/clicks
     final code = TxCode(value: 0);
     await frame!.sendMessage(0x10, code.pack());
+    await frame!.sendMessage(0x11, code.pack());
 
     // clear the display
     final plainText = TxPlainText(text: ' ');

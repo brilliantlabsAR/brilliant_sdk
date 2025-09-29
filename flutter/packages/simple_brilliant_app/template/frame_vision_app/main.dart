@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:frame_msg/rx/click.dart';
 import 'package:logging/logging.dart';
 import 'package:simple_frame_app/frame_vision_app.dart';
 import 'package:simple_frame_app/simple_frame_app.dart';
@@ -69,6 +70,25 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
         }
         break;
       default:
+    }
+  }
+
+    @override
+  Future<void> onClick(ClickType type) async {
+    switch (type) {
+      case ClickType.single:
+        // check if there's processing in progress already and drop the request if so
+        if (!_processing) {
+          _processing = true;
+          // start new vision capture
+          // asynchronously kick off the capture/processing pipeline
+          capture().then(process);
+        }
+        break;
+      case ClickType.double:
+        break;
+      case ClickType.long:
+        break;
     }
   }
 
