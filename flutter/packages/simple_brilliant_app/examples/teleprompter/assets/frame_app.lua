@@ -12,12 +12,25 @@ CLEAR_MSG = 0x10
 data.parsers[TEXT_SPRITE_BLOCK] = text_sprite_block.parse_text_sprite_block
 data.parsers[CLEAR_MSG] = code.parse_code
 
+function clear_display()
+    if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
 -- Main app loop
 function app_loop()
-	-- clear the display
-	frame.display.text(" ", 1, 1)
-	frame.display.show()
+	clear_display()
     local last_batt_update = 0
+
+	if frame.HARDWARE_VERSION ~= 'Frame' then
+		frame.display.set_brightness(0)
+	end
+
+    print('Frame App Started')
 
     while true do
         rc, err = pcall(
@@ -42,31 +55,32 @@ function app_loop()
                                 frame.display.bitmap(1, tsb.offsets[index].y + 1 - shift_y, spr.width, 2^spr.bpp, 0, spr.pixel_data)
                             end
 
-                            frame.display.show()
+                            if frame.HARDWARE_VERSION == 'Frame' then
+                                frame.display.show()
+                            end
                             last_text_show = frame.time.utc()
                         end
                     end
 
                     if (data.app_data[CLEAR_MSG] ~= nil) then
-                        -- clear the display
-                        frame.display.text(" ", 1, 1)
-                        frame.display.show()
-
+                        clear_display()
                         data.app_data[CLEAR_MSG] = nil
                     end
                 end
 
                 -- periodic battery level updates, 120s for a camera app
-                last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
-                frame.sleep(0.1)
+                -- TODO switch back on for Halo when frame.time.utc() is fixed
+				if frame.HARDWARE_VERSION == 'Frame' then
+                    last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
+                end
+                frame.sleep(0.05)
             end
         )
         -- Catch the break signal here and clean up the display
         if rc == false then
             -- send the error back on the stdout stream
             print(err)
-            frame.display.text(" ", 1, 1)
-            frame.display.show()
+            clear_display()
             frame.sleep(0.04)
             break
         end

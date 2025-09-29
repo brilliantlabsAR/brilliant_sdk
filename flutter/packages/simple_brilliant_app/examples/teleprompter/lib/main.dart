@@ -4,8 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
 
 import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:simple_frame_app/tx/code.dart';
-import 'package:simple_frame_app/tx/text_sprite_block.dart';
+import 'package:frame_ble/frame_ble.dart';
+import 'package:frame_msg/tx/code.dart';
+import 'package:frame_msg/tx/text_sprite_block.dart';
 
 
 void main() => runApp(const MainApp());
@@ -22,6 +23,13 @@ class MainApp extends StatefulWidget {
 /// SimpleFrameAppState mixin helps to manage the lifecycle of the Frame connection outside of this file
 class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
+  // teleprompter data - text and current chunk
+  final List<String> _textChunks = [];
+  int _currentLine = -1;
+  TextDirection _textDir = TextDirection.ltr;
+  int _textSizeIndex = 1;
+  final List<int> _textSizeValues = [16, 32, 48, 64];
+
   MainAppState() {
     Logger.root.level = Level.INFO;
     Logger.root.onRecord.listen((record) {
@@ -29,12 +37,13 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     });
   }
 
-  // teleprompter data - text and current chunk
-  final List<String> _textChunks = [];
-  int _currentLine = -1;
-  TextDirection _textDir = TextDirection.ltr;
-  int _textSizeIndex = 1;
-  final List<int> _textSizeValues = [16, 32, 48, 64];
+  @override
+  void initState() {
+    super.initState();
+
+    // if possible, connect right away and load files
+    tryScanAndConnectAndStart(andRun: true);
+  }
 
   @override
   Future<void> run() async {
@@ -79,17 +88,20 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
   /// create the TextSpriteBlock for the specified text, then send the TSB header and line sprites one by one
   Future<void> sendTextToFrame(String text) async {
+    // start by sending a Clear Display message
+    await frame!.sendMessage(0x10, TxCode().pack());
+
     if (text.isEmpty) {
-      // just send a Clear Display message
-      await frame!.sendMessage(TxCode(msgCode: 0x10));
       return;
     }
 
+    var width = frame!.type == BrilliantDeviceType.halo ? 320 : 620;
+    var maxDisplayRows = frame!.type == BrilliantDeviceType.halo ? 5 : 10;
+
     var tsb = TxTextSpriteBlock(
-      msgCode: 0x20,
-      width: 620,
+      width: width,
       fontSize: _textSizeValues[_textSizeIndex],
-      maxDisplayRows: 10,
+      maxDisplayRows: maxDisplayRows,
       textDirection: _textDir,
       textAlign: TextAlign.start,
       text: text,
@@ -100,19 +112,19 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
     // send the TxTextSpriteBlock lines to Frame for display
     // block header first
-    await frame!.sendMessage(tsb);
+    await frame!.sendMessage(0x20, tsb.pack());
 
     // send over the lines one by one
     // note that the sprites have the same message code, so they need to be handled by the text_sprite_block parser
     for (var sprite in tsb.rasterizedSprites) {
-      await frame!.sendMessage(sprite);
+      await frame!.sendMessage(0x20, sprite.pack());
     }
   }
 
   @override
   Future<void> cancel() async {
     // send a Clear Display message
-    await frame!.sendMessage(TxCode(msgCode: 0x10));
+    await frame!.sendMessage(0x10, TxCode().pack());
 
     currentState = ApplicationState.ready;
     _textChunks.clear();
@@ -123,11 +135,11 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Frame Teleprompter Universal',
+      title: 'Teleprompter',
       theme: ThemeData.dark(),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Frame Teleprompter Universal'),
+          title: const Text('Teleprompter'),
           actions: [getBatteryWidget()]
         ),
         drawer: Drawer(

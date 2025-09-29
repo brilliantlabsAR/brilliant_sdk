@@ -1,5 +1,5 @@
-name: frame_teleprompter_universal
-description: "Simple teleprompter for Frame with Unicode support"
+name: teleprompter
+description: "Simple teleprompter for Halo and Frame with Unicode support"
 publish_to: 'none'
 version: 0.1.0
 
@@ -11,7 +11,14 @@ dependencies:
   flutter:
     sdk: flutter
   logging: ^1.2.0
-  simple_frame_app: ^1.1.1
+  simple_frame_app:
+    # Note: We use a path dependency because the example apps & library packages are bundled together.
+    # In *your* app you should use a versioned dependency from pub.dev
+    path: ../../
+  frame_ble:
+    path: ../../../frame_ble
+  frame_msg:
+    path: ../../../frame_msg
 
 dev_dependencies:
   flutter_test:
@@ -21,9 +28,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - packages/simple_frame_app/lua/battery.min.lua
-    - packages/simple_frame_app/lua/code.min.lua
-    - packages/simple_frame_app/lua/data.min.lua
-    - packages/simple_frame_app/lua/sprite.min.lua
-    - packages/simple_frame_app/lua/text_sprite_block.min.lua
-    - assets/frame_app.min.lua
+    - packages/frame_msg/lua/battery.min.lua
+    - packages/frame_msg/lua/code.min.lua
+    - packages/frame_msg/lua/data.min.lua
+    - packages/frame_msg/lua/sprite.min.lua
+    - packages/frame_msg/lua/text_sprite_block.min.lua
+    - assets/frame_app.lua
