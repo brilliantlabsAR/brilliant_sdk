@@ -108,14 +108,20 @@ end
 function send_data(data)
 	local sent = false
 
-	-- 2 second time limit for this packet else bail out
-	local try_until = frame.time.utc() + 2
+	-- TODO revert when frame.time.utc() is fixed on Halo
+	if frame.HARDWARE_VERSION == "Frame" then
+		-- 2 second time limit for this packet else bail out
+		local try_until = frame.time.utc() + 2
 
-	while frame.time.utc() < try_until do
-		if pcall(frame.bluetooth.send, data) then
-			sent = true
-			break
+		while frame.time.utc() < try_until do
+			if pcall(frame.bluetooth.send, data) then
+				sent = true
+				break
+			end
 		end
+	else
+		-- on non-Frame hardware just try once
+		sent = pcall(frame.bluetooth.send, data)
 	end
 
 	if not sent then

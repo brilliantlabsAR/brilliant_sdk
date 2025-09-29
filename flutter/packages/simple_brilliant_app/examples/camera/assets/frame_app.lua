@@ -1,6 +1,6 @@
 local data = require('data.min')
 local battery = require('battery.min')
-local camera = require('camera')
+local camera = require('camera.min')
 local code = require('code.min')
 local plain_text = require('plain_text.min')
 

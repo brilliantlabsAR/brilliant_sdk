@@ -110,11 +110,11 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Frame Camera',
+      title: 'Camera',
       theme: ThemeData.dark(),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text("Frame Camera"),
+          title: const Text("Camera"),
           actions: [getBatteryWidget()]
         ),
         drawer: getCameraDrawer(),
