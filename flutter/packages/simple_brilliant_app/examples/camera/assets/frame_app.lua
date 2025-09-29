@@ -10,6 +10,7 @@ AUTO_EXP_SETTINGS_MSG = 0x0e
 MANUAL_EXP_SETTINGS_MSG = 0x0f
 TEXT_MSG = 0x0a
 TAP_SUBS_MSG = 0x10
+CLICK_SUBS_MSG = 0x11
 
 -- register the message parser so it's automatically called when matching data comes in
 data.parsers[CAPTURE_SETTINGS_MSG] = camera.parse_capture_settings
@@ -17,12 +18,24 @@ data.parsers[AUTO_EXP_SETTINGS_MSG] = camera.parse_auto_exp_settings
 data.parsers[MANUAL_EXP_SETTINGS_MSG] = camera.parse_manual_exp_settings
 data.parsers[TEXT_MSG] = plain_text.parse_plain_text
 data.parsers[TAP_SUBS_MSG] = code.parse_code
+data.parsers[CLICK_SUBS_MSG] = code.parse_code
 
 -- Frame to Phone flags
 TAP_MSG = 0x09
+CLICK_MSG = 0x06
 
 function handle_tap()
 	rc, err = pcall(frame.bluetooth.send, string.char(TAP_MSG))
+
+	if rc == false then
+		-- send the error back on the stdout stream
+		print(err)
+	end
+end
+
+-- single (1), double (2), long (3)
+function handle_click(type)
+	rc, err = pcall(frame.bluetooth.send, string.char(CLICK_MSG) .. string.char(type))
 
 	if rc == false then
 		-- send the error back on the stdout stream
@@ -148,6 +161,25 @@ function app_loop()
 
 						data.app_data[TAP_SUBS_MSG] = nil
 					end
+
+					if (data.app_data[CLICK_SUBS_MSG] ~= nil) then
+
+						if data.app_data[CLICK_SUBS_MSG].value == 1 then
+							-- start subscription to click events
+							print('subscribing for clicks')
+							frame.button.single(function() handle_click(1) end)
+							frame.button.double(function() handle_click(2) end)
+							frame.button.long(function() handle_click(3) end)
+						else
+							-- cancel subscription to click events
+							print('cancel subscription for clicks')
+							frame.button.single(nil)
+							frame.button.double(nil)
+							frame.button.long(nil)
+						end
+
+						data.app_data[CLICK_SUBS_MSG] = nil
+					end					
 
 				end
 

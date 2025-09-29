@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:frame_ble/brilliant_device.dart';
+import 'package:frame_msg/rx/click.dart';
 import 'package:logging/logging.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:simple_frame_app/frame_vision_app.dart';
@@ -51,7 +52,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
     TxPlainText msg;
 
     if (frame!.type == BrilliantDeviceType.halo) {
-      msg = TxPlainText(text: '1-Tap: take photo');
+      msg = TxPlainText(text: '1-Click: take photo');
     } else {
       msg = TxPlainText(text: '2-Tap: take photo');
     }
@@ -75,16 +76,19 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
           await capture().then(process);
         }
         break;
-      case 1:
-        // TODO Halo only seems to pass 1 tap; a "tilt" at the moment
-        if (frame!.type == BrilliantDeviceType.halo) {
-          // check if there's processing in progress already and drop the request if so
-          _log.fine("1-tap detected, capturing photo. Already processing: $_processing");
-          if (!_processing) {
-            _processing = true;
-            // synchronously call the capture and processing (just display) of the photo
-            await capture().then(process);
-          }
+      default:
+    }
+  }
+
+  @override
+  Future<void> onClick(ClickType type) async {
+    switch (type) {
+      case ClickType.single:
+        _log.fine("Click detected, capturing photo. Already processing: $_processing");
+        if (!_processing) {
+          _processing = true;
+          // synchronously call the capture and processing (just display) of the photo
+          await capture().then(process);
         }
         break;
       default:
