@@ -1,0 +1,33 @@
+name: frame_pollinations
+description: "Generative AI images for Frame using pollinations.ai"
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  frame_msg: ^2.0.0
+  http: ^0.13.5
+  image: ^4.2.0
+  logging: ^1.2.0
+  share_plus: ^10.1.0
+  speech_to_text: ^6.6.2
+  simple_frame_app: ^7.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - packages/frame_msg/lua/battery.min.lua
+    - packages/frame_msg/lua/data.min.lua
+    - packages/frame_msg/lua/sprite.min.lua
+    - packages/frame_msg/lua/plain_text.min.lua
+    - packages/frame_msg/lua/image_sprite_block.min.lua
+    - assets/frame_app.min.lua
