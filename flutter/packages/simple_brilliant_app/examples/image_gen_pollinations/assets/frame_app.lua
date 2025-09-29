@@ -16,20 +16,38 @@ function print_text(text_string)
     local i = 0
     for line in text_string:gmatch("([^\n]*)\n?") do
         if line ~= "" then
-            frame.display.text(line, 1, i * 60 + 1)
+			if frame.HARDWARE_VERSION == "Frame" then
+				frame.display.text(line, 1, i * 60 + 1)
+			else
+				frame.display.text(line, 1, i * 60 + 1, 0xFFFFFF)
+			end
             i = i + 1
         end
     end
+	if frame.HARDWARE_VERSION == "Frame" then
+		frame.display.show()
+	end
 end
+
+function clear_display()
+	if frame.HARDWARE_VERSION == "Frame" then
+		frame.display.text(" ", 1, 1)
+		frame.display.show()
+	else
+		-- Halo
+		frame.display.clear(0x000000)
+	end
+end
+
 
 
 -- Main app loop
 function app_loop()
 	-- clear the display
-	frame.display.text(" ", 1, 1)
-	frame.display.show()
+	clear_display()
     local last_batt_update = 0
     local caption = ''
+
     while true do
         rc, err = pcall(
             function()
@@ -54,32 +72,39 @@ function app_loop()
                             -- either we have all the sprites, or we want to do progressive/incremental rendering
                             if isb.progressive_render or (isb.active_sprites == isb.total_sprites) then
 
-                                for index = 1, isb.active_sprites do
-                                    local spr = isb.sprites[index]
-                                    local y_offset = isb.sprite_line_height * (index - 1)
+								for index = 1, isb.active_sprites do
+									local spr = isb.sprites[index]
+									local y_offset = isb.sprite_line_height * (index - 1)
 
-                                    -- set the palette the first time, all the sprites should have the same palette
-                                    if index == 1 then
-                                        image_sprite_block.set_palette(spr.num_colors, spr.palette_data)
-                                    end
+									if frame.HARDWARE_VERSION == 'Frame' then
+										-- set the palette the first time, all the sprites should have the same palette
+										if index == 1 then
+											image_sprite_block.set_palette(spr.num_colors, spr.palette_data)
+										end
 
-                                    frame.display.bitmap(301, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
-                                end
+										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
+									else
+										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+									end
+								end
+								if frame.HARDWARE_VERSION == 'Frame' then
+									frame.display.show()
+								end
                             end
                         end
                     end
 
                     -- always show the current caption if there is one
                     print_text(caption)
-                    frame.display.show()
                 end
 
                 -- TODO tune sleep durations to optimise for data handler and processing
                 frame.sleep(0.005)
 
                 -- periodic battery level updates
-                last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 180)
-
+				if frame.HARDWARE_VERSION == "Frame" then
+                	last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 180)
+                end
                 -- TODO clear display after an amount of time?
             end
         )
@@ -87,8 +112,7 @@ function app_loop()
         if rc == false then
             -- send the error back on the stdout stream
             print(err)
-            frame.display.text(" ", 1, 1)
-            frame.display.show()
+            clear_display()
             frame.sleep(0.04)
             break
         end
