@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:frame_ble/brilliant_device.dart';
+import 'package:frame_msg/rx/click.dart';
 import 'package:image/image.dart' as image_lib;
 import 'package:logging/logging.dart';
 import 'package:simple_frame_app/frame_vision_app.dart';
 import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:simple_frame_app/tx/plain_text.dart';
+import 'package:frame_msg/tx/plain_text.dart';
 
 import 'helper/image_classification_helper.dart';
 
@@ -54,12 +56,15 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
   @override
   Future<void> onRun() async {
     // initial message to display when running
-    await frame!.sendMessage(
-      TxPlainText(
-        msgCode: 0x0a,
-        text: '2-Tap: take photo'
-      )
-    );
+    TxPlainText msg;
+
+    if (frame!.type == BrilliantDeviceType.halo) {
+      msg = TxPlainText(text: '1-Click: take photo');
+    } else {
+      msg = TxPlainText(text: '2-Tap: take photo');
+    }
+
+    await frame!.sendMessage(0x0a, msg.pack());
   }
 
   @override
@@ -76,6 +81,21 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
           _processing = true;
           // synchronously call the capture and processing (just display) of the photo
           await capture().then(process);
+        }
+        break;
+      default:
+    }
+  }
+
+  @override
+  Future<void> onClick(ClickType type) async {
+    switch (type) {
+      case ClickType.single:
+        // check if there's processing in progress already and drop the request if so
+        if (!_processing) {
+          _processing = true;
+          // synchronously call the capture and processing (just display) of the photo
+          return capture().then(process);
         }
         break;
       default:
@@ -100,7 +120,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
     _log.fine('Classification result: $_top3');
 
     // Frame display
-    await frame!.sendMessage(TxPlainText(msgCode: 0x0a, text: _top3));
+    await frame!.sendMessage(0x0a, TxPlainText(text: _top3).pack());
 
     // UI display
     setState(() {
