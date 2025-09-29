@@ -1,0 +1,32 @@
+name: frame_vision
+description: "Foundation for Frame Vision apps. Takes repeated snapshots and feeds into a machine vision pipeline."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  logging: ^1.2.0
+  image: ^4.2.0
+  tflite_flutter: ^0.10.4
+  simple_frame_app: ^4.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - packages/simple_frame_app/lua/battery.min.lua
+    - packages/simple_frame_app/lua/camera.min.lua
+    - packages/simple_frame_app/lua/code.min.lua
+    - packages/simple_frame_app/lua/data.min.lua
+    - packages/simple_frame_app/lua/plain_text.min.lua
+    - assets/frame_app.min.lua
+    - assets/mobilenet_quant.tflite
+    - assets/labels.txt
