@@ -17,9 +17,15 @@ function print_text(text_string)
     for line in text_string:gmatch("([^\n]*)\n?") do
         if line ~= "" then
 			if frame.HARDWARE_VERSION == "Frame" then
+                if i * 60 + 1 > 400 then
+                    break
+                end
 				frame.display.text(line, 1, i * 60 + 1)
 			else
-				frame.display.text(line, 1, i * 60 + 1, 0xFFFFFF)
+                if i * 20 + 1 > 240 then
+                    break
+                end
+				frame.display.text(line, 1, i * 20 + 1, 0xFFFFFF)
 			end
             i = i + 1
         end
@@ -35,7 +41,7 @@ function clear_display()
 		frame.display.show()
 	else
 		-- Halo
-		frame.display.clear(0x000000)
+		frame.display.clear()
 	end
 end
 
@@ -44,13 +50,14 @@ end
 -- Main app loop
 function app_loop()
 	if frame.HARDWARE_VERSION ~= "Frame" then
-		frame.display.set_brightness(0)
+		frame.display.set_brightness(30)
 	end
 
 	-- clear the display
 	clear_display()
     local last_batt_update = 0
     local caption = ''
+    local drawing_image = false
 
     print("App started")
 
@@ -67,9 +74,20 @@ function app_loop()
                     if (data.app_data[TEXT_FLAG] ~= nil and data.app_data[TEXT_FLAG].string ~= nil) then
                         -- save the string here and we'll print it before show()
                         caption = data.app_data[TEXT_FLAG].string
+
+                        -- if we have a new caption, clear the display on Halo
+                        if not drawing_image and frame.HARDWARE_VERSION ~= "Frame" then
+                            clear_display()
+                        end
                     end
 
                     if (data.app_data[IMAGE_SPRITE_BLOCK] ~= nil) then
+                        -- first time we are drawing an image, clear the display on Halo. Frame keeps the text
+                        if not drawing_image and frame.HARDWARE_VERSION ~= "Frame" then
+                            drawing_image = true
+                            clear_display()
+                        end
+
                         -- show the image sprite block
                         local isb = data.app_data[IMAGE_SPRITE_BLOCK]
 
@@ -90,11 +108,6 @@ function app_loop()
 
 										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
 									else
-                                        if index == 1 then
-                                            -- clear the text off the display when the image starts on Halo
-                                            caption = ''
-                                            clear_display()
-                                        end
 										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
 									end
 								end
@@ -102,12 +115,26 @@ function app_loop()
 									frame.display.show()
 								end
                             end
+
+                            if isb.active_sprites == isb.total_sprites then
+                                -- all done, clear the data so we don't keep re-drawing it
+                                data.app_data[IMAGE_SPRITE_BLOCK] = nil
+                                drawing_image = false
+
+                                -- also make sure there is no caption to draw now that drawing_image is false
+                                if frame.HARDWARE_VERSION ~= "Frame" then
+                                    caption = ''
+                                end
+                            end
                         end
                     end
 
-                    -- always show the current caption if there is one
+                    -- always show the current caption if there is one on Frame, 
+                    -- only show a caption when not drawing an image on Halo
                     if caption ~= '' then
-                        print_text(caption)
+                        if frame.HARDWARE_VERSION == 'Frame' or not drawing_image then
+                            print_text(caption)
+                        end
                     end
                 end
 

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:frame_ble/brilliant_device.dart';
 import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
 import 'package:share_plus/share_plus.dart';
@@ -129,9 +128,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
           _partialResult = '';
           _log.fine('Final result: $_finalResult');
           _stopListening();
-          // send final query text to Frame line 1 (before we confirm the title)
-          // no text on Halo
-          if (_finalResult != _prevText && frame!.type == BrilliantDeviceType.frame) {
+          // send final query text to Halo/Frame
+          if (_finalResult != _prevText) {
             var text = TxPlainText(text: TextUtils.wrapText(_finalResult, 320, 4).join('\n'));
             await frame!.sendMessage(0x0a, text.pack());
             _prevText = _finalResult;
@@ -199,8 +197,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
           _log.fine('Partial result: $_partialResult, ${result.alternates}');
           if (_partialResult != _prevText) {
-            // send partial result to Frame line 1
-            var text = TxPlainText(text: TextUtils.wrapText(_partialResult, 300, 4).join('\n'));
+            // send partial result to Halo/Frame
+            var text = TxPlainText(text: TextUtils.wrapText(_partialResult, 320, 4).join('\n'));
             await frame!.sendMessage(0x0a, text.pack());
             _prevText = _partialResult;
           }
