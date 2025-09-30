@@ -13,7 +13,7 @@ dependencies:
   image: ^4.2.0
   logging: ^1.2.0
   share_plus: ^10.1.0
-  speech_to_text: ^6.6.2
+  speech_to_text: ^7.0.2
   simple_frame_app:
     # Note: We use a path dependency because the example apps & library packages are bundled together.
     # In *your* app you should use a versioned dependency from pub.dev

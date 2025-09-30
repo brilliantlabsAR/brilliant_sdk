@@ -43,10 +43,16 @@ end
 
 -- Main app loop
 function app_loop()
+	if frame.HARDWARE_VERSION ~= "Frame" then
+		frame.display.set_brightness(0)
+	end
+
 	-- clear the display
 	clear_display()
     local last_batt_update = 0
     local caption = ''
+
+    print("App started")
 
     while true do
         rc, err = pcall(
@@ -84,6 +90,11 @@ function app_loop()
 
 										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
 									else
+                                        if index == 1 then
+                                            -- clear the text off the display when the image starts on Halo
+                                            caption = ''
+                                            clear_display()
+                                        end
 										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
 									end
 								end
@@ -95,7 +106,9 @@ function app_loop()
                     end
 
                     -- always show the current caption if there is one
-                    print_text(caption)
+                    if caption ~= '' then
+                        print_text(caption)
+                    end
                 end
 
                 -- TODO tune sleep durations to optimise for data handler and processing

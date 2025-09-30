@@ -187,6 +187,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
           }
           else {
             _log.fine('Error fetching image for "$_finalResult": "$error"');
+            // back to ready state
+            currentState = ApplicationState.ready;
+            if (mounted) setState(() {});
           }
         }
         else {
@@ -231,11 +234,11 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Frame - Pollinations.ai',
+      title: 'Image Gen - Pollinations.ai',
       theme: ThemeData.dark(),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Frame - Pollinations.ai'),
+          title: const Text('Image Gen - Pollinations.ai'),
           actions: [getBatteryWidget()]
         ),
         body: Center(
