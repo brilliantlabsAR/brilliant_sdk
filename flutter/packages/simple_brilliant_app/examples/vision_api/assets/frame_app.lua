@@ -52,7 +52,7 @@ function print_text()
 			if frame.HARDWARE_VERSION == "Frame" then
 				frame.display.text(line, 1, i * 60 + 1)
 			else
-				frame.display.text(line, 1, i * 60 + 1, 0xFFFFFF)
+				frame.display.text(line, 1, i * 20 + 1, 0xFFFFFF)
 			end
             i = i + 1
         end
