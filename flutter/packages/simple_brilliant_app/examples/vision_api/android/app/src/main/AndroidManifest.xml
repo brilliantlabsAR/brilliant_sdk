@@ -25,7 +25,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="Frame Vision API"
+        android:label="Vision API"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

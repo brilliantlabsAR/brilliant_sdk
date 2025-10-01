@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:frame_msg/rx/click.dart';
 import 'package:logging/logging.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,59 +113,80 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
   @override
   Future<void> onTap(int taps) async {
     switch (taps) {
-      // Next Page
       case 1:
-        // Cancel any pending clear operations
-        _clearTimer?.cancel();
-        _clearTimer = null;
-
-        // next
-        _pagination.nextPage();
-        await frame!.sendMessage(0x0a,
-          TxPlainText(
-            text: _pagination.getCurrentPage().join('\n')
-          ).pack()
-        );
+        await _nextPage();
         break;
-      // Previous Page
       case 2:
-        // Cancel any pending clear operations
-        _clearTimer?.cancel();
-        _clearTimer = null;
-
-        // prev
-        _pagination.previousPage();
-        await frame!.sendMessage(0x0a,
-          TxPlainText(
-            text: _pagination.getCurrentPage().join('\n')
-          ).pack()
-        );
+        await _previousPage();
         break;
-      // Take Photo
       case 3:
-        // check if there's processing in progress already and drop the request if so
-        if (!_processing) {
-          _processing = true;
-          // start new vision capture
-
-          // Cancel any pending clear operations
-          _clearTimer?.cancel();
-          _clearTimer = null;
-
-          // show we're capturing on the Frame display
-          await frame!.sendMessage(0x0a,
-            TxPlainText(
-              text: '\u{F0007}', // starry eyes emoji
-              paletteOffset: 8, // yellow
-            ).pack()
-          );
-
-          // asynchronously kick off the capture/processing pipeline
-          capture().then(process);
-        }
+        await _requestNewPhoto();
         break;
       default:
     }
+  }
+
+  @override
+  Future<void> onClick(ClickType type) async {
+    switch (type) {
+      case ClickType.single:
+        await _nextPage();
+      case ClickType.double:
+        await _previousPage();
+      case ClickType.long:
+        await _requestNewPhoto();
+    }
+  }
+
+  Future<void> _requestNewPhoto() async {
+    // check if there's processing in progress already and drop the request if so
+    if (!_processing) {
+      _processing = true;
+      // start new vision capture
+    
+      // Cancel any pending clear operations
+      _clearTimer?.cancel();
+      _clearTimer = null;
+    
+      // show we're capturing on the Frame display
+      await frame!.sendMessage(0x0a,
+        TxPlainText(
+          text: '\u{F0007}', // starry eyes emoji
+          paletteOffset: 8, // yellow
+        ).pack()
+      );
+    
+      // asynchronously kick off the capture/processing pipeline
+      capture().then(process);
+    }
+  }
+
+  Future<void> _previousPage() async {
+    // Cancel any pending clear operations
+    _clearTimer?.cancel();
+    _clearTimer = null;
+    
+    // prev
+    _pagination.previousPage();
+    await frame!.sendMessage(0x0a,
+      TxPlainText(
+        text: _pagination.getCurrentPage().join('\n')
+      ).pack()
+    );
+  }
+
+  Future<void> _nextPage() async {
+    // Cancel any pending clear operations
+    _clearTimer?.cancel();
+    _clearTimer = null;
+    
+    // next
+    _pagination.nextPage();
+    await frame!.sendMessage(0x0a,
+      TxPlainText(
+        text: _pagination.getCurrentPage().join('\n')
+      ).pack()
+    );
   }
 
   /// The vision pipeline to run when a photo is captured

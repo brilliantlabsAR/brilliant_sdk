@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace = "xyz.brilliant.vision_api"
+    namespace = "com.example.frame_vision_api"
     compileSdk = 34 // share_plus
     ndkVersion = flutter.ndkVersion
 
@@ -38,7 +38,7 @@ android {
         applicationId = "com.example.frame_vision_api"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdk = 23 // flutter_blue_plus(21) flutter_foreground_task(23)
+        minSdkVersion = flutter.minSdkVersion // flutter_blue_plus(21) flutter_foreground_task(23)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
