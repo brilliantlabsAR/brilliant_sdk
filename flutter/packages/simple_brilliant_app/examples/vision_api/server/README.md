@@ -5,9 +5,7 @@ Uses FastAPI to provide an endpoint that receives a single image as input and re
 When used in conjunction with the [Vision API mobile app](https://github.com/brilliantlabsAR/brilliant_sdk/tree/halo/flutter/packages/simple_brilliant_app/examples/vision_api), it's possible to prototype computer vision/AI apps for Brilliant Labs Halo and Frame with no mobile coding required (phone or Halo/Frame).
 
 ## Example Usage
-* Clone this repository locally into `my_api` directory (change the name to suit yourself): `git clone https://github.com/brilliantlabsAR/brilliant_sdk/tree/halo/flutter/packages/simple_brilliant_app/examples/vision_api/server my_api`
-* Jump into the new directory: `cd my_api`
-* Create a Python virtual environment to help isolate package dependencies: `python -m venv .venv`
+* Create a Python virtual environment to help isolate package dependencies: `python3 -m venv .venv` / `. ./venv/bin/activate`
 * Add dependencies for this project: `pip install -r requirements.txt`
 * Start the server, listening on all network interfaces: `uvicorn main:app --reload --host 0.0.0.0`
 * Run the [Vision API mobile app](://github.com/brilliantlabsAR/brilliant_sdk/tree/halo/flutter/packages/simple_brilliant_app/examples/vision_api) and test your vision/AI pipeline live with your API results (or exceptions!) printed in front of your eyes

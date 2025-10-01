@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:frame_ble/brilliant_device.dart';
 import 'package:frame_msg/rx/click.dart';
 import 'package:logging/logging.dart';
 import 'package:share_plus/share_plus.dart';
@@ -97,11 +98,15 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
 
   @override
   Future<void> onRun() async {
-    await frame!.sendMessage(0x0a,
-      TxPlainText(
-        text: '3-Tap: take photo\n______________\n1-Tap: next page\n2-Tap: previous page'
-      ).pack()
-    );
+    TxPlainText msg;
+
+    if (frame!.type == BrilliantDeviceType.halo) {
+      msg = TxPlainText(text: 'Long-Click: take photo\n______________\n1-Click: next page\n2-Click: previous page');
+    } else {
+      msg = TxPlainText(text: '3-Tap: take photo\n______________\n1-Tap: next page\n2-Tap: previous page');
+    }
+
+    await frame!.sendMessage(0x0a,msg.pack());
   }
 
   @override
