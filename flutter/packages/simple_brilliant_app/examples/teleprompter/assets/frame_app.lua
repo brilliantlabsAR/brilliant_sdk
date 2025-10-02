@@ -2,7 +2,7 @@ local data = require('data.min')
 local battery = require('battery.min')
 local sprite = require('sprite.min')
 local code = require('code.min')
-local text_sprite_block = require('text_sprite_block.min')
+local text_sprite_block = require('text_sprite_block')
 
 -- Phone to Frame flags
 TEXT_SPRITE_BLOCK = 0x20
@@ -52,7 +52,7 @@ function app_loop()
 
                             for index = tsb.first_sprite_index, tsb.last_sprite_index do
                                 local spr = tsb.sprites[index]
-                                frame.display.bitmap(1, tsb.offsets[index].y + 1 - shift_y, spr.width, 2^spr.bpp, 0, spr.pixel_data)
+                                frame.display.bitmap(tsb.offsets[index].x + 1, tsb.offsets[index].y + 1 - shift_y, spr.width, 2^spr.bpp, 0, spr.pixel_data)
                             end
 
                             if frame.HARDWARE_VERSION == 'Frame' then

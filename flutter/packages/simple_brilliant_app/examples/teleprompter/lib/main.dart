@@ -1,10 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
 
 import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:frame_ble/frame_ble.dart';
 import 'package:frame_msg/tx/code.dart';
 import 'package:frame_msg/tx/text_sprite_block.dart';
 
@@ -23,15 +23,15 @@ class MainApp extends StatefulWidget {
 /// SimpleFrameAppState mixin helps to manage the lifecycle of the Frame connection outside of this file
 class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
-  // teleprompter data - text and current chunk
-  final List<String> _textChunks = [];
-  int _currentLine = -1;
+  // teleprompter data - pages of text to display
+  final List<PageData> _pages = [];
+  int _currentPage = -1;
   TextDirection _textDir = TextDirection.ltr;
   int _textSizeIndex = 1;
   final List<int> _textSizeValues = [16, 32, 48, 64];
-
+  
   MainAppState() {
-    Logger.root.level = Level.INFO;
+    Logger.root.level = Level.FINE;
     Logger.root.onRecord.listen((record) {
       debugPrint('${record.level.name}: [${record.loggerName}] ${record.time}: ${record.message}');
     });
@@ -60,20 +60,38 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
       if (result != null) {
         File file = File(result.files.single.path!);
 
-        // Read the file content and split into lines
+        // Read the file content
         String content = await file.readAsString();
-        _textChunks.clear();
+      
+        var layout = CircularTextLayout(width: 320, height: 240, 
+                        circleMargin: 10.0, 
+                        fontSize: _textSizeValues[_textSizeIndex]);
+        // var layout = RectangularTextLayout(width: 320, height: 240,
+        //                 fontSize: _textSizeValues[_textSizeIndex], 
+        //                 textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
+
+        var tsb = TxTextSpriteBlock(
+          layout: layout,
+          text: content,
+        );
+
+        _pages.clear();
+        while (tsb.hasMoreText) {
+          final page = await tsb.measureNextPage();
+          if (page != null) {
+            _pages.add(page);
+          }
+        }
 
         // Update the UI
         setState(() {
           // strip out any carriage-return characters if the file is CRLF
           content = content.replaceAll(RegExp('\r'), '');
-          _textChunks.addAll(content.split('\n'));
-          _currentLine = 0;
+          _currentPage = 0;
         });
 
         // and send initial text to Frame
-        await sendTextToFrame(_textChunks[_currentLine]);
+        await sendTextToFrame(_pages[_currentPage]);
       }
       else {
         currentState = ApplicationState.ready;
@@ -87,38 +105,29 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   }
 
   /// create the TextSpriteBlock for the specified text, then send the TSB header and line sprites one by one
-  Future<void> sendTextToFrame(String text) async {
+  Future<void> sendTextToFrame(PageData page) async {
     // start by sending a Clear Display message
     await frame!.sendMessage(0x10, TxCode().pack());
 
-    if (text.isEmpty) {
+    if (page.isEmpty) {
       return;
     }
-
-    var width = frame!.type == BrilliantDeviceType.halo ? 320 : 620;
-    var maxDisplayRows = frame!.type == BrilliantDeviceType.halo ? 5 : 10;
-
-    var tsb = TxTextSpriteBlock(
-      width: width,
-      fontSize: _textSizeValues[_textSizeIndex],
-      maxDisplayRows: maxDisplayRows,
-      textDirection: _textDir,
-      textAlign: TextAlign.start,
-      text: text,
-    );
-
-    // rasterize the text to sprites
-    await tsb.rasterize(startLine: 0, endLine: tsb.numLines - 1);
+    else if (!page.isRasterized) {
+      await page.rasterize();
+    }
 
     // send the TxTextSpriteBlock lines to Frame for display
     // block header first
-    await frame!.sendMessage(0x20, tsb.pack());
+    await frame!.sendMessage(0x20, page.pack());
 
     // send over the lines one by one
     // note that the sprites have the same message code, so they need to be handled by the text_sprite_block parser
-    for (var sprite in tsb.rasterizedSprites) {
+    for (var sprite in page.rasterizedSprites) {
       await frame!.sendMessage(0x20, sprite.pack());
     }
+
+    // save the current full image for previewing
+    //_currentTsb = page.toPngBytes();
   }
 
   @override
@@ -127,8 +136,8 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     await frame!.sendMessage(0x10, TxCode().pack());
 
     currentState = ApplicationState.ready;
-    _textChunks.clear();
-    _currentLine = -1;
+    _pages.clear();
+    _currentPage = -1;
     if (mounted) setState(() {});
   }
 
@@ -169,7 +178,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   },
                   onChangeEnd: (value) {
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_textChunks[_currentLine]);
+                      sendTextToFrame(_pages[_currentPage]);
                     }
                   },
                 ),
@@ -182,7 +191,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   setState(() {
                     _textDir = value ?? TextDirection.ltr;
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_textChunks[_currentLine]);
+                      sendTextToFrame(_pages[_currentPage]);
                     }
                   });
                 },
@@ -195,7 +204,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   setState(() {
                     _textDir = value ?? TextDirection.rtl;
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_textChunks[_currentLine]);
+                      sendTextToFrame(_pages[_currentPage]);
                     }
                   });
                 },
@@ -207,13 +216,13 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
           behavior: HitTestBehavior.opaque,
           onVerticalDragEnd: (x) async {
               if (x.velocity.pixelsPerSecond.dy > 0) {
-                _currentLine > 0 ? --_currentLine : null;
+                _currentPage > 0 ? --_currentPage : null;
               }
               else {
-                _currentLine < _textChunks.length - 1 ? ++_currentLine : null;
+                _currentPage < _pages.length - 1 ? ++_currentPage : null;
               }
-              if (_currentLine >= 0) {
-                await sendTextToFrame(_textChunks[_currentLine]);
+              if (_currentPage >= 0) {
+                await sendTextToFrame(_pages[_currentPage]);
               }
               if (mounted) setState(() {});
             },
@@ -224,10 +233,31 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Spacer(),
-                Text(
-                  _currentLine >= 0 ? _textChunks[_currentLine] : 'Load a file',
-                  style: const TextStyle(fontSize: 24),
-                ),
+                if (_currentPage >= 0)
+                  ..._pages[_currentPage].lineTexts.map((line) =>
+                    Center(
+                      child: Text(
+                        line,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  )
+                else
+                  const Center(child: Text('Load a file', style: TextStyle(fontSize: 12))),
+                const Spacer(),
+                // insert an image of the current TextSpriteBlock here
+                if (_currentPage >= 0)
+                  FutureBuilder<Uint8List>(
+                    future: _pages[_currentPage].toPngBytes(),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Center(
+                          child: Image.memory(snapshot.data!, width: 320, height: 240, fit: BoxFit.contain),
+                        );
+                      }
+                      return const SizedBox.shrink(); // Or a loading indicator
+                    },
+                  ),
                 const Spacer(),
               ],
             ),

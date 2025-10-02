@@ -32,5 +32,5 @@ flutter:
     - packages/frame_msg/lua/code.min.lua
     - packages/frame_msg/lua/data.min.lua
     - packages/frame_msg/lua/sprite.min.lua
-    - packages/frame_msg/lua/text_sprite_block.min.lua
+    - packages/frame_msg/lua/text_sprite_block.lua
     - assets/frame_app.lua
