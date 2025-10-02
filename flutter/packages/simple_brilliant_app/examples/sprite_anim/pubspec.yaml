@@ -31,9 +31,9 @@ flutter:
     - packages/frame_msg/lua/data.min.lua
     - packages/frame_msg/lua/sprite.min.lua
     - assets/frame_app.lua
-    - assets/sprites/21_thinking_01.png
-    - assets/sprites/22_thinking_02.png
-    - assets/sprites/23_thinking_03.png
-    - assets/sprites/31_thinking_text_01.png
-    - assets/sprites/32_thinking_text_02.png
-    - assets/sprites/33_thinking_text_03.png
+    - assets/sprites/21_lowbatt_01.png
+    - assets/sprites/22_lowbatt_02.png
+    - assets/sprites/23_lowbatt_03.png
+    - assets/sprites/31_lowbatt_text_01.png
+    - assets/sprites/32_lowbatt_text_02.png
+    - assets/sprites/33_lowbatt_text_03.png
