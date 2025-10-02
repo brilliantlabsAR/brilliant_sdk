@@ -26,7 +26,7 @@ function app_loop()
     local last_batt_update = 0
 
 	if frame.HARDWARE_VERSION ~= 'Frame' then
-		frame.display.set_brightness(0)
+		frame.display.set_brightness(50)
 	end
 
     print('Frame App Started')
