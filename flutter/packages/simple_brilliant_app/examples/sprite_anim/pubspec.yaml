@@ -34,3 +34,6 @@ flutter:
     - assets/sprites/21_sleep_01.png
     - assets/sprites/22_sleep_02.png
     - assets/sprites/23_sleep_03.png
+    - assets/sprites/31_sleep_text_01.png
+    - assets/sprites/32_sleep_text_02.png
+    - assets/sprites/33_sleep_text_03.png

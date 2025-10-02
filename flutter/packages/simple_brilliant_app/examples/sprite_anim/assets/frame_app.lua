@@ -7,6 +7,9 @@ local sprite = require('sprite.min')
 SPRITE_1 = 0x21
 SPRITE_2 = 0x22
 SPRITE_3 = 0x23
+SPRITE_TEXT_1 = 0x31
+SPRITE_TEXT_2 = 0x32
+SPRITE_TEXT_3 = 0x33
 CLEAR_MSG = 0x10
 NEXT_MSG = 0x11
 
@@ -14,6 +17,9 @@ NEXT_MSG = 0x11
 data.parsers[SPRITE_1] = sprite.parse_sprite
 data.parsers[SPRITE_2] = sprite.parse_sprite
 data.parsers[SPRITE_3] = sprite.parse_sprite
+data.parsers[SPRITE_TEXT_1] = sprite.parse_sprite
+data.parsers[SPRITE_TEXT_2] = sprite.parse_sprite
+data.parsers[SPRITE_TEXT_3] = sprite.parse_sprite
 data.parsers[CLEAR_MSG] = code.parse_code
 data.parsers[NEXT_MSG] = code.parse_code
 
@@ -49,33 +55,59 @@ function app_loop()
 				-- one or more full messages received
 				if items_ready > 0 then
 
-					-- do we have all three sprites?
-					if (data.app_data[SPRITE_1] ~= nil and data.app_data[SPRITE_2] ~= nil and data.app_data[SPRITE_3] ~= nil) then
-						all_sprites = {data.app_data[SPRITE_1], data.app_data[SPRITE_2], data.app_data[SPRITE_3]}
+					-- do we have all the sprites?
+					if (data.app_data[SPRITE_1] ~= nil and 
+						data.app_data[SPRITE_TEXT_1] ~= nil and 
+						data.app_data[SPRITE_2] ~= nil and 
+						data.app_data[SPRITE_TEXT_2] ~= nil and 
+						data.app_data[SPRITE_3] ~= nil and
+						data.app_data[SPRITE_TEXT_3] ~= nil 
+					) then
+						print('All sprites received')
+						all_sprites = {
+							data.app_data[SPRITE_1], 
+							data.app_data[SPRITE_TEXT_1],
+							data.app_data[SPRITE_2], 
+							data.app_data[SPRITE_TEXT_2],
+							data.app_data[SPRITE_3],
+							data.app_data[SPRITE_TEXT_3]
+						}
 						data.app_data[SPRITE_1] = nil
 						data.app_data[SPRITE_2] = nil
 						data.app_data[SPRITE_3] = nil
+						data.app_data[SPRITE_TEXT_1] = nil
+						data.app_data[SPRITE_TEXT_2] = nil
+						data.app_data[SPRITE_TEXT_3] = nil
 					end
 
 					if (data.app_data[NEXT_MSG] ~= nil) then
 						print('Next sprite message received')
 						-- display the next sprite in the sequence
 						if #all_sprites > 0 then
+							print('Displaying next sprite')
 							local spr = table.remove(all_sprites, 1)
 							table.insert(all_sprites, spr)
+							local spr_text = table.remove(all_sprites, 1)
+							table.insert(all_sprites, spr_text)
+
 							-- clear just the display area
 							--print(#spr.pixel_data*8/spr.bpp/(spr.width+7//8))
 							--frame.display.bitmap(101, 71, 1, 2, 0, '\xFF', {palette_data='\x000000\x18309C', x_scale=spr.width, y_scale=#spr.pixel_data*8/spr.bpp/(spr.width+7//8)})
 							--frame.display.bitmap(101, 71, 1, 2, 0, '\xFF', {palette_data='\x00\x00\x00\x18\x30\x9C', x_scale=1, y_scale=spr.height//8})
+
 							-- draw the sprite
 							frame.display.clear(0x18309C)
+							-- 120x60 @ 101,71
 							frame.display.bitmap(101, 71, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+							-- 140x30 @ 91,136
+							frame.display.bitmap(91, 136, spr_text.width, 2^spr_text.bpp, 0, spr_text.pixel_data, {palette_data=spr_text.palette_data})
 						end
 						data.app_data[NEXT_MSG] = nil
 					end
 
 					if (data.app_data[CLEAR_MSG] ~= nil) then
 						-- clear the display
+						print('Clear display message received')
 						clear_display()
 						data.app_data[CLEAR_MSG] = nil
 					end

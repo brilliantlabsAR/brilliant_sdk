@@ -1,13 +1,8 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:frame_msg/tx/image_sprite_block.dart';
 import 'package:logging/logging.dart';
 
 import 'package:simple_frame_app/simple_frame_app.dart';
 import 'package:frame_msg/tx/code.dart';
-import 'package:frame_msg/tx/sprite.dart';
 
 
 void main() => runApp(const MainApp());
