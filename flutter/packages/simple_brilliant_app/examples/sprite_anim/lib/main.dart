@@ -57,38 +57,6 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         await Future.delayed(const Duration(milliseconds: 1000));
       }
 
-      // // Open the file picker
-      // FilePickerResult? result = await FilePicker.platform.pickFiles(
-      //   type: FileType.image,
-      // );
-
-      // if (result != null) {
-      //   File file = File(result.files.single.path!);
-
-      //   // Read the file content
-      //   Uint8List imageBytes = await file.readAsBytes();
-
-      //   // Update the UI
-      //   setState(() {
-      //     _image = Image.memory(imageBytes);
-      //   });
-
-      //   // make the sprite
-      //   var sprite = TxSprite.fromImageBytes(imageBytes: imageBytes);
-
-      //   var isb = TxImageSpriteBlock(image: sprite, spriteLineHeight: 10);
-      //   // send the header first
-      //   await frame!.sendMessage(0x20, isb.pack());
-
-      //   // then send all the slices
-      //   for (var line in isb.spriteLines) {
-      //     await frame!.sendMessage(0x20, line.pack());
-      //   }
-      // }
-      // else {
-      //   currentState = ApplicationState.ready;
-      //   if (mounted) setState(() {});
-      // }
     } catch (e) {
       _log.fine('Error executing application logic: $e');
       currentState = ApplicationState.ready;
