@@ -1,0 +1,39 @@
+name: sprite_anim
+description: "Basic sprite animation example for Brilliant Labs Halo and Frame"
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  file_picker: ^8.1.2
+  flutter:
+    sdk: flutter
+  logging: ^1.2.0
+  simple_frame_app:
+    # Note: We use a path dependency because the example apps & library packages are bundled together.
+    # In *your* app you should use a versioned dependency from pub.dev
+    path: ../../
+  frame_msg:
+    path: ../../../frame_msg
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - packages/frame_msg/lua/battery.min.lua
+    - packages/frame_msg/lua/code.min.lua
+    - packages/frame_msg/lua/data.min.lua
+    - packages/frame_msg/lua/sprite.min.lua
+    - assets/frame_app.lua
+    - assets/sprites/21_lowbatt_01.png
+    - assets/sprites/22_lowbatt_02.png
+    - assets/sprites/23_lowbatt_03.png
+    - assets/sprites/31_lowbatt_text_01.png
+    - assets/sprites/32_lowbatt_text_02.png
+    - assets/sprites/33_lowbatt_text_03.png
