@@ -1,18 +1,18 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
-
 import 'sprite.dart';
 import 'package:image/image.dart' as img;
 
-/// Abstract base class for text layout strategies
+/// Abstract base class for defining the geometry of a text layout area.
+/// This allows for different shapes like rectangles and circles.
 abstract class TextLayout {
   final int width;
   final int height;
   final int fontSize;
   final String? fontFamily;
   final ui.TextAlign textAlign;
-  
+
   TextLayout({
     required this.width,
     required this.height,
@@ -20,13 +20,16 @@ abstract class TextLayout {
     this.fontFamily,
     this.textAlign = ui.TextAlign.left,
   });
-  
-  /// Get the layout parameters for a specific line at Y position
-  /// Returns null if the line is outside the displayable area
+
+  /// The starting Y coordinate for laying out text.
+  double get startY => 0.0;
+
+  /// Gets the layout parameters (width and x-offset) for a line at a specific Y position.
+  /// Returns null if the line is outside the displayable area.
   ({int width, int xOffset})? getLineLayout(double lineY, double lineHeight);
 }
 
-/// Rectangular text layout for Frame display
+/// A standard rectangular text layout for the Frame device.
 class RectangularTextLayout extends TextLayout {
   RectangularTextLayout({
     required super.width,
@@ -35,30 +38,29 @@ class RectangularTextLayout extends TextLayout {
     super.fontFamily,
     super.textAlign,
   });
-  
+
   @override
   ({int width, int xOffset})? getLineLayout(double lineY, double lineHeight) {
-    // Check if line fits within height
-    if (lineY + lineHeight > height) {
-      return null;
+    if (lineY < 0 || lineY + lineHeight > height) {
+      return null; // Line is outside the vertical bounds.
     }
     return (width: width, xOffset: 0);
   }
 }
 
-/// Circular text layout for Halo display
+/// A circular text layout, ideal for the Halo device. Text is constrained
+/// within a circle inscribed in the defined width/height.
 class CircularTextLayout extends TextLayout {
   final double circleMargin;
-  
   late final double radius;
   late final double centerX;
   late final double centerY;
-  
+
   CircularTextLayout({
     required super.width,
     required super.height,
     required super.fontSize,
-    this.circleMargin = 15.0,
+    this.circleMargin = 15.0, // Margin from the edge of the canvas to the circle.
     super.fontFamily,
     super.textAlign = ui.TextAlign.center,
   }) {
@@ -66,294 +68,224 @@ class CircularTextLayout extends TextLayout {
     centerX = width / 2.0;
     centerY = height / 2.0;
   }
-  
+
+  @override
+  double get startY => centerY - radius;
+
   @override
   ({int width, int xOffset})? getLineLayout(double lineY, double lineHeight) {
-    double distFromCenter = (lineY + lineHeight / 2) - centerY;
-    
+    // Calculate the vertical distance from the center of the circle to the middle of the line.
+    final double distFromCenter = (lineY + lineHeight / 2) - centerY;
+
     if (distFromCenter.abs() > radius) {
-      return null;
+      return null; // Line is completely outside the circle.
     }
-    
-    double halfWidth = math.sqrt(radius * radius - distFromCenter * distFromCenter);
-    int lineWidth = (halfWidth * 2).floor();
-    int xOffset = (centerX - halfWidth).floor();
-    
-    // Ensure minimum width for readability
-    if (lineWidth < 20) return null;
-    
+
+    // Use the Pythagorean theorem to calculate the half-width of the chord at this y-position.
+    final double halfWidth = math.sqrt(radius * radius - distFromCenter * distFromCenter);
+    final int lineWidth = (halfWidth * 2).floor();
+    final int xOffset = (centerX - halfWidth).floor();
+
+    // Avoid rendering text on very narrow lines near the top/bottom of the circle.
+    if (lineWidth < fontSize) return null;
+
     return (width: lineWidth, xOffset: xOffset);
   }
 }
 
-/// Unified text sprite block that works with any TextLayout
+/// Manages the process of laying out and rasterizing text into pages (TxSpriteBlocks).
+/// It works with any `TextLayout` to support different display shapes.
 class TxTextSpriteBlock {
   final TextLayout layout;
   final String text;
-  
+
   String _remainingText;
-  
+
   TxTextSpriteBlock({
     required this.layout,
     required this.text,
   }) : _remainingText = text.trim();
-  
+
+  /// The portion of the text that has not yet been processed into a page.
   String get remainingText => _remainingText;
+
+  /// Returns true if there is more text to be laid out.
   bool get hasMoreText => _remainingText.isNotEmpty;
-  
-  /// Measure the next page of text without rasterizing
-  /// Returns the page data and updates remainingText
+
+  /// Measures the next page of text and returns its data without rasterizing.
+  /// This is useful for previewing content or getting layout information.
   Future<PageData?> measureNextPage() async {
     if (_remainingText.isEmpty) return null;
-    
-    List<_LineData> lines = [];
+
+    final List<_LineData> lines = [];
     String textToLayout = _remainingText;
-    String originalText = _remainingText; // Track what we started with
+    double currentY = layout.startY;
     
-    // For circular layout, start from top of circle
-    // For rectangular, start from 0
-    double currentY = 0;
-    if (layout is CircularTextLayout) {
-      final circLayout = layout as CircularTextLayout;
-      currentY = circLayout.centerY - circLayout.radius;
-    }
-    
+    final double estimatedLineHeight = layout.fontSize * 1.4;
+
     while (textToLayout.isNotEmpty && currentY < layout.height) {
-      // Estimate line height for initial positioning
-      double estimatedLineHeight = layout.fontSize * 1.4;
+      // Get the available width for a line at the current Y position.
       var lineLayout = layout.getLineLayout(currentY, estimatedLineHeight);
-      
+
       if (lineLayout == null) {
-        // Outside displayable area - this shouldn't happen for rectangular,
-        // but can happen for circular. Move to next Y position
-        currentY += estimatedLineHeight;
-        continue;
+        // We have moved outside the drawable area, so this page is done.
+        break;
       }
       
-      // Create a paragraph with this specific width to measure actual metrics
+      // Use a Paragraph to measure the text for the current line.
       final paragraphBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
         textAlign: layout.textAlign,
-        textDirection: ui.TextDirection.ltr,
         fontFamily: layout.fontFamily,
         fontSize: layout.fontSize.toDouble(),
+        textDirection: ui.TextDirection.ltr,
       ));
-      
       paragraphBuilder.addText(textToLayout);
       final paragraph = paragraphBuilder.build();
       paragraph.layout(ui.ParagraphConstraints(width: lineLayout.width.toDouble()));
       
-      var lineMetrics = paragraph.computeLineMetrics();
-      
-      if (lineMetrics.isEmpty) break;
-      
-      // Take only the first line
-      var firstLine = lineMetrics[0];
-      double actualLineHeight = firstLine.ascent + firstLine.descent;
-      
-      // Check if this line will fit at current Y with actual height
+      // Get the metrics for the first line that fits within the constraints.
+      final lineMetrics = paragraph.computeLineMetrics();
+      if (lineMetrics.isEmpty) break; // No more text fits.
+
+      final firstLine = lineMetrics.first;
+      final double actualLineHeight = firstLine.height;
+
+      // Final check to ensure this line actually fits vertically.
       if (currentY + actualLineHeight > layout.height) {
-        // Line doesn't fit, stop this page
         break;
       }
+
+      // Re-check the layout with the actual height for better accuracy, especially for circles.
+      var finalLineLayout = layout.getLineLayout(currentY, actualLineHeight) ?? lineLayout;
+
+      // Get the character range for the first line. This is the most reliable way
+      // to determine where Flutter decided to break the line.
+      final lineBreak = paragraph.getLineBoundary(const ui.TextPosition(offset: 0));
+      int endIndex = lineBreak.end;
       
-      // Re-check layout with actual line height to get proper width
-      var actualLineLayout = layout.getLineLayout(currentY, actualLineHeight);
-      if (actualLineLayout == null) {
-        // Line doesn't fit with actual height, move to next position
-        currentY += actualLineHeight;
-        continue;
-      }
-      
-      // Use the actual line layout
-      lineLayout = actualLineLayout;
-      
-      // Get the text for this line by finding where the line breaks
-      int endIndex = 0;
-      if (lineMetrics.isNotEmpty) {
-        // Find the end of the first line using getBoxesForRange
-        final boxes = paragraph.getBoxesForRange(0, textToLayout.length);
-        if (boxes.isNotEmpty) {
-          // Find the last character index in the first line's box
-          final firstLineBottom = boxes[0].bottom;
-          double maxRight = 0;
-          for (final box in boxes) {
-            if (box.bottom == firstLineBottom && box.right > maxRight) {
-              maxRight = box.right;
-            }
-          }
-          // Get the character index at the end of the first line
-          final pos = paragraph.getPositionForOffset(ui.Offset(maxRight, firstLineBottom - 1));
-          endIndex = pos.offset;          
-        } else {
-          endIndex = textToLayout.length;
-        }
-      } else {
-        endIndex = textToLayout.length;
+      if (endIndex == 0 && textToLayout.isNotEmpty) {
+        // Failsafe for cases where not even one character fits. Consume one to prevent loops.
+        endIndex = 1;
       }
 
-      if (endIndex <= 0) endIndex = 1; // Ensure progress
-      
-      // Extract line text and handle word breaks
       String lineText = textToLayout.substring(0, endIndex);
-      
-      // Try to break at last space if we're mid-word
-      if (endIndex < textToLayout.length && 
-          !_isWhitespace(textToLayout[endIndex])) {
-        int lastSpace = lineText.lastIndexOf(' ');
-        if (lastSpace > 0) {
-          endIndex = lastSpace + 1;
-          lineText = textToLayout.substring(0, endIndex);
-        }
+
+      // Refine word wrapping: if the line breaks in the middle of a word,
+      // try to break at the previous space instead.
+      if (endIndex < textToLayout.length) {
+          final nextChar = textToLayout[endIndex];
+          if (lineText.isNotEmpty && !_isWhitespace(nextChar) && !_isWhitespace(lineText[lineText.length - 1])) {
+              int lastSpace = lineText.trimRight().lastIndexOf(' ');
+              if (lastSpace != -1) {
+                  // Re-measure endIndex to the character after the space.
+                  endIndex = textToLayout.substring(0, lastSpace).length + 1;
+                  lineText = textToLayout.substring(0, endIndex);
+              }
+          }
       }
-      
-      lineText = lineText.trim();
-      textToLayout = textToLayout.substring(endIndex).trim();
-      
-      // Store line data
+
+      // Add the measured line to our page data.
       lines.add(_LineData(
-        text: lineText,
-        width: lineLayout.width,
-        xOffset: lineLayout.xOffset,
+        text: lineText.trim(),
+        width: finalLineLayout.width,
+        xOffset: finalLineLayout.xOffset,
         yOffset: currentY.toInt(),
         lineHeight: actualLineHeight.toInt(),
       ));
-      
+
+      // Advance Y position and update remaining text.
       currentY += actualLineHeight;
+      textToLayout = textToLayout.substring(endIndex).trimLeft();
     }
-    
-    if (lines.isEmpty) {
-      // Couldn't fit any lines - this shouldn't happen normally
-      // but prevent infinite loop by consuming at least one character
-      if (textToLayout.isEmpty) {
-        _remainingText = textToLayout.substring(1);
-      }
+
+    if (lines.isEmpty && _remainingText.isNotEmpty) {
+      // This can happen if the first word is too long to fit on any line.
+      // To prevent an infinite loop, we consume the text that was attempted.
+      _remainingText = textToLayout;
       return null;
     }
-    
-    // Update remaining text - use the textToLayout that was modified by the loop
+
     _remainingText = textToLayout;
-    
     return PageData._(lines: lines, layout: layout);
   }
   
-  /// Measure and rasterize the next page in one call
+  /// Measures and rasterizes the next page in one call.
   Future<PageData?> rasterizeNextPage() async {
     final page = await measureNextPage();
-    if (page != null) {
-      await page.rasterize();
-    }
+    await page?.rasterize();
     return page;
   }
-  
+
   bool _isWhitespace(String char) {
     return char == ' ' || char == '\t' || char == '\n' || char == '\r';
   }
-  
+
+  // Caches a monochrome palette for creating 1-bit sprites.
   static img.PaletteUint8? _monochromePal;
-  
   static img.PaletteUint8 _getPalette() {
-    if (_monochromePal == null) {
-      _monochromePal = img.PaletteUint8(2, 3);
-      _monochromePal!.setRgb(0, 0, 0, 0);
-      _monochromePal!.setRgb(1, 255, 255, 255);
-    }
-    return _monochromePal!;
+    return _monochromePal ??= img.PaletteUint8(2, 3)
+      ..setRgb(0, 0, 0, 0)       // Black
+      ..setRgb(1, 255, 255, 255); // White
   }
 }
 
-/// Represents a measured page of text that can be rasterized
+/// Represents a single, measured page of text that is ready to be rasterized into sprites.
 class PageData {
   final List<_LineData> _lines;
   final TextLayout layout;
   final List<TxSprite> _sprites = [];
-  
-  PageData._({
-    required List<_LineData> lines,
-    required this.layout,
-  }) : _lines = lines;
-  
+
+  PageData._({required List<_LineData> lines, required this.layout}) : _lines = lines;
+
   bool get isEmpty => _lines.isEmpty;
-  bool get isNotEmpty => _lines.isNotEmpty;
-  int get numLines => _lines.length;
-  List<TxSprite> get rasterizedSprites => _sprites;
   bool get isRasterized => _sprites.isNotEmpty;
-  
-  /// Get the text content of all lines in this page
+  List<TxSprite> get rasterizedSprites => _sprites;
   List<String> get lineTexts => _lines.map((line) => line.text).toList();
-  
-  /// Rasterize the measured lines to create TxSprites
+
+  /// Rasterizes the measured lines into a list of `TxSprite` objects.
+  /// Each sprite represents one line of text.
   Future<void> rasterize() async {
-    if (_sprites.isNotEmpty) {
-      // Already rasterized
-      return;
-    }
-    
-    for (var lineData in _lines) {
-      if (lineData.text.isEmpty) {
-        // Empty line - create 1x1 sprite
-        _sprites.add(TxSprite(
-          width: 1,
-          height: 1,
-          numColors: 2,
-          paletteData: TxTextSpriteBlock._getPalette().data,
-          pixelData: Uint8List(1),
-        ));
-        continue;
+    if (isRasterized) return;
+
+    for (final lineData in _lines) {
+      if (lineData.text.isEmpty || lineData.lineHeight <= 0) {
+        continue; // Skip empty or invalid lines.
       }
 
-      // Always use the full layout width for the sprite
-      int spriteWidth = layout.width;
-      int spriteHeight = lineData.lineHeight;
-
-      // Render paragraph at the line's width (for correct metrics)
       final paragraphBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
         textAlign: layout.textAlign,
-        textDirection: ui.TextDirection.ltr,
         fontFamily: layout.fontFamily,
         fontSize: layout.fontSize.toDouble(),
       ));
-
       paragraphBuilder.addText(lineData.text);
       final paragraph = paragraphBuilder.build();
+      // Layout with the specific width calculated for this line.
       paragraph.layout(ui.ParagraphConstraints(width: lineData.width.toDouble()));
+      
+      // The canvas for the sprite should span the full width of the layout
+      // to ensure consistent sprite dimensions.
+      final int spriteWidth = layout.width;
+      final int spriteHeight = lineData.lineHeight;
 
-      var metrics = paragraph.computeLineMetrics();
-      if (metrics.isEmpty) continue;
+      final recorder = ui.PictureRecorder();
+      final canvas = ui.Canvas(recorder);
 
-      var firstLine = metrics[0];
-      int lineWidth = firstLine.width.toInt();
-      int lineHeight = (firstLine.ascent + firstLine.descent).toInt();
-
-      if (lineWidth == 0 || lineHeight == 0) {
-        // Degenerate line - create 1x1 sprite
-        _sprites.add(TxSprite(
-          width: 1,
-          height: 1,
-          numColors: 2,
-          paletteData: TxTextSpriteBlock._getPalette().data,
-          pixelData: Uint8List(1),
-        ));
-        continue;
-      }
-
-      // Render to a full-width canvas, offsetting the text
-      final pictureRecorder = ui.PictureRecorder();
-      final canvas = ui.Canvas(pictureRecorder);
-
-      // Draw the paragraph at the correct x offset
+      // Draw the paragraph at its calculated horizontal offset.
       canvas.drawParagraph(paragraph, ui.Offset(lineData.xOffset.toDouble(), 0));
-      final picture = pictureRecorder.endRecording();
 
+      final picture = recorder.endRecording();
       final image = await picture.toImage(spriteWidth, spriteHeight);
-      var byteData = (await image.toByteData(format: ui.ImageByteFormat.rawUnmodified))!;
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
 
-      // Convert to monochrome
-      var linePixelData = Uint8List(spriteWidth * spriteHeight);
-      for (int i = 0; i < spriteHeight; i++) {
-        var sourceRow = byteData.buffer.asUint8List(i * spriteWidth * 4, spriteWidth * 4);
-        for (int j = 0; j < spriteWidth; j++) {
-          linePixelData[i * spriteWidth + j] = sourceRow[4 * j] >= 128 ? 1 : 0;
-        }
+      if (byteData == null) continue;
+
+      // Convert the 32-bit RGBA image to a 1-bit monochrome sprite.
+      final pixels = Uint8List(spriteWidth * spriteHeight);
+      final rgba = byteData.buffer.asUint8List();
+      for (int i = 0; i < pixels.length; ++i) {
+        // Use the red channel to determine color (assuming grayscale text).
+        // A threshold of 128 determines black or white.
+        pixels[i] = rgba[i * 4] >= 128 ? 1 : 0;
       }
 
       _sprites.add(TxSprite(
@@ -361,79 +293,68 @@ class PageData {
         height: spriteHeight,
         numColors: 2,
         paletteData: TxTextSpriteBlock._getPalette().data,
-        pixelData: linePixelData,
+        pixelData: pixels,
       ));
     }
   }
-  
-  /// Convert to PNG for testing/verification
+
+  /// Generates a single PNG image of the entire page for debugging or verification.
   Future<Uint8List> toPngBytes() async {
-    if (_sprites.isEmpty) {
+    if (!isRasterized) {
       await rasterize();
     }
-    
-    // Create an image for the whole page
-    var preview = img.Image(
-      width: layout.width, 
-      height: layout.height, 
-      numChannels: 4
-    );
-    
-    // Copy in each of the sprites at their correct positions
-    for (int i = 0; i < _lines.length; i++) {
+
+    // Create a composite image for the whole page.
+    final pageImage = img.Image(width: layout.width, height: layout.height, numChannels: 4);
+    img.fill(pageImage, color: img.ColorRgba8(0,0,0,0)); // Transparent background
+
+    for (int i = 0; i < _sprites.length; i++) {
       img.compositeImage(
-        preview, 
+        pageImage,
         _sprites[i].toImage(),
-        dstX: _lines[i].xOffset,
         dstY: _lines[i].yOffset,
-        blend: img.BlendMode.direct,
+        // No dstX needed as the sprite itself is full-width with the text offset baked in.
       );
     }
-    
-    return img.encodePng(preview);
+
+    return img.encodePng(pageImage);
   }
-  
-  /// Pack for transmission
+
+  /// Packs the page layout data for transmission to a device.
   Uint8List pack() {
-    if (_sprites.isEmpty) {
-      throw Exception('Sprites not rasterized: call rasterize() before pack()');
+    if (!isRasterized) {
+      throw StateError('Page must be rasterized before packing.');
     }
-    
-    int widthMsb = layout.width >> 8;
-    int widthLsb = layout.width & 0xFF;
-    
-    // Store x and y offsets for each line
-    Uint8List offsets = Uint8List(_lines.length * 4);
-    
+
+    final offsets = Uint8List(_lines.length * 4);
     for (int i = 0; i < _lines.length; i++) {
-      var line = _lines[i];
+      final line = _lines[i];
       offsets[4 * i] = line.xOffset >> 8;
       offsets[4 * i + 1] = line.xOffset & 0xFF;
       offsets[4 * i + 2] = line.yOffset >> 8;
       offsets[4 * i + 3] = line.yOffset & 0xFF;
     }
-    
-    // Block header: 0xFF, width (2 bytes), height (2 bytes), num lines, offsets
+
     return Uint8List.fromList([
-      0xFF,
-      widthMsb,
-      widthLsb,
+      0xFF, // Header byte
+      layout.width >> 8,
+      layout.width & 0xFF,
       layout.height >> 8,
       layout.height & 0xFF,
       _sprites.length & 0xFF,
-      ...offsets
+      ...offsets,
     ]);
   }
 }
 
-/// Internal line data storage
+/// Internal data class to store measured information for a single line of text.
 class _LineData {
   final String text;
   final int width;
   final int xOffset;
   final int yOffset;
   final int lineHeight;
-  
+
   _LineData({
     required this.text,
     required this.width,
@@ -442,3 +363,4 @@ class _LineData {
     required this.lineHeight,
   });
 }
+

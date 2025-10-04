@@ -192,7 +192,7 @@ void main() {
       final page = await tsb.measureNextPage();
       expect(page, isNotNull);
       expect(page!.isRasterized, false);
-      expect(page.numLines, greaterThan(0));
+      expect(page.lineTexts.length, greaterThan(0));
     });
     
     test('should rasterize page when requested', () async {
@@ -209,7 +209,7 @@ void main() {
       
       await page.rasterize();
       expect(page.isRasterized, true);
-      expect(page.rasterizedSprites.length, page.numLines);
+      expect(page.rasterizedSprites.length, page.lineTexts.length);
     });
     
     test('should preserve all text across pages', () async {
@@ -257,7 +257,7 @@ void main() {
       
       final page = await tsb.measureNextPage();
       expect(page, isNotNull);
-      expect(page!.numLines, greaterThan(1));
+      expect(page!.lineTexts.length, greaterThan(1));
     });
     
     test('should paginate long text correctly', () async {
@@ -323,7 +323,7 @@ void main() {
       
       final page = await tsb.measureNextPage();
       expect(page, isNotNull);
-      expect(page!.numLines, greaterThan(0));
+      expect(page!.lineTexts.length, greaterThan(0));
     });
     
     test('should have varying line widths in circular layout', () async {
@@ -337,7 +337,7 @@ void main() {
       final page = await tsb.measureNextPage();
       expect(page, isNotNull);
       
-      if (page!.numLines > 2) {
+      if (page!.lineTexts.length > 2) {
         // Check that not all lines have the same width
         // We can't directly check widths without exposing _lines,
         // but we can verify lines exist
@@ -407,7 +407,7 @@ void main() {
       
       expect(page.isRasterized, true);
       expect(page.rasterizedSprites, isNotEmpty);
-      expect(page.rasterizedSprites.length, page.numLines);
+      expect(page.rasterizedSprites.length, page.lineTexts.length);
     });
     
     test('should throw when packing before rasterizing', () async {
@@ -552,7 +552,7 @@ void main() {
       
       final page = await tsb.measureNextPage();
       expect(page, isNotNull);
-      expect(page!.numLines, 1);
+      expect(page!.lineTexts.length, 1);
     });
     
     test('should handle layout with zero height gracefully', () async {
@@ -569,7 +569,7 @@ void main() {
       
       final page = await tsb.measureNextPage();
       // Should return null or empty page
-      expect(page?.numLines ?? 0, 0);
+      expect(page?.lineTexts.length ?? 0, 0);
     });
   });
   
