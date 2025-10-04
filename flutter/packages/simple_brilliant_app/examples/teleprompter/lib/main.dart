@@ -32,7 +32,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   Uint8List _pngBytes = Uint8List(0);
   
   MainAppState() {
-    Logger.root.level = Level.FINE;
+    Logger.root.level = Level.INFO;
     Logger.root.onRecord.listen((record) {
       debugPrint('${record.level.name}: [${record.loggerName}] ${record.time}: ${record.message}');
     });
