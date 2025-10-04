@@ -271,17 +271,27 @@ class PageData {
         final paragraph = paragraphBuilder.build();
         // Layout with the specific width calculated for this line.
         paragraph.layout(ui.ParagraphConstraints(width: lineData.width.toDouble()));
+
+        final lineMetrics = paragraph.computeLineMetrics();
+        if (lineMetrics.isEmpty) {
+          continue; // No line metrics available, skip.
+        }
+        final firstLineMetrics = lineMetrics.first;
         
         // The canvas for the sprite should span the full width of the layout
         // to ensure consistent sprite dimensions.
-        final int spriteWidth = layout.width;
+        final int spriteWidth = layout.width.ceil();
         final int spriteHeight = lineData.lineHeight;
+
+        if (spriteWidth <= 0 || spriteHeight <= 0) {
+          continue; // Skip invalid sprite sizes.
+        }
 
         final recorder = ui.PictureRecorder();
         final canvas = ui.Canvas(recorder);
 
         // Draw the paragraph at its calculated horizontal offset.
-        canvas.drawParagraph(paragraph, ui.Offset(lineData.xOffset.toDouble(), 0));
+        canvas.drawParagraph(paragraph, ui.Offset(-firstLineMetrics.left, 0));
 
         final picture = recorder.endRecording();
         final image = await picture.toImage(spriteWidth, spriteHeight);
@@ -297,6 +307,10 @@ class PageData {
           // A threshold of 128 determines black or white.
           pixels[i] = rgba[i * 4] >= 128 ? 1 : 0;
         }
+
+        // After rasterizing, update the lineData with the final sprite geometry
+        lineData.xOffset = (lineData.xOffset + firstLineMetrics.left).toInt();
+        lineData.width = spriteWidth;
 
         _sprites.add(TxSprite(
           width: spriteWidth,
@@ -328,6 +342,7 @@ class PageData {
       img.compositeImage(
         pageImage,
         _sprites[i].toImage(),
+        dstX: _lines[i].xOffset,
         dstY: _lines[i].yOffset,
         // No dstX needed as the sprite itself is full-width with the text offset baked in.
       );
@@ -339,7 +354,7 @@ class PageData {
   /// Packs the page layout data for transmission to a device.
   Uint8List pack() {
     if (!isRasterized) {
-      throw StateError('Page must be rasterized before packing.');
+      throw Exception('Page must be rasterized before packing.');
     }
 
     final offsets = Uint8List(_lines.length * 4);
@@ -364,10 +379,11 @@ class PageData {
 }
 
 /// Internal data class to store measured information for a single line of text.
+/// Its width and xOffset are mutable and are updated during rasterization.
 class _LineData {
   final String text;
-  final int width;
-  final int xOffset;
+  int width;
+  int xOffset;
   final int yOffset;
   final int lineHeight;
 
