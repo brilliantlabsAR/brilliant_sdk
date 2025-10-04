@@ -280,7 +280,7 @@ class PageData {
         
         // The canvas for the sprite should span the full width of the layout
         // to ensure consistent sprite dimensions.
-        final int spriteWidth = layout.width.ceil();
+        final int spriteWidth = firstLineMetrics.width.ceil();
         final int spriteHeight = lineData.lineHeight;
 
         if (spriteWidth <= 0 || spriteHeight <= 0) {
