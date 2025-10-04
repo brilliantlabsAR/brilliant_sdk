@@ -29,6 +29,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   TextDirection _textDir = TextDirection.ltr;
   int _textSizeIndex = 1;
   final List<int> _textSizeValues = [16, 32, 48, 64];
+  Uint8List _pngBytes = Uint8List(0);
   
   MainAppState() {
     Logger.root.level = Level.FINE;
@@ -63,12 +64,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         // Read the file content
         String content = await file.readAsString();
       
-        // var layout = CircularTextLayout(width: 320, height: 240,
-        //                 circleMargin: 10.0,
-        //                 fontSize: _textSizeValues[_textSizeIndex]);
-        var layout = RectangularTextLayout(width: 320, height: 240,
-                        fontSize: _textSizeValues[_textSizeIndex],
-                        textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
+        var layout = CircularTextLayout(width: 320, height: 240,
+                        circleMargin: 10.0,
+                        fontSize: _textSizeValues[_textSizeIndex]);
+        // var layout = RectangularTextLayout(width: 320, height: 240,
+        //                 fontSize: _textSizeValues[_textSizeIndex],
+        //                 textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
 
         var tsb = TxTextSpriteBlock(
           layout: layout,
@@ -83,14 +84,23 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
           }
         }
 
-        // Update the UI
+        // Update the UI with the text
         setState(() {
           // strip out any carriage-return characters if the file is CRLF
           content = content.replaceAll(RegExp('\r'), '');
           _currentPage = 0;
         });
 
-        // and send initial text to Frame
+        // rasterize the first page
+        await _pages[_currentPage].rasterize();
+
+        // and create a PNG image of the first page
+        Uint8List bytes = await _pages[_currentPage].toPngBytes();
+        setState(() {
+          _pngBytes = bytes;
+        });
+
+        // and send initial page to Frame
         await sendTextToFrame(_pages[_currentPage]);
       }
       else {
@@ -219,6 +229,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                 _currentPage < _pages.length - 1 ? ++_currentPage : null;
               }
               if (_currentPage >= 0) {
+                _pngBytes = await _pages[_currentPage].toPngBytes();
                 await sendTextToFrame(_pages[_currentPage]);
               }
               if (mounted) setState(() {});
@@ -232,28 +243,21 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                 const Spacer(),
                 if (_currentPage >= 0)
                   ..._pages[_currentPage].lineTexts.map((line) =>
-                    Center(
-                      child: Text(
+                   Center(
+                     child: 
+                      Text(
                         line,
                         style: const TextStyle(fontSize: 16),
                       ),
-                    ),
+                   ),
                   )
                 else
                   const Center(child: Text('Load a file', style: TextStyle(fontSize: 12))),
                 const Spacer(),
                 // insert an image of the current TextSpriteBlock here
-                if (_currentPage >= 0)
-                  FutureBuilder<Uint8List>(
-                    future: _pages[_currentPage].toPngBytes(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return Center(
-                          child: Image.memory(snapshot.data!, width: 320, height: 240, fit: BoxFit.contain),
-                        );
-                      }
-                      return const SizedBox.shrink(); // Or a loading indicator
-                    },
+                if (_currentPage >= 0 && _pngBytes.isNotEmpty)
+                  Center(
+                    child: Image.memory(_pngBytes, width: 320, height: 240, fit: BoxFit.contain),
                   ),
                 const Spacer(),
               ],

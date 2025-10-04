@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'sprite.dart';
 import 'package:image/image.dart' as img;
 
+
 /// Abstract base class for defining the geometry of a text layout area.
 /// This allows for different shapes like rectangles and circles.
 abstract class TextLayout {
@@ -195,6 +196,7 @@ class TxTextSpriteBlock {
           lineHeight: actualLineHeight.toInt(),
         ));
       }
+
       // Advance Y position and update remaining text.
       currentY += actualLineHeight;
       textToLayout = textToLayout.substring(endIndex).trimLeft();
@@ -236,6 +238,7 @@ class PageData {
   final List<_LineData> _lines;
   final TextLayout layout;
   final List<TxSprite> _sprites = [];
+  bool _isRasterizing = false;
 
   PageData._({required List<_LineData> lines, required this.layout}) : _lines = lines;
 
@@ -247,56 +250,65 @@ class PageData {
   /// Rasterizes the measured lines into a list of `TxSprite` objects.
   /// Each sprite represents one line of text.
   Future<void> rasterize() async {
-    if (isRasterized) return;
+    // If rasterization is already complete or is currently in progress, do nothing.
+    // This prevents race conditions from concurrent calls.
+    if (isRasterized || _isRasterizing) return;
 
-    for (final lineData in _lines) {
-      if (lineData.text.isEmpty || lineData.lineHeight <= 0) {
-        continue; // Skip invalid lines.
+    _isRasterizing = true;
+    try {
+      // This check is now mostly for safety; measureNextPage should prevent empty lines.
+      for (final lineData in _lines) {
+        if (lineData.text.isEmpty || lineData.lineHeight <= 0) {
+          continue; // Skip invalid lines.
+        }
+
+        final paragraphBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
+          textAlign: layout.textAlign,
+          fontFamily: layout.fontFamily,
+          fontSize: layout.fontSize.toDouble(),
+        ));
+        paragraphBuilder.addText(lineData.text);
+        final paragraph = paragraphBuilder.build();
+        // Layout with the specific width calculated for this line.
+        paragraph.layout(ui.ParagraphConstraints(width: lineData.width.toDouble()));
+        
+        // The canvas for the sprite should span the full width of the layout
+        // to ensure consistent sprite dimensions.
+        final int spriteWidth = layout.width;
+        final int spriteHeight = lineData.lineHeight;
+
+        final recorder = ui.PictureRecorder();
+        final canvas = ui.Canvas(recorder);
+
+        // Draw the paragraph at its calculated horizontal offset.
+        canvas.drawParagraph(paragraph, ui.Offset(lineData.xOffset.toDouble(), 0));
+
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(spriteWidth, spriteHeight);
+        final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+
+        if (byteData == null) continue;
+
+        // Convert the 32-bit RGBA image to a 1-bit monochrome sprite.
+        final pixels = Uint8List(spriteWidth * spriteHeight);
+        final rgba = byteData.buffer.asUint8List();
+        for (int i = 0; i < pixels.length; ++i) {
+          // Use the red channel to determine color (assuming grayscale text).
+          // A threshold of 128 determines black or white.
+          pixels[i] = rgba[i * 4] >= 128 ? 1 : 0;
+        }
+
+        _sprites.add(TxSprite(
+          width: spriteWidth,
+          height: spriteHeight,
+          numColors: 2,
+          paletteData: TxTextSpriteBlock._getPalette().data,
+          pixelData: pixels,
+        ));
       }
-
-      final paragraphBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
-        textAlign: layout.textAlign,
-        fontFamily: layout.fontFamily,
-        fontSize: layout.fontSize.toDouble(),
-      ));
-      paragraphBuilder.addText(lineData.text);
-      final paragraph = paragraphBuilder.build();
-      // Layout with the specific width calculated for this line.
-      paragraph.layout(ui.ParagraphConstraints(width: lineData.width.toDouble()));
-      
-      // The canvas for the sprite should span the full width of the layout
-      // to ensure consistent sprite dimensions.
-      final int spriteWidth = layout.width;
-      final int spriteHeight = lineData.lineHeight;
-
-      final recorder = ui.PictureRecorder();
-      final canvas = ui.Canvas(recorder);
-
-      // Draw the paragraph at its calculated horizontal offset.
-      canvas.drawParagraph(paragraph, ui.Offset(lineData.xOffset.toDouble(), 0));
-
-      final picture = recorder.endRecording();
-      final image = await picture.toImage(spriteWidth, spriteHeight);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-
-      if (byteData == null) continue;
-
-      // Convert the 32-bit RGBA image to a 1-bit monochrome sprite.
-      final pixels = Uint8List(spriteWidth * spriteHeight);
-      final rgba = byteData.buffer.asUint8List();
-      for (int i = 0; i < pixels.length; ++i) {
-        // Use the red channel to determine color (assuming grayscale text).
-        // A threshold of 128 determines black or white.
-        pixels[i] = rgba[i * 4] >= 128 ? 1 : 0;
-      }
-
-      _sprites.add(TxSprite(
-        width: spriteWidth,
-        height: spriteHeight,
-        numColors: 2,
-        paletteData: TxTextSpriteBlock._getPalette().data,
-        pixelData: pixels,
-      ));
+    } finally {
+      // Ensure the flag is always reset, even if an error occurs.
+      _isRasterizing = false;
     }
   }
 
@@ -305,6 +317,8 @@ class PageData {
     if (!isRasterized) {
       await rasterize();
     }
+
+    assert(lineTexts.length == _sprites.length);
 
     // Create a composite image for the whole page.
     final pageImage = img.Image(width: layout.width, height: layout.height, numChannels: 4);
@@ -325,7 +339,7 @@ class PageData {
   /// Packs the page layout data for transmission to a device.
   Uint8List pack() {
     if (!isRasterized) {
-      throw Exception('Page must be rasterized before packing.');
+      throw StateError('Page must be rasterized before packing.');
     }
 
     final offsets = Uint8List(_lines.length * 4);
