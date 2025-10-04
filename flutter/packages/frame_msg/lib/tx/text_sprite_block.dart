@@ -184,15 +184,17 @@ class TxTextSpriteBlock {
           }
       }
 
-      // Add the measured line to our page data.
-      lines.add(_LineData(
-        text: lineText.trim(),
-        width: finalLineLayout.width,
-        xOffset: finalLineLayout.xOffset,
-        yOffset: currentY.toInt(),
-        lineHeight: actualLineHeight.toInt(),
-      ));
-
+      // Only add the line if it contains non-whitespace characters.
+      final trimmedLine = lineText.trim();
+      if (trimmedLine.isNotEmpty) {
+        lines.add(_LineData(
+          text: trimmedLine,
+          width: finalLineLayout.width,
+          xOffset: finalLineLayout.xOffset,
+          yOffset: currentY.toInt(),
+          lineHeight: actualLineHeight.toInt(),
+        ));
+      }
       // Advance Y position and update remaining text.
       currentY += actualLineHeight;
       textToLayout = textToLayout.substring(endIndex).trimLeft();
@@ -249,7 +251,7 @@ class PageData {
 
     for (final lineData in _lines) {
       if (lineData.text.isEmpty || lineData.lineHeight <= 0) {
-        continue; // Skip empty or invalid lines.
+        continue; // Skip invalid lines.
       }
 
       final paragraphBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
@@ -323,7 +325,7 @@ class PageData {
   /// Packs the page layout data for transmission to a device.
   Uint8List pack() {
     if (!isRasterized) {
-      throw StateError('Page must be rasterized before packing.');
+      throw Exception('Page must be rasterized before packing.');
     }
 
     final offsets = Uint8List(_lines.length * 4);

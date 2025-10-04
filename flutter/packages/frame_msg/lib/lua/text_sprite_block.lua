@@ -8,14 +8,14 @@ function _M.parse_text_sprite_block(data, prev)
 		-- new block
 		local text_sprite_block = {}
 		text_sprite_block.width = string.byte(data, 2) << 8 | string.byte(data, 3)
-		text_sprite_block.max_display_rows = string.byte(data, 4)
-		text_sprite_block.lines = string.byte(data, 5)
+		text_sprite_block.height = string.byte(data, 4) << 8 | string.byte(data, 5)
+		text_sprite_block.lines = string.byte(data, 6)
 		-- for each line, parse the offsets
 		local offsets = {}
 		for i=0,text_sprite_block.lines-1 do
 			local xy = {}
-			xy.x = string.byte(data, 5+(4*i)+1) << 8 | string.byte(data, 5+(4*i)+2)
-			xy.y = string.byte(data, 5+(4*i)+3) << 8 | string.byte(data, 5+(4*i)+4)
+			xy.x = string.byte(data, 6+(4*i)+1) << 8 | string.byte(data, 6+(4*i)+2)
+			xy.y = string.byte(data, 6+(4*i)+3) << 8 | string.byte(data, 6+(4*i)+4)
 			table.insert(offsets, xy)
 		end
 		text_sprite_block.offsets = offsets
@@ -29,17 +29,15 @@ function _M.parse_text_sprite_block(data, prev)
 			return nil
 		end
 
+		if prev.last_sprite_index >= prev.lines then
+			-- we have all the sprites we expect, drop this one
+			return prev
+		end
+
 		-- increment our counters (and index into sprites table)
 		prev.last_sprite_index = prev.last_sprite_index + 1
 		if prev.first_sprite_index == 0 then
 			prev.first_sprite_index = 1
-		end
-
-		-- if we have more than max_display_rows with this new line then
-		-- remove the earliest sprite and increment the first_sprite_index
-		if (prev.last_sprite_index - prev.first_sprite_index + 1) > prev.max_display_rows then
-			prev.sprites[prev.first_sprite_index] = nil
-			prev.first_sprite_index = prev.first_sprite_index + 1
 		end
 
 		-- new text sprite line

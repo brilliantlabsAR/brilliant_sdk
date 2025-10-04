@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/services.dart';
-import 'dart:ui' as ui;
 import 'package:frame_msg/tx/text_sprite_block.dart';
 
 void main() {
