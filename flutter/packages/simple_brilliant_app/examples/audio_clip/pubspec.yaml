@@ -10,14 +10,16 @@ dependencies:
   flutter:
     sdk: flutter
   frame_ble:
-    path: ../brilliant_sdk_flutter/packages/frame_ble
+    path: ../../../frame_ble
   frame_msg:
-    path: ../brilliant_sdk_flutter/packages/frame_msg
+    path: ../../../frame_msg
   logging: ^1.2.0
   flutter_sound: ^9.28.0
   share_plus: ^10.1.0
   simple_frame_app:
-    path: ../simple_frame_app
+    # Note: We use a path dependency because the example apps & library packages are bundled together.
+    # In *your* app you should use a versioned dependency from pub.dev
+    path: ../../
 
 dev_dependencies:
   flutter_test:

@@ -198,11 +198,11 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Frame Audio Recorder',
+        title: 'Audio Clip Recorder',
         theme: ThemeData.dark(),
         home: Scaffold(
           appBar: AppBar(
-              title: const Text('Frame Audio Recorder'),
+              title: const Text('Audio Clip Recorder'),
               actions: [getBatteryWidget()]),
           body: Padding(
             padding: const EdgeInsets.all(8.0),
