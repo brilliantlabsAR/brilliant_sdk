@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
+import 'package:frame_ble/brilliant_device.dart';
 import 'package:frame_msg/rx/photo.dart';
 import 'package:frame_msg/rx/tap.dart';
 import 'package:frame_msg/rx/click.dart';
@@ -76,34 +77,38 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
       currentState = ApplicationState.running;
     });
 
-    // listen for taps for e.g. next(1)/prev(2) content and "new capture" (3)
-    _tapSubs?.cancel();
-    _tapSubs = RxTap().attach(frame!.dataResponse)
-      .listen((taps) async {
-        _log.fine(() => 'taps: $taps');
-        // call the tap handler in the implementing class
-        onTap(taps);
-      }
-    );
-
     // same TxCode(1) for both click and tap subscriptions
     final code = TxCode(value: 1);
 
     // let Frame know to subscribe for taps and send them to us
-    await frame!.sendMessage(0x10, code.pack());
+    if (frame!.type == BrilliantDeviceType.frame) {
+      // listen for taps for e.g. next(1)/prev(2) content and "new capture" (3)
+      _tapSubs?.cancel();
+      _tapSubs = RxTap().attach(frame!.dataResponse)
+        .listen((taps) async {
+          _log.fine(() => 'taps: $taps');
+          // call the tap handler in the implementing class
+          onTap(taps);
+        }
+      );
 
-    // listen for clicks for e.g. single/double/long click
-    _clickSubs?.cancel();
-    _clickSubs = RxClick().attach(frame!.dataResponse)
-      .listen((type) async {
-        _log.fine(() => 'click type: $type');
-        // call the click handler in the implementing class
-        onClick(type);
-      }
-    );
+      // let Frame know to subscribe for taps and send them to us
+      await frame!.sendMessage(0x10, code.pack());
+    }
+    else {
+      // Halo
+      // listen for clicks for e.g. single/double/long click
+      _clickSubs?.cancel();
+      _clickSubs = RxClick().attach(frame!.dataResponse)
+        .listen((type) async {
+          _log.fine(() => 'click type: $type');
+          // call the click handler in the implementing class
+          onClick(type);
+        }
+      );
 
-    // let Frame know to subscribe for clicks and send them to us
-    await frame!.sendMessage(0x11, code.pack());
+      await frame!.sendMessage(0x11, code.pack());
+    }
 
     // prompt the user to begin tapping/clicking or other app-specific setup
     await onRun();
