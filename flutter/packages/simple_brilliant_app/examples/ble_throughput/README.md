@@ -1,17 +1,8 @@
-# Frame Audio Clip Recorder
+# BLE Throughput Tester
 
-Record streamed audio clips from the Brilliant Labs Frame into a list for review and playback and Sharing.
+Measures Bluetooth Low Energy (BLE) throughput from Frame/Halo to phone.
 
-Audio is recorded at 8kHz, 16-bit linear PCM and streamed back in real-time so long recordings (that would exceed Frame memory) are possible.
-
-Playback uses the `raw_sound` Flutter package (in fact a fork of the original package due to build/version issues with the original).
-
-Sharing uses the `share_plus` Flutter package.
-
-Very short clips (< 256ms) can be recorded but won't be played since `raw_sound` doesn't seem to play clips shorter than its buffer size (4096 bytes) on Android, at least.
+4000 packets are sent, ~1MB of data.
 
 ### Screenshots
 ![Screenshot1](docs/screenshot1.png)
-
-### Architecture
-![Architecture](docs/Frame%20App%20Architecture%20-%20Audio%20Clip%20Recorder.svg)
