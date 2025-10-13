@@ -6,8 +6,7 @@ local plain_text = require('plain_text.min')
 -- Phone to Frame flags
 TEXT_MSG = 0x12
 CLEAR_MSG = 0x10
-START_AUDIO_MSG = 0x30
-STOP_AUDIO_MSG = 0x31
+START_DATA_SEND_MSG = 0x30
 
 -- Frame to Phone flags
 AUDIO_DATA_NON_FINAL_MSG = 0x05
@@ -16,17 +15,23 @@ AUDIO_DATA_FINAL_MSG = 0x06
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[TEXT_MSG] = plain_text.parse_plain_text
 data.parsers[CLEAR_MSG] = code.parse_code
-data.parsers[START_AUDIO_MSG] = code.parse_code
-data.parsers[STOP_AUDIO_MSG] = code.parse_code
+data.parsers[START_DATA_SEND_MSG] = code.parse_code
 
-function show_text(text)
-	if frame.HARDWARE_VERSION == "Frame" then
-		frame.display.text(text, 1, 1)
-		frame.display.show()
-	else
-		-- Halo
-		frame.display.text(text, 50, 50, 0xFFFFFF)
-	end
+function print_text(text)
+    local i = 0
+    for line in text:gmatch("([^\n]*)\n?") do
+        if line ~= "" then
+			if frame.HARDWARE_VERSION == "Frame" then
+					frame.display.text(line, 1, i * 60 + 1)
+			else
+					frame.display.text(line, 1, i * 20 + 1, 0xFFFFFF)
+			end
+            i = i + 1
+        end
+    end
+    if frame.HARDWARE_VERSION == "Frame" then
+        frame.display.show()
+    end
 end
 
 function clear_display()
@@ -35,7 +40,7 @@ function clear_display()
 		frame.display.show()
 	else
 		-- Halo
-		frame.display.clear(0x000000)
+		frame.display.clear()
 	end
 end
 
@@ -45,13 +50,10 @@ function app_loop()
 	clear_display()
     local last_batt_update = 0
 	local streaming = false
-	local audio_data = ''
+	local payload = ''
 	local mtu = frame.bluetooth.max_length()
-	-- data buffer needs to be even for reading from microphone
-	if mtu % 2 == 1 then mtu = mtu - 1 end
-	if frame.HARDWARE_VERSION ~= "Frame" then
-		mtu = 200
-	end
+	local NUM_PACKETS = 4000
+
 	print("Frame app started")
 
 	while true do
@@ -62,18 +64,8 @@ function app_loop()
 		if items_ready > 0 then
 
 			if (data.app_data[TEXT_MSG] ~= nil and data.app_data[TEXT_MSG].string ~= nil) then
-				local i = 0
-				for line in data.app_data[TEXT_MSG].string:gmatch("([^\n]*)\n?") do
-					if line ~= "" then
-						if frame.HARDWARE_VERSION == "Frame" then
-							frame.display.text(line, 1, i * 60 + 1)
-						else
-							frame.display.text(line, 50, 50 + i * 60, 0xFFFFFF)
-						end
-						i = i + 1
-					end
-				end
-				frame.display.show()
+				print_text(data.app_data[TEXT_MSG].string)
+				data.app_data[TEXT_MSG] = nil
 			end
 
 			if (data.app_data[CLEAR_MSG] ~= nil) then
@@ -81,56 +73,24 @@ function app_loop()
 				data.app_data[CLEAR_MSG] = nil
 			end
 
-			if (data.app_data[START_AUDIO_MSG] ~= nil) then
-				audio_data = ''
-				if frame.HARDWARE_VERSION == "Frame" then
-					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=8})
-				else
-					-- Halo
-					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=8, gain=5})
-				end
+			if (data.app_data[START_DATA_SEND_MSG] ~= nil) then
+				print_text("Streaming starting")
 				streaming = true
-				show_text("Streaming Audio")
-
-				data.app_data[START_AUDIO_MSG] = nil
-			end
-
-			if (data.app_data[STOP_AUDIO_MSG] ~= nil) then
-				pcall(frame.microphone.stop)
-				clear_display()
-
-				data.app_data[STOP_AUDIO_MSG] = nil
-			end
-
-		end
-
-		-- send any pending audio data back
-		-- Streams until STOP_AUDIO_MSG is sent from phone
-		-- (prioritize the reading and sending about 20x compared to checking for other events e.g. STOP_AUDIO_MSG)
-		for i=1,20 do
-			if streaming then
-				audio_data = frame.microphone.read(mtu)
-
-				-- Calling frame.microphone.stop() will allow this to break the loop
-				if audio_data == nil then
-					-- send an end-of-stream message back to the phone
-					pcall(frame.bluetooth.send, string.char(AUDIO_DATA_FINAL_MSG))
-					streaming = false
-					break
-
-				-- send the data that was read
-				elseif audio_data ~= '' then
-					pcall(frame.bluetooth.send, string.char(AUDIO_DATA_NON_FINAL_MSG) .. audio_data)
-
-				-- no more data for now
-				else
-					break
+				-- send back some data on code 0x30
+				payload = "\x30" .. string.rep("A", mtu - 1)
+				
+				for i=1,NUM_PACKETS do
+					pcall(frame.bluetooth.send, payload)
 				end
+
+				streaming = false
+				data.app_data[START_DATA_SEND_MSG] = nil
 			end
+
 		end
 
-        -- periodic battery level updates, 120s for a camera app
-		-- TODO check timekeeping functions, this is returning true every iteration (0.1s)
+        -- periodic battery level updates
+		-- TODO re-enable when Halo timekeeping is fixed
         --last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
 
 		if not streaming then frame.sleep(0.1) end

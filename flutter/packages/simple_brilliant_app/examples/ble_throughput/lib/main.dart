@@ -19,6 +19,13 @@ class MainApp extends StatefulWidget {
 /// SimpleFrameAppState mixin helps to manage the lifecycle of the Frame connection outside of this file
 class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
+  int _bytesReceived = 0;
+  int _numPackets = 0;
+  final _stopwatch = Stopwatch();
+  int _millis = 0;
+  static const totalPacketCount = 4000;
+  StreamSubscription<List<int>>? dataResponseSubs;
+
   MainAppState() {
     Logger.root.level = Level.INFO;
     Logger.root.onRecord.listen((record) {
@@ -40,7 +47,6 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     super.dispose();
   }
 
-  /// Start recording audio on Frame
   @override
   Future<void> run() async {
     currentState = ApplicationState.running;
@@ -48,29 +54,38 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
     try {
       // attach a handler to listen for the data
-      frame!.dataResponse.listen( (data) {
-        // TODO count the bytes received
-        if (data.isEmpty) {
-          // end of data
-          // TODO stop stopwatch and calculate rate
-          // TODO set state back to ready
-        } else {
-          // TODO add data length to byte counter
+      dataResponseSubs?.cancel();
+      dataResponseSubs = frame!.dataResponse.listen( (data) {
+        // count the bytes received
+        if (data.length > 1 && data[0] == 0x30) {
+          _bytesReceived += data.length;
+          _numPackets++;
+          _millis = _stopwatch.elapsedMilliseconds;
+          setState(() {});
+
+          if (_numPackets == totalPacketCount) {
+            _stopwatch.stop();
+            _log.info("All packets received");
+            // when done, set the state back to ready
+            currentState = ApplicationState.ready;
+            setState(() {});
+          }
         }
       });
 
       // start a stopwatch to measure the time taken to receive the data
       // and count the bytes received
-      // TODO reset byte counter
-      // TODO start stopwatch     
+      setState(() {
+        _bytesReceived = 0;
+        _numPackets = 0;
+        _millis = 0;
+      });
 
-      // tell Frame to start streaming data
+      _stopwatch.reset();
+      _stopwatch.start();
+
+      // tell Frame/Halo to start streaming data
       await frame!.sendMessage(0x30, TxCode().pack());
-
-      // TODO when the data is all received, send some data and measure the rate
-
-      // when done, set the state back to ready
-      currentState = ApplicationState.ready;
 
     } catch (e) {
       _log.fine('Error executing application logic: $e');
@@ -88,9 +103,6 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     setState(() {
       currentState = ApplicationState.canceling;
     });
-
-    // tell Frame to stop streaming data
-    await frame!.sendMessage(0x31, TxCode().pack());
   }
 
   @override
@@ -104,7 +116,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
               actions: [getBatteryWidget()]),
           body: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: const Text("Placeholder for BLE throughput test app")
+            child: Text("Packets received: $_numPackets\nBytes received: $_bytesReceived\nPacket size: ${_numPackets == 0 ? 0 : _bytesReceived/_numPackets}\nElapsed time (ms): $_millis\nThroughput (kbps): ${_millis == 0 ? 0 : (8 * _bytesReceived / 1024 / _millis * 1000).toStringAsFixed(0)}\nThroughput (kBps): ${_millis == 0 ? 0 : (_bytesReceived / 1024 / _millis * 1000).toStringAsFixed(2)}")
           ),
           floatingActionButton: getFloatingActionButtonWidget(
               const Icon(Icons.mic), const Icon(Icons.stop)),
