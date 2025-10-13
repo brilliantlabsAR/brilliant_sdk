@@ -80,7 +80,12 @@ function app_loop()
 				payload = "\x30" .. string.rep("A", mtu - 1)
 				
 				for i=1,NUM_PACKETS do
-					pcall(frame.bluetooth.send, payload)
+					while true do
+						-- rapid sends can cause failure so retry immediately
+						if pcall(frame.bluetooth.send, payload) then
+							break
+						end
+					end
 				end
 
 				streaming = false
