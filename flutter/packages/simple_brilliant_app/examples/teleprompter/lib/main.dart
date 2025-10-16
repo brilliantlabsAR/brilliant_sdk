@@ -28,7 +28,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   int _currentPage = -1;
   TextDirection _textDir = TextDirection.ltr;
   int _textSizeIndex = 1;
-  final List<int> _textSizeValues = [16, 32, 48, 64];
+  final List<int> _textSizeValues = [16, 20, 24, 28, 32, 48, 64];
   Uint8List _pngBytes = Uint8List(0);
   
   MainAppState() {
