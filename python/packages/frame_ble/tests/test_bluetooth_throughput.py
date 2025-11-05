@@ -12,7 +12,7 @@ def receive_data(data):
     global last_data_time
     total_data_received += len(data)
 
-    if len(data) == 0:
+    if len(data) == 1:
         throughput = total_data_received / (time.time() - last_data_time)
         last_data_time = time.time()
         total_data_received = 0
@@ -22,19 +22,11 @@ def receive_data(data):
 async def main():
 
     lua_script = """
-    function send_data(data)
-        while true do 
-            if (pcall(frame.bluetooth.send, data)) then
-                break
-            end
-        end
-    end
-
     data = string.rep('a',frame.bluetooth.max_length())
     
-    while true do 
-        for i = 1, 100 do send_data(data) end
-        send_data('')
+    while true do
+        for i = 1, 100 do frame.bluetooth.send(data) end
+        frame.bluetooth.send('X')
     end
     """
 
@@ -42,19 +34,22 @@ async def main():
 
     await b.connect(data_response_handler=receive_data)
 
-    print("Testing throughput")
-    print("Press Enter to quit")
-    # # await b.send_remove_signal()
-    # await b.send_reset_signal()
-    # # await asyncio.sleep(3)
-    # await b.upload_file(lua_script, "main.lua")
-    # await b.send_reset_signal()
+    await b.send_break_signal()
+    await b.upload_file_from_string(lua_script, "test.lua")
+    # why do we need to sleep to make sure the upload gets its reply?
+    # Maybe the future from the send_lua() await_print misses getting completed
+    # if some other data is moving?
+    await asyncio.sleep(5.0)
+
+    print("Testing throughput: Press Enter to quit")
+    await b.send_lua("require('test')")
 
     # Wait until a keypress
     await ainput("")
 
     await b.send_break_signal()
+    await b.send_lua("frame.file.remove('test.lua');print(0)", await_print=True)
     await b.disconnect()
 
-
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
