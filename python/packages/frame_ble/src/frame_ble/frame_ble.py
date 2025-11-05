@@ -157,7 +157,7 @@ class FrameBle:
         except Exception as ble_error:
             raise Exception(f"Error subscribing for notifications: {ble_error}")
 
-        return device.address
+        return device.name
 
     async def disconnect(self):
         """
