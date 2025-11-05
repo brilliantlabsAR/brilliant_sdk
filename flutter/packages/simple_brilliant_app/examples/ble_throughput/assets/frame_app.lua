@@ -95,8 +95,7 @@ function app_loop()
 		end
 
         -- periodic battery level updates
-		-- TODO re-enable when Halo timekeeping is fixed
-        --last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
+        last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
 
 		if not streaming then frame.sleep(0.1) end
 	end
