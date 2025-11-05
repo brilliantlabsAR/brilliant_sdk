@@ -31,6 +31,7 @@ end
 -- Main app loop
 function app_loop()
 	clear_display()
+	frame.camera.power_save(false)
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')

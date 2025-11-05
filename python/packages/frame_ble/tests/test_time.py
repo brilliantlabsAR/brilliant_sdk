@@ -1,6 +1,5 @@
 import asyncio
 from frame_ble import FrameBle
-from luaparser import ast
 
 async def main():
     b = FrameBle()
@@ -75,6 +74,19 @@ async def main():
     print("print(frame.time.utc(0))")
     await b.send_lua("print(frame.time.utc(0))")
     await asyncio.sleep(1.0)
+
+    print("frame.time.utc() increments during frame.sleep()")
+    await b.send_lua("print(frame.time.utc())", await_print=True)
+    await b.send_lua("frame.sleep(5)print('5 second sleep completed')", await_print=True)
+    await b.send_lua("print(frame.time.utc())", await_print=True)
+    await asyncio.sleep(1.0)
+
+    from datetime import datetime
+    print("print(frame.time.utc()) 10 times in a tight loop")
+    for i in range(10):
+        print(f'Host time: {datetime.now()}')
+        await b.send_lua(f"print(frame.time.utc())", await_print=True)
+
 
     # Disconnect Bluetooth
     await b.disconnect()
