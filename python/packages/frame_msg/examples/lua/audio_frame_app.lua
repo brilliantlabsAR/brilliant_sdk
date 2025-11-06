@@ -14,13 +14,17 @@ function app_loop()
 		frame.display.text('Frame App Started', 1, 1)
 		frame.display.show()
 	else
-		frame.display.text('Frame App Started', 50, 50, 0xFFFFFF)
+		frame.display.clear()
+		frame.display.text('Frame App Started', 50, 50)
 	end
 
 	local streaming = false
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
+
+	-- calculate delay per packet based on max bluetooth length and audio bitrate
+	local delay_per_packet = frame.bluetooth.max_length() / 6000 -- 8kHz/8bit audio with some margin
 
 	while true do
         rc, err = pcall(
@@ -42,7 +46,8 @@ function app_loop()
 								frame.display.text("\u{F0010}", 300, 1)
 								frame.display.show()
 							else
-								frame.display.text("Rec", 50, 50, 0xFFFFFF)
+								frame.display.clear()
+								frame.display.text("Rec", 50, 50)
 							end
 						else
 							-- 'stop' message
@@ -53,7 +58,7 @@ function app_loop()
 								frame.display.text(" ", 1, 1)
 								frame.display.show()
 							else
-								frame.display.clear(0x000000)
+								frame.display.clear()
 							end
 						end
 
@@ -66,20 +71,22 @@ function app_loop()
 				-- Streams until AUDIO_SUBS_MSG is sent from host with a value of 0
 				if streaming then
 					-- read_and_send_audio() sends one MTU worth of samples
-					-- so loop up to 10 times until we have caught up or the stream has stopped
-					local sent = audio.read_and_send_audio()
+					-- so we want to call it a bit more frequently than the audio bitrate
+					-- to catch up if we fall behind
+					local sent = nil
 					for i = 1, 10 do
-						if sent == nil or sent == 0 then
+						sent = audio.read_and_send_audio()
+						if sent == 0 then
 							break
 						end
-						sent = audio.read_and_send_audio()
 					end
 					if sent == nil then
 						streaming = false
 					end
 
-					-- 8kHz/8 bit is 8000b/s, which is ~33 packets/second, or 1 every 30ms
-					frame.sleep(0.005)
+					-- 8kHz/8 bit is 8000b/s, i.e. 8000/MTU packets per second
+					-- but we send up to 10 packets and sleep for (MTU/6k) between packets
+					frame.sleep(delay_per_packet)
 				else
 					-- not streaming, sleep for longer
 					frame.sleep(0.1)
@@ -94,7 +101,7 @@ function app_loop()
 				frame.display.text(" ", 1, 1)
 				frame.display.show() 
 			else
-				frame.display.clear(0x000000)
+				frame.display.clear()
 			end
 			break
 		end

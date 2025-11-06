@@ -20,6 +20,7 @@ async def main():
 
     try:
         await frame.connect()
+        await frame.send_break_signal()
 
         # Let the user know we're starting
         await frame.print_short_text('Loading...')
