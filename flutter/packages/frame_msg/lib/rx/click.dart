@@ -19,7 +19,7 @@ class RxClick {
   StreamController<ClickType>? _controller;
 
   RxClick({
-    this.clickFlag = 0x06,
+    this.clickFlag = 0x0B,
   });
 
   /// Attach this RxClick to the device's dataResponse characteristic stream.
