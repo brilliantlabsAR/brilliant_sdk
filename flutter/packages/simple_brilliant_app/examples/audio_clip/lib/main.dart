@@ -153,7 +153,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     );
   }
 
-  Uint8List _convertToWav(Uint8List rawAudio, {int sampleRate = 8000, int channels = 1, int bitDepth = 16}) {
+  Uint8List _convertToWav(Uint8List rawAudio, {int sampleRate = 8000, int channels = 1, int bitDepth = 8}) {
     // Calculate the total size of the WAV file
     int dataSize = rawAudio.length;
     int headerSize = 44; // Standard WAV header is 44 bytes
@@ -180,7 +180,19 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     // data sub-chunk
     wavData.add(Uint8List.fromList('data'.codeUnits)); // Subchunk2ID
     wavData.add(_intToBytes(dataSize, 4));             // Subchunk2Size
-    wavData.add(rawAudio);                             // Audio data
+
+    if (bitDepth == 8) {
+      debugPrint('Converting 8-bit signed PCM to unsigned PCM for WAV format');
+      // For 8-bit PCM, audio data is unsigned, so we need to convert from signed to unsigned
+      final unsignedAudio = Uint8List(rawAudio.length);
+      for (int i = 0; i < rawAudio.length; i++) {
+        unsignedAudio[i] = rawAudio[i] + 128;         // Convert signed to unsigned
+      }
+      wavData.add(unsignedAudio);                     // Audio data
+    } else {
+      debugPrint('Keeping signed PCM for WAV format');
+      wavData.add(rawAudio);                          // Audio data
+    }
 
     // Return the full WAV data as a Uint8List
     return wavData.toBytes();
