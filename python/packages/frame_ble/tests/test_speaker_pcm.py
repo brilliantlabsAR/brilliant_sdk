@@ -26,7 +26,7 @@ async def main():
     # 3. Send and play frame by frame
     for i in range(0, len(data), frame_size):
         frame = data[i:i + frame_size]
-        await b.send_audio(frame)
+        await b.send_audio(frame, await_bt_response=False) # takes < 1ms, compared with 30-80ms for withResponse
         await asyncio.sleep(0.05) # 8000 bytes/second = 1/20 second (should be 0.05)
 
     # 4. Stop playback
