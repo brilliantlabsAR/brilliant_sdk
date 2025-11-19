@@ -55,11 +55,11 @@ async def main():
         # bitrate 32000 / 800 = 40 bytes per frame
         frame_size = 200  # LC3 @ 8kHz / 10ms / 32kbps / 5 frames per packet
 
-        # Send and play frame by frame
+        # Send and play 5 frames at a time
         for i in range(0, len(data), frame_size):
             audio_frame = data[i:i + frame_size]
             await frame.send_audio(audio_frame)
-            await asyncio.sleep(0.01)  # 10ms frames, 5 frames per packet, sending faster than the required rate
+            await asyncio.sleep(0.05)  # 10ms frames, 5 frames per packet
 
         # send the command that will call frame.speaker.stop()
         await frame.send_message(0x42, TxCode(0).pack())

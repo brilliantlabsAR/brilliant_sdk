@@ -246,15 +246,22 @@ class FrameBle:
             except asyncio.TimeoutError:
                 raise Exception("device didn't respond")
 
-    async def send_audio(self, data: bytearray):
+    async def send_audio(self, data: bytearray, await_bt_response=False):
         """
-        Sends audio data to the device. Splits if necessary.
+        Sends audio data to the custom audio characteristic of the device.
+        await_bt_response corresponds to bluetooth "writeWithResponse", so
+        a bluetooth-level ACK will be required for each write (defaults to False)
+
+        Note:
+        Ensure that whole LC3 frames fit within MTU if sending LC3,
+        or even numbers of samples are provided in the case of PCM
+        If data exceeds a single packet payload (mtu-3) the audio packet is silently dropped
         """
         mtu = self._client.mtu_size - 3
-        for i in range(0, len(data), mtu):
-            chunk = memoryview(data)[i:i + mtu]
-            # TODO audio should be write-without-response (response=False), update when fw is fixed
-            await self._client.write_gatt_char(self._audio_tx_characteristic, chunk, response=True)
+        if len(data) > mtu:
+            return
+        # stream audio as write-without-response (response=False)
+        await self._client.write_gatt_char(self._audio_tx_characteristic, data, response=await_bt_response)
 
     async def send_reset_signal(self, show_me=False):
         """

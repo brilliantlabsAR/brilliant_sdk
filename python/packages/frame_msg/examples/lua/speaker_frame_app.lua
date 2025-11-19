@@ -56,8 +56,8 @@ function app_loop()
 
 				end
 
-				-- can't sleep for long, might be lots of incoming bluetooth data to process
-				frame.sleep(0.001)
+				-- sleep and wake up often enough for control messages
+				frame.sleep(0.1)
 			end
 		)
 		-- Catch an error (including the break signal) here
