@@ -1,36 +1,54 @@
 import asyncio
 from frame_ble import FrameBle
 
-# Convert frame data to a Lua-compatible hexadecimal string
-def bin2lua_hex(data: bytes) -> str:
-    return '"' + ''.join(f'\\x{b:02x}' for b in data) + '"'
+# convert s8 to s16 le
+def s8_to_s16_le(data: bytes) -> bytes:
+    """Convert signed 8-bit PCM to little-endian signed 16-bit PCM."""
+    out = bytearray(len(data) * 2)
+    j = 0
+    for b in data:
+        s8 = b - 256 if b >= 128 else b
+        s16 = (s8 << 8) & 0xffff
+        out[j] = s16 & 0xff
+        out[j + 1] = (s16 >> 8) & 0xff
+        j += 2
+    return bytes(out)
+
 
 async def main():
     b = FrameBle()
     await b.connect()
 
+    frame_size = 400
+ 
+    # load the sample s8 pcm audio
+    with open("tests/audio/female_w1_8k_s8.pcm", "rb") as f:
+        data8 = f.read()
+
     b._user_print_response_handler = print
 
-    # 1. Configure the speaker in pcm mode
-    await b.send_lua("frame.speaker.start{encoder='pcm', sample_rate=8000, is_signed = 1, bit_depth=8, channels=1};print(0)", await_print=True)
-    await b.send_lua("frame.speaker.volume(50);print(1)", await_print=True)
-    await b.send_lua("print(frame.bluetooth.max_length())", await_print=True)
-    print(b.max_data_payload())
+    # 8-bit
+    data = data8
+    await b.send_lua("frame.speaker.start{encoder='pcm', sample_rate=8000, is_signed = 1, bit_depth=8, channels=1, volume=50};print('8-bit')", await_print=True)
 
+    # Send and play frame by frame
+    for i in range(0, len(data8), frame_size):
+        frame = data8[i:i + frame_size]
+        await b.send_audio(frame, await_bt_response=False) # takes < 1ms, compared with 30-80ms for withResponse
+        await asyncio.sleep(0.05) # 8000 bytes/second for s8 = 1/20 second (should be 0.05)
 
-    with open("tests/audio/female_w1_8k_s8.pcm", "rb") as f:
-        data = f.read()
-
-    frame_size = 400
-
-    # 3. Send and play frame by frame
+    # 16-bit
+    data = s8_to_s16_le(data8)
+    await b.send_lua("frame.speaker.start{encoder='pcm', sample_rate=8000, is_signed = 1, bit_depth=16, channels=1, volume=50};print('16-bit')", await_print=True)
+    
+    # Send and play frame by frame
     for i in range(0, len(data), frame_size):
         frame = data[i:i + frame_size]
         await b.send_audio(frame, await_bt_response=False) # takes < 1ms, compared with 30-80ms for withResponse
-        await asyncio.sleep(0.05) # 8000 bytes/second = 1/20 second (should be 0.05)
+        await asyncio.sleep(0.025) # 16000 bytes/second for s16 = 1/40 second (should be 0.025)
 
     # 4. Stop playback
-    await b.send_lua("frame.speaker.stop();print(2)", await_print=True)
+    await b.send_lua("frame.speaker.stop();print('stopping')", await_print=True)
     await asyncio.sleep(1.0)
 
     await b.disconnect()
