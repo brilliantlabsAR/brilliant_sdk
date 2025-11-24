@@ -27,19 +27,9 @@ async def main():
 
     b._user_print_response_handler = print
 
-    # 8-bit
-    data = data8
-    await b.send_lua("frame.speaker.start{encoder='pcm', sample_rate=8000, is_signed = 1, bit_depth=8, channels=1, volume=50};print('8-bit')", await_print=True)
-
-    # Send and play frame by frame
-    for i in range(0, len(data8), frame_size):
-        frame = data8[i:i + frame_size]
-        await b.send_audio(frame, await_bt_response=False) # takes < 1ms, compared with 30-80ms for withResponse
-        await asyncio.sleep(0.05) # 8000 bytes/second for s8 = 1/20 second (should be 0.05)
-
     # 16-bit
     data = s8_to_s16_le(data8)
-    await b.send_lua("frame.speaker.start{encoder='pcm', sample_rate=8000, is_signed = 1, bit_depth=16, channels=1, volume=50};print('16-bit')", await_print=True)
+    await b.send_lua("frame.speaker.start{encoder='pcm', sample_rate=8000, bit_depth=16, channels=1, volume=50};print('16-bit')", await_print=True)
     
     # Send and play frame by frame
     for i in range(0, len(data), frame_size):
