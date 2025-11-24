@@ -1,19 +1,12 @@
 import asyncio
 from frame_ble import FrameBle
-import time
-
-# Convert frame data to a Lua-compatible hexadecimal string
-def bin2lua_hex(data: bytes) -> str:
-    return '"' + ''.join(f'\\x{b:02x}' for b in data) + '"'
 
 async def main():
     b = FrameBle()
     await b.connect()
 
     # 1. Configure the speaker in LC3 mode
-    await b.send_lua("frame.speaker.start{encoder='lc3', sample_rate=8000, bit_depth=16, channels=1, bitrate=32000};print(0)", await_print=True)
-    await b.send_lua("frame.speaker.volume(100);print(1)", await_print=True)
-    
+    await b.send_lua("frame.speaker.start{encoder='lc3', sample_rate=8000, bit_depth=16, channels=1, bitrate=32000, volume=50};print('start')", await_print=True)  
 
     # 2. Load LC3 audio frames (each frame is 40 bytes)
     with open("tests/audio/female_w1_8k_s16.lc3", "rb") as f:
@@ -25,20 +18,21 @@ async def main():
     for i in range(0, len(data), frame_size):
         frame = data[i:i + frame_size]
         await b.send_audio(frame, await_bt_response=False) # takes < 1ms
-        await asyncio.sleep(0.1)  # 10ms playback interval x 10 frames per packet, sleep the whole time
+        #await asyncio.sleep(0.1)  # 10ms playback interval x 10 frames per packet, sleep for 100ms
+        await asyncio.sleep(0.001)  # 1ms to reproduce crash
 
     # 4. Send and play frame by frame (with bluetooth ACK for each write)
-    for i in range(0, len(data), frame_size):
-        frame = data[i:i + frame_size]
-        start = time.perf_counter()
-        await b.send_audio(frame, await_bt_response=True) # can take 30-80ms, so unless we send 8+ frames per packet, we won't keep up
-        elapsed = time.perf_counter() - start
-        remaining = 0.1 - elapsed # 10ms playback interval x 10 frames per packet = 100ms, sleep the remaining time
-        if remaining > 0:
-            await asyncio.sleep(remaining)
+    # for i in range(0, len(data), frame_size):
+    #     frame = data[i:i + frame_size]
+    #     start = time.perf_counter()
+    #     await b.send_audio(frame, await_bt_response=True) # can take 30-80ms, so unless we send 8+ frames per packet, we won't keep up
+    #     elapsed = time.perf_counter() - start
+    #     remaining = 0.1 - elapsed # 10ms playback interval x 10 frames per packet = 100ms, sleep the remaining time
+    #     if remaining > 0:
+    #         await asyncio.sleep(remaining)
 
     # 5. Stop playback
-    await b.send_lua("frame.speaker.stop();print(2)", await_print=True)
+    await b.send_lua("frame.speaker.stop();print('stop')", await_print=True)
     await asyncio.sleep(1.0)
 
     await b.disconnect()
