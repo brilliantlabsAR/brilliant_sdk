@@ -203,13 +203,13 @@ class FrameBle:
 
         await self._client.write_gatt_char(self._tx_characteristic, data, response=True)
 
-    async def send_lua(self, string: str, show_me=False, await_print=False):
+    async def send_lua(self, string: str, show_me=False, await_print=False, timeout=5):
         """
         Sends a Lua string to the device. The string length must be less than or
         equal to `max_lua_payload()`.
 
         If `await_print=True`, the function will block until a Lua print()
-        occurs, or a timeout.
+        occurs, or a timeout (in seconds).
 
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
@@ -221,17 +221,17 @@ class FrameBle:
 
         if await_print:
             try:
-                return await asyncio.wait_for(self._print_response.get(), timeout=5)
+                return await asyncio.wait_for(self._print_response.get(), timeout=timeout)
             except asyncio.TimeoutError:
                 raise Exception("device didn't respond")
 
-    async def send_data(self, data: bytearray, show_me=False, await_data=False):
+    async def send_data(self, data: bytearray, show_me=False, await_data=False, timeout=5):
         """
         Sends raw data to the device. The payload length must be less than or
         equal to `max_data_payload()`.
 
         If `await_data=True`, the function will block until a data response
-        occurs, or a timeout.
+        occurs, or a timeout (in seconds).
 
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
@@ -242,7 +242,7 @@ class FrameBle:
 
         if await_data:
             try:
-                return await asyncio.wait_for(self._data_response.get(), timeout=5)
+                return await asyncio.wait_for(self._data_response.get(), timeout=timeout)
             except asyncio.TimeoutError:
                 raise Exception("device didn't respond")
 

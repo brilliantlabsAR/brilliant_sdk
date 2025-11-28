@@ -77,7 +77,7 @@ async def main():
 
     print("frame.time.utc() increments during frame.sleep()")
     await b.send_lua("print(frame.time.utc())", await_print=True)
-    await b.send_lua("frame.sleep(5)print('5 second sleep completed')", await_print=True)
+    await b.send_lua("frame.sleep(5)print('5 second sleep completed')", await_print=True, timeout=10)
     await b.send_lua("print(frame.time.utc())", await_print=True)
     await asyncio.sleep(1.0)
 
