@@ -18,8 +18,7 @@ async def main():
     for i in range(0, len(data), frame_size):
         frame = data[i:i + frame_size]
         await b.send_audio(frame, await_bt_response=False) # takes < 1ms
-        #await asyncio.sleep(0.1)  # 10ms playback interval x 10 frames per packet, sleep for 100ms
-        await asyncio.sleep(0.001)  # 1ms to reproduce crash
+        await asyncio.sleep(0.1)  # 10ms playback interval x 10 frames per packet, sleep for 100ms
 
     # 4. Send and play frame by frame (with bluetooth ACK for each write)
     # for i in range(0, len(data), frame_size):
