@@ -28,7 +28,7 @@ async def main():
 
     """
 
-    await b.upload_file(lua_script, "main.lua")
+    await b.upload_file_from_string(lua_script, "main.lua")
     await b.send_reset_signal()
 
     await asyncio.sleep(1)
