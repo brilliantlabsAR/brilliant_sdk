@@ -194,14 +194,14 @@ class FrameBle:
         except AttributeError:
             return 0
 
-    async def _transmit(self, data, show_me=False):
+    async def _transmit(self, data, show_me=False, await_bt_response=True):
         if show_me:
             print(data)  # TODO make this print nicer
 
         if len(data) > self._client.mtu_size - 3:
             raise Exception("payload length is too large")
 
-        await self._client.write_gatt_char(self._tx_characteristic, data, response=True)
+        await self._client.write_gatt_char(self._tx_characteristic, data, response=await_bt_response)
 
     async def send_lua(self, string: str, show_me=False, await_print=False, timeout=5):
         """
@@ -225,7 +225,7 @@ class FrameBle:
             except asyncio.TimeoutError:
                 raise Exception("device didn't respond")
 
-    async def send_data(self, data: bytearray, show_me=False, await_data=False, timeout=5):
+    async def send_data(self, data: bytearray, show_me=False, await_data=False, timeout=5, await_bt_response=True):
         """
         Sends raw data to the device. The payload length must be less than or
         equal to `max_data_payload()`.
@@ -238,7 +238,7 @@ class FrameBle:
         # set the awaiting status before we transmit
         self._awaiting_data_response = await_data
 
-        await self._transmit(bytearray(b"\x01") + data, show_me=show_me)
+        await self._transmit(bytearray(b"\x01") + data, show_me=show_me, await_bt_response=await_bt_response)
 
         if await_data:
             try:
