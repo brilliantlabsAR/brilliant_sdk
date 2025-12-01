@@ -1,0 +1,207 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXFileReference section */
+		6C1194FD2ECE0D4200966E06 /* attdet.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = attdet.c; sourceTree = "<group>"; };
+		6C1194FE2ECE0D4200966E06 /* makefile.mk */ = {isa = PBXFileReference; lastKnownFileType = text; path = makefile.mk; sourceTree = "<group>"; };
+		6C1194FF2ECE0D4200966E06 /* bwdet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bwdet.h; sourceTree = "<group>"; };
+		6C1195002ECE0D4200966E06 /* ltpf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ltpf.c; sourceTree = "<group>"; };
+		6C1195012ECE0D4200966E06 /* tables.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = tables.c; sourceTree = "<group>"; };
+		6C1195022ECE0D4200966E06 /* spec.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = spec.c; sourceTree = "<group>"; };
+		6C1195032ECE0D4200966E06 /* plc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = plc.c; sourceTree = "<group>"; };
+		6C1195042ECE0D4200966E06 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		6C1195052ECE0D4200966E06 /* energy.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = energy.c; sourceTree = "<group>"; };
+		6C1195062ECE0D4200966E06 /* lc3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lc3.h; sourceTree = "<group>"; };
+		6C1195072ECE0D4200966E06 /* lc3_private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lc3_private.h; sourceTree = "<group>"; };
+		6C1195082ECE0D4200966E06 /* sns.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sns.c; sourceTree = "<group>"; };
+		6C1195092ECE0D4200966E06 /* mdct.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mdct.c; sourceTree = "<group>"; };
+		6C11950A2ECE0D4200966E06 /* tns.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = tns.c; sourceTree = "<group>"; };
+		6C11950B2ECE0D4200966E06 /* bits.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bits.c; sourceTree = "<group>"; };
+		6C11950C2ECE0D4200966E06 /* fastmath.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fastmath.h; sourceTree = "<group>"; };
+		6C11950D2ECE0D4200966E06 /* meson.build */ = {isa = PBXFileReference; lastKnownFileType = text; path = meson.build; sourceTree = "<group>"; };
+		6C11950E2ECE0D4200966E06 /* spec.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = spec.h; sourceTree = "<group>"; };
+		6C11950F2ECE0D4200966E06 /* tables.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tables.h; sourceTree = "<group>"; };
+		6C1195102ECE0D4200966E06 /* ltpf.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ltpf.h; sourceTree = "<group>"; };
+		6C1195112ECE0D4200966E06 /* bwdet.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bwdet.c; sourceTree = "<group>"; };
+		6C1195122ECE0D4200966E06 /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
+		6C1195132ECE0D4200966E06 /* attdet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = attdet.h; sourceTree = "<group>"; };
+		6C1195142ECE0D4200966E06 /* lc3.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lc3.c; sourceTree = "<group>"; };
+		6C1195152ECE0D4200966E06 /* ltpf_neon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ltpf_neon.h; sourceTree = "<group>"; };
+		6C1195162ECE0D4200966E06 /* energy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = energy.h; sourceTree = "<group>"; };
+		6C1195172ECE0D4200966E06 /* plc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = plc.h; sourceTree = "<group>"; };
+		6C1195182ECE0D4200966E06 /* lc3_cpp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lc3_cpp.h; sourceTree = "<group>"; };
+		6C1195192ECE0D4200966E06 /* ltpf_arm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ltpf_arm.h; sourceTree = "<group>"; };
+		6C11951A2ECE0D4200966E06 /* mdct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mdct.h; sourceTree = "<group>"; };
+		6C11951B2ECE0D4200966E06 /* sns.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sns.h; sourceTree = "<group>"; };
+		6C11951C2ECE0D4200966E06 /* mdct_neon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mdct_neon.h; sourceTree = "<group>"; };
+		6C11951D2ECE0D4200966E06 /* bits.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bits.h; sourceTree = "<group>"; };
+		6C11951E2ECE0D4200966E06 /* tns.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tns.h; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		6C1194F72ECE0D4200966E06 = {
+			isa = PBXGroup;
+			children = (
+				6C1194FD2ECE0D4200966E06 /* attdet.c */,
+				6C1194FE2ECE0D4200966E06 /* makefile.mk */,
+				6C1194FF2ECE0D4200966E06 /* bwdet.h */,
+				6C1195002ECE0D4200966E06 /* ltpf.c */,
+				6C1195012ECE0D4200966E06 /* tables.c */,
+				6C1195022ECE0D4200966E06 /* spec.c */,
+				6C1195032ECE0D4200966E06 /* plc.c */,
+				6C1195042ECE0D4200966E06 /* CMakeLists.txt */,
+				6C1195052ECE0D4200966E06 /* energy.c */,
+				6C1195062ECE0D4200966E06 /* lc3.h */,
+				6C1195072ECE0D4200966E06 /* lc3_private.h */,
+				6C1195082ECE0D4200966E06 /* sns.c */,
+				6C1195092ECE0D4200966E06 /* mdct.c */,
+				6C11950A2ECE0D4200966E06 /* tns.c */,
+				6C11950B2ECE0D4200966E06 /* bits.c */,
+				6C11950C2ECE0D4200966E06 /* fastmath.h */,
+				6C11950D2ECE0D4200966E06 /* meson.build */,
+				6C11950E2ECE0D4200966E06 /* spec.h */,
+				6C11950F2ECE0D4200966E06 /* tables.h */,
+				6C1195102ECE0D4200966E06 /* ltpf.h */,
+				6C1195112ECE0D4200966E06 /* bwdet.c */,
+				6C1195122ECE0D4200966E06 /* common.h */,
+				6C1195132ECE0D4200966E06 /* attdet.h */,
+				6C1195142ECE0D4200966E06 /* lc3.c */,
+				6C1195152ECE0D4200966E06 /* ltpf_neon.h */,
+				6C1195162ECE0D4200966E06 /* energy.h */,
+				6C1195172ECE0D4200966E06 /* plc.h */,
+				6C1195182ECE0D4200966E06 /* lc3_cpp.h */,
+				6C1195192ECE0D4200966E06 /* ltpf_arm.h */,
+				6C11951A2ECE0D4200966E06 /* mdct.h */,
+				6C11951B2ECE0D4200966E06 /* sns.h */,
+				6C11951C2ECE0D4200966E06 /* mdct_neon.h */,
+				6C11951D2ECE0D4200966E06 /* bits.h */,
+				6C11951E2ECE0D4200966E06 /* tns.h */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXLegacyTarget section */
+		6C1194FC2ECE0D4200966E06 /* liblc3 */ = {
+			isa = PBXLegacyTarget;
+			buildArgumentsString = "$(ACTION)";
+			buildConfigurationList = 6C11951F2ECE0D4200966E06 /* Build configuration list for PBXLegacyTarget "liblc3" */;
+			buildPhases = (
+			);
+			buildToolPath = /usr/bin/make;
+			buildWorkingDirectory = /Users/citizenone/Projects/brilliant_sdk/flutter/packages/simple_brilliant_app/examples/audio_clip_lc3/native/liblc3;
+			dependencies = (
+			);
+			name = liblc3;
+			packageProductDependencies = (
+			);
+			passBuildSettingsInEnvironment = 1;
+			productName = liblc3;
+		};
+/* End PBXLegacyTarget section */
+
+/* Begin PBXProject section */
+		6C1194F82ECE0D4200966E06 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+			};
+			buildConfigurationList = 6C1194FB2ECE0D4200966E06 /* Build configuration list for PBXProject "liblc3" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 6C1194F72ECE0D4200966E06;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6C1194FC2ECE0D4200966E06 /* liblc3 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		6C1194F92ECE0D4200966E06 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Debug;
+		};
+		6C1194FA2ECE0D4200966E06 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
+				COPY_PHASE_STRIP = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				SDKROOT = macosx10.6;
+			};
+			name = Release;
+		};
+		6C1195202ECE0D4200966E06 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				DEBUGGING_SYMBOLS = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = liblc3;
+			};
+			name = Debug;
+		};
+		6C1195212ECE0D4200966E06 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = liblc3;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		6C1194FB2ECE0D4200966E06 /* Build configuration list for PBXProject "liblc3" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C1194F92ECE0D4200966E06 /* Debug */,
+				6C1194FA2ECE0D4200966E06 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6C11951F2ECE0D4200966E06 /* Build configuration list for PBXLegacyTarget "liblc3" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C1195202ECE0D4200966E06 /* Debug */,
+				6C1195212ECE0D4200966E06 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 6C1194F82ECE0D4200966E06 /* Project object */;
+}

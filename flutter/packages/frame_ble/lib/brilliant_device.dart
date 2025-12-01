@@ -202,23 +202,26 @@ class BrilliantDevice {
     }
   }
 
-  Future<void> sendData(List<int> data) async {
+  Future<void> sendData(List<int> data, {bool awaitBtResponse = true}) async {
     final Uint8List byteData = Uint8List.fromList(data..insert(0, 0x01));
-    await sendDataRawOnCharacteristic(byteData, txChannel!);
+    await sendDataRawOnCharacteristic(byteData, txChannel!, awaitBtResponse: awaitBtResponse, awaitAppResponse: true, validateHeader: true);
   }
 
-  Future<void> sendAudioData(Uint8List data) async {
+  Future<void> sendAudio(Uint8List data, {bool awaitBtResponse = false}) async {
     if (audioTxChannel != null) {
-      await sendDataRawOnCharacteristic(data, audioTxChannel!, awaitResponse: false);
+      await sendDataRawOnCharacteristic(data, audioTxChannel!, awaitBtResponse: awaitBtResponse, awaitAppResponse: false, validateHeader: false);
     }
   }
 
-  Future<void> sendDataRaw(Uint8List data) async {
-    await sendDataRawOnCharacteristic(data, txChannel!);
+  Future<void> sendDataRaw(Uint8List data, {bool awaitBtResponse = true}) async {
+    await sendDataRawOnCharacteristic(data, txChannel!, awaitBtResponse: awaitBtResponse, awaitAppResponse: true, validateHeader: true);
   }
 
   /// Same as sendData but user includes the 0x01 header byte to avoid extra memory allocation
-  Future<void> sendDataRawOnCharacteristic(Uint8List data, BluetoothCharacteristic char, {bool awaitResponse = true}) async {
+  /// awaitBtResponse indicates whether to wait for a bluetooth-level ack from the write operation (write-without-response/write-with-response)
+  /// awaitAppResponse indicates whether to wait for an application-level ack from the data handler on the device
+  /// validateHeader indicates whether to check that the first byte is 0x01 (true for data tx, false for audio)
+  Future<void> sendDataRawOnCharacteristic(Uint8List data, BluetoothCharacteristic char, {bool awaitBtResponse = true, bool awaitAppResponse = true, bool validateHeader = true}) async {
     try {
       _log.finer(() => "Sending ${data.length - 1} bytes of plain data");
       _log.finest(data);
@@ -231,16 +234,16 @@ class BrilliantDevice {
         throw ("Payload exceeds allowed length of ${maxDataLength! + 1}");
       }
 
-      if (data[0] != 0x01) {
+      if (validateHeader && data[0] != 0x01) {
         throw ("Data packet missing 0x01 header");
       }
 
-      if (awaitResponse) {
+      if (awaitAppResponse) {
         // Perform the write and wait for the application-level response concurrently.
         // This prevents a race condition where a very fast device could respond
         // before we start listening for it.
         await Future.wait([
-          char.write(data, withoutResponse: false),
+          char.write(data, withoutResponse: !awaitBtResponse),
           dataResponse
               .timeout(const Duration(seconds: 5), onTimeout: (event) {
                 throw const BrilliantBluetoothException("Timeout waiting for data response");
@@ -248,8 +251,8 @@ class BrilliantDevice {
               .first,
         ]);
       } else {
-        // don't wait for a bluetooth ack or an application-level ack
-        await char.write(data, withoutResponse: true);
+        // don't wait for an application-level ack, and a bluetooth-level ack only if requested
+        await char.write(data, withoutResponse: !awaitBtResponse);
       }
     } catch (error) {
       _log.warning("Couldn't send data. $error");
@@ -261,7 +264,7 @@ class BrilliantDevice {
   /// `[0x01 (dataFlag), messageFlag & 0xFF, {first packet: length(Uint16)}, payload(chunked)]`
   /// until all data in the payload is sent. Payload data cannot exceed 65535 bytes in length.
   /// Can be received by a corresponding Lua function on Frame.
-  Future<void> sendMessage(int msgCode, Uint8List payload) async {
+  Future<void> sendMessage(int msgCode, Uint8List payload, {bool awaitBtResponse = true}) async {
 
     if (payload.length > 65535) {
       return Future.error(const BrilliantBluetoothException(
@@ -347,8 +350,8 @@ class BrilliantDevice {
         }
       }
 
-      // send the chunk
-      await sendDataRaw(packetToSend);
+      // send the chunk, awaits the app-level ack
+      await sendDataRaw(packetToSend, awaitBtResponse: awaitBtResponse);
 
       bytesRemaining = payload.length - sentBytes;
       _log.finer(() => 'Bytes remaining: $bytesRemaining');

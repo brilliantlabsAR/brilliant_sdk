@@ -147,8 +147,8 @@ class BrilliantBluetooth {
     if (Platform.isAndroid) {
       // TODO in future Halo should be paired as well, but for now we only pair Frame
       // try to avoid the double pop-up on Android
-      //await device.createBond();
-      await device.requestMtu(512);
+      await device.createBond();
+      await device.requestMtu(517);
       await device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
       await device.setPreferredPhy(txPhy: (Phy.le2m.mask | Phy.le1m.mask), rxPhy: (Phy.le2m.mask | Phy.le1m.mask), option: PhyCoding.noPreferred);
     }
@@ -166,22 +166,23 @@ class BrilliantBluetooth {
         _log.fine("Found Service");
         finalDevice.maxStringLength = device.mtuNow - 3;
         finalDevice.maxDataLength = device.mtuNow - 4;
+        
         // initialize as Frame by default, override if Halo is detected
         finalDevice.type = BrilliantDeviceType.frame;
 
         // peek first to see if the device has a Halo characteristic with characteristic.characteristicUuid == Guid('7a230004-5475-a6a4-654c-8431f6ad49c4')
         // to override the type
-        if (service.characteristics.any((c) => c.characteristicUuid == Guid('7a230004-5475-a6a4-654c-8431f6ad49c4'))) {
+        if (service.characteristics.any((c) => c.characteristicUuid == Guid('7a230005-5475-a6a4-654c-8431f6ad49c4'))) {
           _log.fine("Device is a Halo");
           finalDevice.type = BrilliantDeviceType.halo;
         }
         else {
           _log.fine("Device is a Frame");
-          if (Platform.isAndroid) {
-            // try to avoid the double pop-up on Android
-            // TODO in future Halo should be paired as well, but for now we only pair Frame
-            await device.createBond();
-          }
+        }
+
+        // try to avoid the double pop-up on Android
+        if (Platform.isAndroid) {
+          await device.createBond();
         }
 
         for (var characteristic in service.characteristics) {
@@ -226,12 +227,9 @@ class BrilliantBluetooth {
             // }
           }
           if (characteristic.characteristicUuid ==
-              Guid('7a230004-5475-a6a4-654c-8431f6ad49c4')) {
+              Guid('7a230005-5475-a6a4-654c-8431f6ad49c4')) {
             _log.fine("Found Audio TX characteristic");
             finalDevice.audioTxChannel = characteristic;
-
-            finalDevice.type = BrilliantDeviceType.halo;
-            _log.fine("Device type: ${finalDevice.type}");
 
             // TODO Halo seems to report 517 but really might be less
             finalDevice.maxStringLength = finalDevice.maxStringLength! - 2;

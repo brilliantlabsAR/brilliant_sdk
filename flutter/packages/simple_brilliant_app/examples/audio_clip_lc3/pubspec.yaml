@@ -1,0 +1,39 @@
+name: audio_clip_lc3
+description: "Record streamed audio clips from the Brilliant Labs Frame into a list for review and playback"
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  frame_ble:
+    path: ../../../frame_ble
+  frame_msg:
+    path: ../../../frame_msg
+  logging: ^1.2.0
+  flutter_sound: ^9.28.0
+  share_plus: ^10.1.0
+  simple_frame_app:
+    # Note: We use a path dependency because the example apps & library packages are bundled together.
+    # In *your* app you should use a versioned dependency from pub.dev
+    path: ../../
+  ffi: ^2.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  test: ^1.21.0
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+  - packages/frame_msg/lua/battery.min.lua
+  - packages/frame_msg/lua/data.min.lua
+  - packages/frame_msg/lua/code.min.lua
+  - packages/frame_msg/lua/plain_text.min.lua
+  - assets/frame_app.lua
+  - assets/female_w1_8k_s16.lc3
