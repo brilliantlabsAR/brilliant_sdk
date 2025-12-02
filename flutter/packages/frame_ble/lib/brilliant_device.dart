@@ -118,13 +118,21 @@ class BrilliantDevice {
     }
   }
 
-  /// Checks if Lua is running by sending a simple print command and expecting no response.
-  /// If Lua is running, it will not respond to the print command within the short timeout, and we return true.
-  /// If Lua is not running, it will respond with the printed output and we return false.
-  Future<bool> isLuaRunning() async{
-    final response = await sendString("print(1)", awaitResponse: true, log: true)
-        .timeout(const Duration(milliseconds: 200), onTimeout: () => null);
-    return response == null;
+  /// Checks if Lua is in the REPL/break by sending a simple print command and expecting a response.
+  /// If Lua is in the REPL/break state, it will respond with the printed output and we return true.
+  /// If a Lua main loop is running, it will not respond to the print command within the short timeout, and we return false.
+  Future<bool> isLuaInReplState({Duration timeout = const Duration(milliseconds: 200)}) async{
+    try {
+      final response = await sendString("print(1)", awaitResponse: true, log: false);
+      return response != null && response == "1";
+    } on BrilliantBluetoothException catch (e) {
+      if (e.msg == "Timeout waiting for string response") {
+        return false;
+      }
+      else {
+        rethrow;
+      }
+    }
   }
 
   Future<void> sendBreakSignal() async {
@@ -157,6 +165,7 @@ class BrilliantDevice {
     String string, {
     bool awaitResponse = true,
     bool log = true,
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     try {
       if (log) {
@@ -182,7 +191,9 @@ class BrilliantDevice {
       Future<String>? responseFuture;
       if (awaitResponse) {
         responseFuture = rx!.onValueReceived
-            .timeout(const Duration(seconds: 10))
+            .timeout(timeout, onTimeout: (event) {
+                throw const BrilliantBluetoothException("Timeout waiting for string response");
+            })
             .first
             .then((response) => utf8.decode(response));
       }
@@ -202,9 +213,9 @@ class BrilliantDevice {
     }
   }
 
-  Future<void> sendData(List<int> data, {bool awaitBtResponse = true}) async {
+  Future<void> sendData(List<int> data, {bool awaitBtResponse = true, Duration timeout = const Duration(seconds: 5)}) async {
     final Uint8List byteData = Uint8List.fromList(data..insert(0, 0x01));
-    await sendDataRawOnCharacteristic(byteData, txChannel!, awaitBtResponse: awaitBtResponse, awaitAppResponse: true, validateHeader: true);
+    await sendDataRawOnCharacteristic(byteData, txChannel!, awaitBtResponse: awaitBtResponse, awaitAppResponse: true, validateHeader: true, timeout: timeout);
   }
 
   Future<void> sendAudio(Uint8List data, {bool awaitBtResponse = false}) async {
@@ -213,15 +224,16 @@ class BrilliantDevice {
     }
   }
 
-  Future<void> sendDataRaw(Uint8List data, {bool awaitBtResponse = true}) async {
-    await sendDataRawOnCharacteristic(data, txChannel!, awaitBtResponse: awaitBtResponse, awaitAppResponse: true, validateHeader: true);
+  Future<void> sendDataRaw(Uint8List data, {bool awaitBtResponse = true, Duration timeout = const Duration(seconds: 5)}) async {
+    await sendDataRawOnCharacteristic(data, txChannel!, awaitBtResponse: awaitBtResponse, awaitAppResponse: true, validateHeader: true, timeout: timeout);
   }
 
   /// Same as sendData but user includes the 0x01 header byte to avoid extra memory allocation
   /// awaitBtResponse indicates whether to wait for a bluetooth-level ack from the write operation (write-without-response/write-with-response)
   /// awaitAppResponse indicates whether to wait for an application-level ack from the data handler on the device
   /// validateHeader indicates whether to check that the first byte is 0x01 (true for data tx, false for audio)
-  Future<void> sendDataRawOnCharacteristic(Uint8List data, BluetoothCharacteristic char, {bool awaitBtResponse = true, bool awaitAppResponse = true, bool validateHeader = true}) async {
+  /// timeout indicates how long to wait for the application-level ack before timing out
+  Future<void> sendDataRawOnCharacteristic(Uint8List data, BluetoothCharacteristic char, {bool awaitBtResponse = true, bool awaitAppResponse = true, bool validateHeader = true, Duration timeout = const Duration(seconds: 5)}) async {
     try {
       _log.finer(() => "Sending ${data.length - 1} bytes of plain data");
       _log.finest(data);
@@ -245,7 +257,7 @@ class BrilliantDevice {
         await Future.wait([
           char.write(data, withoutResponse: !awaitBtResponse),
           dataResponse
-              .timeout(const Duration(seconds: 5), onTimeout: (event) {
+              .timeout(timeout, onTimeout: (event) {
                 throw const BrilliantBluetoothException("Timeout waiting for data response");
               })
               .first,
