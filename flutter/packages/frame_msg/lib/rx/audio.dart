@@ -108,7 +108,9 @@ class RxAudio {
           // start or middle of an audio stream
           if (data[0] == nonFinalChunkFlag) {
             _log.finer(() => 'Non-final: ${data.length}');
-            assert(data.length % 2 == 1); // whole 16-bit pcm samples only (plus msgCode in data[0] makes it odd)
+            if (data.length % 2 != 1) {
+              _log.severe('Unexpected odd length audio data payload chunk received: ${data.length - 1}');
+            }
             _controller!.add(Uint8List.fromList(data.skip(1).toList()));
           }
           // the last chunk has a first byte of finalChunkFlag so stop after this
