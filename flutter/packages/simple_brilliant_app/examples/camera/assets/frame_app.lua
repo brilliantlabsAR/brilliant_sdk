@@ -22,7 +22,7 @@ data.parsers[CLICK_SUBS_MSG] = code.parse_code
 
 -- Frame to Phone flags
 TAP_MSG = 0x09
-CLICK_MSG = 0x06
+CLICK_MSG = 0x0B
 
 function handle_tap()
 	rc, err = pcall(frame.bluetooth.send, string.char(TAP_MSG))
