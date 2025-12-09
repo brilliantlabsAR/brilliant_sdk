@@ -239,10 +239,15 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
     // perform app-specific cleanup
     await onCancel();
 
-    // let Frame know to stop sending taps/clicks
+    // let Frame/Halo know to stop sending taps/clicks
     final code = TxCode(value: 0);
-    await frame!.sendMessage(0x10, code.pack());
-    await frame!.sendMessage(0x11, code.pack());
+
+    if (frame!.type == BrilliantDeviceType.frame) {
+      await frame!.sendMessage(0x10, code.pack());
+    }
+    else {
+      await frame!.sendMessage(0x11, code.pack());
+    }
 
     // clear the display
     final plainText = TxPlainText(text: ' ');
