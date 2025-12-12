@@ -1,7 +1,7 @@
 name: sprite_viewer
 description: "Basic image and sprite viewer for Brilliant Labs Halo and Frame"
 publish_to: 'none'
-version: 0.1.0
+version: 0.1.0+2
 
 environment:
   sdk: '>=3.6.0 <4.0.0'
