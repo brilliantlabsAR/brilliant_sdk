@@ -46,28 +46,44 @@ function app_loop()
 
 						-- it can be that we haven't got any sprites yet, so only proceed if we have a sprite
 						if isb.current_sprite_index > 0 then
-							-- either we have all the sprites, or we want to do progressive/incremental rendering
-							if isb.progressive_render or (isb.active_sprites == isb.total_sprites) then
 
-								for index = 1, isb.active_sprites do
-									local spr = isb.sprites[index]
-									local y_offset = isb.sprite_line_height * (index - 1)
+							if frame.HARDWARE_VERSION == 'Frame' then
+								-- horizontally centre the image
+								local width = math.min(isb.width, 640)
+								local x_offset = (640 - width) // 2 + 1
+								print(string.format("width = %d, height = %d, x_offset = %d", isb.width, isb.height, x_offset))
 
-									if frame.HARDWARE_VERSION == 'Frame' then
+								-- either we have all the sprites, or we want to do progressive/incremental rendering
+								if isb.progressive_render or (isb.active_sprites == isb.total_sprites) then
+
+									for index = 1, isb.active_sprites do
+										local spr = isb.sprites[index]
+										local y_offset = isb.sprite_line_height * (index - 1)
+
 										-- set the palette the first time, all the sprites should have the same palette
 										if index == 1 then
 											image_sprite_block.set_palette(spr.num_colors, spr.palette_data)
 										end
 
-										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
-									else
-										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+										frame.display.bitmap(x_offset, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
 									end
-								end
-								if frame.HARDWARE_VERSION == 'Frame' then
 									frame.display.show()
 								end
+
+							else -- Halo
+								-- horizontally centre the image
+								local width = math.min(isb.width, 320)
+								local x_offset = (320 - width) // 2 + 1
+								print(string.format("width = %d, height = %d, x_offset = %d", isb.width, isb.height, x_offset))
+
+								for index = 1, isb.active_sprites do
+									local spr = isb.sprites[index]
+									local y_offset = isb.sprite_line_height * (index - 1)
+
+									frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+								end
 							end
+
 						end
 					end
 
