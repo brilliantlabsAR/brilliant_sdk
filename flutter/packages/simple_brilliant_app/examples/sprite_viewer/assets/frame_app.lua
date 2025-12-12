@@ -27,6 +27,7 @@ function app_loop()
 
 	if frame.HARDWARE_VERSION ~= 'Frame' then
 		frame.display.set_brightness(50)
+		frame.display.power_save(false)
 	end
 
     print('Frame App Started')
@@ -80,7 +81,7 @@ function app_loop()
 									local spr = isb.sprites[index]
 									local y_offset = isb.sprite_line_height * (index - 1)
 
-									frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+									frame.display.bitmap(x_offset, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
 								end
 							end
 
