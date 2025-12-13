@@ -22,12 +22,12 @@ function _M.set_palette(num_colors, palette_data)
 	for i=1,num_colors do
 		local col_offset = (i - 1) * 3
 
-		-- Frame indexes are the color names, Halo indexes are 1-16
+		-- Frame indexes are the color names, Halo indexes are 0-15
 		local index
 		if frame.HARDWARE_VERSION == 'Frame' then
 			index = colors[i]
 		else
-			index = i
+			index = i - 1
 		end
 
 		frame.display.assign_color(index,
