@@ -2,6 +2,7 @@ import asyncio
 from PIL import Image
 import io
 
+from frame_ble import BrilliantDeviceType
 from frame_msg import FrameMsg, RxPhoto, TxCaptureSettings
 
 async def main():
@@ -42,7 +43,7 @@ async def main():
         # From this point we do message-passing with first-class types and send_message() (or send_data())
 
         # hook up the RxPhoto receiver
-        rx_photo = RxPhoto()
+        rx_photo = RxPhoto(upright=frame.ble.type == BrilliantDeviceType.FRAME)
         photo_queue = await rx_photo.attach(frame)
 
         # give the frame some time for the autoexposure loop to run (50 times; every 0.1s)
