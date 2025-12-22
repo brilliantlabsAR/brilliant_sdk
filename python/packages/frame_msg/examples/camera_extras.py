@@ -1,8 +1,9 @@
 import asyncio
+import io
 import traceback
-import sys
-from pathlib import Path
-from frame_msg import FrameMsg, RxPhoto, TxCaptureSettings
+from PIL import Image
+from frame_ble import BrilliantDeviceType
+from frame_msg import FrameMsg, RxPhoto
 
 async def main():
     frame = FrameMsg()
@@ -10,21 +11,42 @@ async def main():
         await frame.connect()
 
         lua_script = '''
+        print('App Started')
         require('camera_extras')
 
         -- Capture a frame with the enhancements of this library
-        capture()
+        if true then
+            frame.camera.power_save(false)
+            local start_time = frame.time.utc()
+
+            --local pipeline = {}
+            --frame.camera.mpix.op.debayer_3x3(pipeline)
+            --frame.camera.mpix.op.jpeg_encode(pipeline)
+            --frame.camera.mpix.set_pipeline(pipeline)
+            frame.camera.capture{resolution=640, quality='VERY_HIGH'}
+            while not frame.camera.image_ready() do
+                frame.sleep(0.005)
+            end
+
+            local end_time = frame.time.utc()
+            print(string.format("Capture and processing time: %.2f seconds", end_time - start_time))
+
+
+        else
+            capture()
+        end
 
         -- Transfer the frame over Bluetooth as it is read
         MTU = frame.bluetooth.max_length()
         while true do
-            data = frame.camera.read(MTU // 2 - 1)
-            if data == nil then break end
-            print(tohex(data))
+            data = frame.camera.read(MTU - 1)
+            if data == nil then
+                frame.bluetooth.send('\x08')
+                break
+            elseif data ~= '' then
+                frame.bluetooth.send('\x07' .. data)
+            end
         end
-
-        print('END')
-        sleep(0.3)
         '''
 
         # Send the library dependencies
@@ -36,12 +58,23 @@ async def main():
         # attach the print response handler so we can see stdout from Frame Lua print() statements
         frame.attach_print_response_handler()
 
+        # hook up the RxPhoto receiver
+        rx_photo = RxPhoto(upright=frame.ble.type == BrilliantDeviceType.FRAME)
+        photo_queue = await rx_photo.attach(frame)
+
         # "require" the main frame_app lua file to run it, and block until it has started.
         await frame.start_frame_app()
 
-	# Wait for 5 seconds that the script runs
-        await asyncio.sleep(30.0)
+        # get the jpeg bytes as soon as they're ready
+        jpeg_bytes = await asyncio.wait_for(photo_queue.get(), timeout=20.0)
+        print("Received photo data from Frame: length =", len(jpeg_bytes))
 
+        # display the image in the system viewer
+        image = Image.open(io.BytesIO(jpeg_bytes))
+        image.show()
+
+        # stop the photo receiver and clean up its resources
+        rx_photo.detach(frame)
         # unhook the print handler
         frame.detach_print_response_handler()
 
