@@ -2,6 +2,7 @@ import asyncio
 import io
 import traceback
 from PIL import Image
+import qoi
 from frame_ble import BrilliantDeviceType
 from frame_msg import FrameMsg, RxPhoto
 
@@ -15,28 +16,38 @@ async def main():
         require('camera_extras')
 
         -- Capture a frame with the enhancements of this library
-        if true then
-            frame.camera.power_save(false)
-            local start_time = frame.time.utc()
+        frame.camera.power_save(false)
 
-            --local pipeline = {}
-            --frame.camera.mpix.op.debayer_3x3(pipeline)
-            --frame.camera.mpix.op.jpeg_encode(pipeline)
-            --frame.camera.mpix.set_pipeline(pipeline)
-            frame.camera.capture{resolution=640, quality='VERY_HIGH'}
-            while not frame.camera.image_ready() do
-                frame.sleep(0.005)
-            end
+        local start_time = frame.time.utc()
+        local pipeline = {}
 
-            local end_time = frame.time.utc()
-            print(string.format("Capture and processing time: %.2f seconds", end_time - start_time))
+        --frame.camera.mpix.op.crop(pipeline, 312, 232, 16, 16)
+        frame.camera.mpix.op.debayer_2x2(pipeline)
+        frame.camera.mpix.op.correct_black_level(pipeline)
+        frame.camera.mpix.op.correct_white_balance(pipeline)
+        --frame.camera.mpix.op.kernel_denoise_3x3(pipeline) -- +24 seconds?
 
+        frame.camera.mpix.op.jpeg_encode(pipeline)
+        --frame.camera.mpix.op.qoi_encode(pipeline)
 
-        else
-            capture()
+        frame.camera.mpix.set_pipeline(pipeline)
+        frame.camera.capture{resolution=640, quality='VERY_HIGH'}
+
+        while not frame.camera.image_ready() do
+            frame.sleep(0.1)
         end
 
+        stats = frame.camera.mpix.get_stats()
+
+        -- from camera_extras.lua helper
+        auto_black_level(stats)
+        auto_white_balance(stats)
+
+        local end_time = frame.time.utc()
+        print(string.format("Capture and processing time: %.2f seconds", end_time - start_time))
+
         -- Transfer the frame over Bluetooth as it is read
+        start_time = frame.time.utc()
         MTU = frame.bluetooth.max_length()
         while true do
             data = frame.camera.read(MTU - 1)
@@ -47,6 +58,8 @@ async def main():
                 frame.bluetooth.send('\x07' .. data)
             end
         end
+        end_time = frame.time.utc()
+        print(string.format("Bluetooth transfer time: %.2f seconds", end_time - start_time))
         '''
 
         # Send the library dependencies
@@ -65,17 +78,23 @@ async def main():
         # "require" the main frame_app lua file to run it, and block until it has started.
         await frame.start_frame_app()
 
-        # get the jpeg bytes as soon as they're ready
-        jpeg_bytes = await asyncio.wait_for(photo_queue.get(), timeout=20.0)
-        print("Received photo data from Frame: length =", len(jpeg_bytes))
+        # get the image bytes as soon as they're ready
+        image_bytes = await asyncio.wait_for(photo_queue.get(), timeout=40.0)
+        print("Received photo data from Frame: length =", len(image_bytes))
 
-        # display the image in the system viewer
-        image = Image.open(io.BytesIO(jpeg_bytes))
+        # decode and display the image in the system viewer
+        if False: # enable for QOI
+            rgb_array = qoi.decode(image_bytes)
+            image = Image.fromarray(rgb_array)
+        else:
+            image = Image.open(io.BytesIO(image_bytes))
+
         image.show()
 
         # stop the photo receiver and clean up its resources
         rx_photo.detach(frame)
-        # unhook the print handler
+        # unhook the print handler after waiting a moment for the bluetooth transfer time message
+        await asyncio.sleep(1.0)
         frame.detach_print_response_handler()
 
         # break out of the frame app loop and reboot Frame
