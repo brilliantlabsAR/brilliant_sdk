@@ -22,11 +22,19 @@ async def main():
         local pipeline = {}
 
         --frame.camera.mpix.op.crop(pipeline, 312, 232, 16, 16)
+
         frame.camera.mpix.op.debayer_2x2(pipeline)
         frame.camera.mpix.op.correct_black_level(pipeline)
         frame.camera.mpix.op.correct_white_balance(pipeline)
+
+        -- denoising
         --frame.camera.mpix.op.kernel_denoise_3x3(pipeline) -- +24 seconds?
 
+        -- palettization
+        --frame.camera.mpix.op.palette_encode(pipeline, frame.camera.mpix.fmt.PALETTE4)
+        --frame.camera.mpix.op.palette_decode(pipeline)
+
+        -- pick the output encoding
         frame.camera.mpix.op.jpeg_encode(pipeline)
         --frame.camera.mpix.op.qoi_encode(pipeline)
 
