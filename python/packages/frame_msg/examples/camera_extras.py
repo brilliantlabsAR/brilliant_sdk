@@ -29,7 +29,7 @@ async def main():
         print("Received photo data from Frame: length =", len(image_bytes))
 
         # decode and display the image in the system viewer
-        if False: # enable for QOI (also change lua/camera_extras.lua to output QOI)
+        if False: # enable for QOI (also change lua/camera_extras_frame_app.lua to output QOI)
             rgb_array = qoi.decode(image_bytes)
             image = Image.fromarray(rgb_array)
         else:
