@@ -11,70 +11,8 @@ async def main():
     try:
         await frame.connect()
 
-        lua_script = '''
-        print('App Started')
-        require('camera_extras')
-
-        -- Capture a frame with the enhancements of this library
-        frame.camera.power_save(false)
-
-        local start_time = frame.time.utc()
-        local pipeline = {}
-
-        --frame.camera.mpix.op.crop(pipeline, 312, 232, 16, 16)
-
-        frame.camera.mpix.op.debayer_2x2(pipeline)
-        frame.camera.mpix.op.correct_black_level(pipeline)
-        frame.camera.mpix.op.correct_white_balance(pipeline)
-
-        -- denoising
-        --frame.camera.mpix.op.kernel_denoise_3x3(pipeline) -- +24 seconds?
-
-        -- palettization
-        --frame.camera.mpix.op.palette_encode(pipeline, frame.camera.mpix.fmt.PALETTE4)
-        --frame.camera.mpix.op.palette_decode(pipeline)
-
-        -- pick the output encoding
-        frame.camera.mpix.op.jpeg_encode(pipeline)
-        --frame.camera.mpix.op.qoi_encode(pipeline)
-
-        frame.camera.mpix.set_pipeline(pipeline)
-        frame.camera.capture{resolution=640, quality='VERY_HIGH'}
-
-        while not frame.camera.image_ready() do
-            frame.sleep(0.1)
-        end
-
-        stats = frame.camera.mpix.get_stats()
-
-        -- from camera_extras.lua helper
-        auto_black_level(stats)
-        auto_white_balance(stats)
-
-        local end_time = frame.time.utc()
-        print(string.format("Capture and processing time: %.2f seconds", end_time - start_time))
-
-        -- Transfer the frame over Bluetooth as it is read
-        start_time = frame.time.utc()
-        MTU = frame.bluetooth.max_length()
-        while true do
-            data = frame.camera.read(MTU - 1)
-            if data == nil then
-                frame.bluetooth.send('\x08')
-                break
-            elseif data ~= '' then
-                frame.bluetooth.send('\x07' .. data)
-            end
-        end
-        end_time = frame.time.utc()
-        print(string.format("Bluetooth transfer time: %.2f seconds", end_time - start_time))
-        '''
-
-        # Send the library dependencies
-        await frame.upload_stdlua_libs(lib_names=['camera_extras'], minified=False)
-
         # Send the main lua application from this project to Frame that will run the app
-        await frame.upload_file_from_string(lua_script, "frame_app.lua")
+        await frame.upload_frame_app(local_filename="lua/camera_extras_frame_app.lua")
 
         # attach the print response handler so we can see stdout from Frame Lua print() statements
         frame.attach_print_response_handler()
@@ -91,7 +29,7 @@ async def main():
         print("Received photo data from Frame: length =", len(image_bytes))
 
         # decode and display the image in the system viewer
-        if False: # enable for QOI
+        if False: # enable for QOI (also change lua/camera_extras.lua to output QOI)
             rgb_array = qoi.decode(image_bytes)
             image = Image.fromarray(rgb_array)
         else:

@@ -111,3 +111,66 @@ function tohex(data)
     for i = 1, #data do hex = hex .. string.format('%02x', data:byte(i)) end
     return hex
 end
+
+
+-- Main program
+print('App Started')
+
+frame.camera.power_save(false)
+
+local start_time = frame.time.utc()
+
+-- Capture a frame with the enhancements of this library
+local pipeline = {}
+
+-- optional cropping
+--frame.camera.mpix.op.crop(pipeline, 312, 232, 16, 16)
+
+frame.camera.mpix.op.debayer_2x2(pipeline)
+frame.camera.mpix.op.correct_black_level(pipeline)
+frame.camera.mpix.op.correct_white_balance(pipeline)
+
+-- denoising
+--frame.camera.mpix.op.kernel_denoise_3x3(pipeline) -- +24 seconds?
+
+-- palettization
+--frame.camera.mpix.op.palette_encode(pipeline, frame.camera.mpix.fmt.PALETTE4)
+--frame.camera.mpix.op.palette_decode(pipeline)
+
+-- pick the output encoding
+frame.camera.mpix.op.jpeg_encode(pipeline)
+--frame.camera.mpix.op.qoi_encode(pipeline)
+
+frame.camera.mpix.set_pipeline(pipeline)
+frame.camera.capture{resolution=640, quality='VERY_HIGH'}
+
+-- wait for capture and processing to complete
+while not frame.camera.image_ready() do
+   frame.sleep(0.1)
+end
+
+-- set the controls based on the stats
+stats = frame.camera.mpix.get_stats()
+auto_black_level(stats)
+auto_white_balance(stats)
+
+local end_time = frame.time.utc()
+print(string.format("Capture and processing time: %.2f seconds", end_time - start_time))
+
+-- Transfer the frame over Bluetooth as it is read
+start_time = frame.time.utc()
+
+local image_mtu = frame.bluetooth.max_length() - 1
+local image_data = nil
+while true do
+   image_data = frame.camera.read(image_mtu)
+   if image_data == nil then
+         frame.bluetooth.send('\x08')
+         break
+   elseif image_data ~= '' then
+         frame.bluetooth.send('\x07' .. image_data)
+   end
+end
+
+end_time = frame.time.utc()
+print(string.format("Bluetooth transfer time: %.2f seconds", end_time - start_time))
