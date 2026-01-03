@@ -3,83 +3,21 @@ from PIL import Image
 import io
 import cv2
 import numpy as np
-import threading
-import queue
 
 from frame_msg import FrameMsg, RxPhoto, TxCaptureSettings
-
-class ImageDisplayThread:
-    def __init__(self, window_name="Camera Feed"):
-        self.window_name = window_name
-        self.image_queue = queue.Queue(maxsize=1)
-        self.running = True
-        self.thread = threading.Thread(target=self.run)
-        self.thread.daemon = True
-        
-    def start(self):
-        self.thread.start()
-        
-    def stop(self):
-        self.running = False
-        if self.thread.is_alive():
-            self.thread.join(timeout=1.0)
-        cv2.destroyAllWindows()
-        
-    def update_image(self, jpeg_bytes):
-        try:
-            # Replace old image with new one
-            if self.image_queue.full():
-                try:
-                    self.image_queue.get_nowait()
-                except queue.Empty:
-                    pass
-            self.image_queue.put_nowait(jpeg_bytes)
-        except queue.Full:
-            pass  # Skip frame if queue is full
-    
-    def run(self):
-        cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
-        
-        while self.running:
-            try:
-                # Check if there's a new image
-                try:
-                    jpeg_bytes = self.image_queue.get(timeout=0.1)
-                    
-                    # Convert PIL Image to OpenCV format
-                    pil_image = Image.open(io.BytesIO(jpeg_bytes))
-                    cv_image = np.array(pil_image)
-                    # Convert RGB to BGR (OpenCV uses BGR)
-                    if cv_image.shape[2] == 3:  # If it has 3 channels
-                        cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
-                    
-                    # Display image
-                    cv2.imshow(self.window_name, cv_image)
-                except queue.Empty:
-                    pass
-                
-                # Process events and check for key press
-                key = cv2.waitKey(10) & 0xFF
-                if key == 27:  # ESC key
-                    self.running = False
-                    break
-                    
-            except Exception as e:
-                print(f"Error in display thread: {e}")
-                break
+from frame_ble import BrilliantDeviceType
 
 async def main():
     """
     Take photos continuously using the Frame camera and display them in an OpenCV window
     """
     frame = None
-    display_thread = None
     rx_photo = None
+    window_name = "Camera Feed"
     
     try:
-        # Initialize display thread
-        display_thread = ImageDisplayThread()
-        display_thread.start()
+        # Initialize OpenCV Window on Main Thread
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
         
         frame = FrameMsg()
         await frame.connect()
@@ -108,30 +46,57 @@ async def main():
 
         # give the frame some time for the autoexposure loop to run
         print("Letting autoexposure loop run for 5 seconds to settle")
-        await asyncio.sleep(5.0)
-        print("Starting continuous capture")
+        
+        # We process the UI loop during the sleep to prevent "spinning wheel"
+        for _ in range(50):
+            await asyncio.sleep(0.1)
+            cv2.waitKey(1)
+
+        print("Starting continuous capture - Ctrl+C to stop")
 
         # Main capture loop
         capture_count = 0
         while True:
-            if not display_thread.running:
-                print("Display window closed, exiting...")
+            # Check if window was closed via 'X' button
+            if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
+                print("Window closed, exiting...")
                 break
-                
+
             # Request a photo
-            await frame.send_message(0x0d, TxCaptureSettings(resolution=720).pack())
+            resolution: int = 720 if frame.ble.type == BrilliantDeviceType.FRAME else 640
+            await frame.send_message(0x0d, TxCaptureSettings(resolution=resolution).pack())
             
-            # get the jpeg bytes
-            jpeg_bytes = await asyncio.wait_for(photo_queue.get(), timeout=10.0)
+            try:
+                # Wait for image with short timeout to keep UI responsive
+                # If the image takes > 0.1s, we catch TimeoutError, update UI, and wait again
+                jpeg_bytes = await asyncio.wait_for(photo_queue.get(), timeout=0.1)
+                
+                # Convert PIL Image to OpenCV format
+                pil_image = Image.open(io.BytesIO(jpeg_bytes))
+                cv_image = np.array(pil_image)
+                
+                # Convert RGB to BGR (OpenCV uses BGR)
+                if cv_image.shape[2] == 3:
+                    cv_image = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
+                
+                # Display image
+                cv2.imshow(window_name, cv_image)
+                
+                capture_count += 1
+                print(f"Captured frame {capture_count}", end="\r")
+
+            except asyncio.TimeoutError:
+                # No frame arrived yet, just continue to keep UI alive
+                pass
             
-            # Update the display
-            display_thread.update_image(jpeg_bytes)
+            # Pump OpenCV events (Required for Mac GUI)
+            # waitKey(1) blocks for 1ms. 
+            key = cv2.waitKey(1) & 0xFF
+            if key == 27:  # ESC key
+                break
             
-            capture_count += 1
-            print(f"Captured frame {capture_count}", end="\r")
-            
-            # Small delay between captures
-            await asyncio.sleep(0.1)  # Adjust this value as needed
+            # Small yield to let other async tasks run
+            await asyncio.sleep(0.01)
             
     except asyncio.CancelledError:
         print("\nCapture loop cancelled")
@@ -140,14 +105,13 @@ async def main():
     finally:
         # Clean up resources
         print("\nCleaning up resources...")
+        cv2.destroyAllWindows()
         if rx_photo and frame:
             rx_photo.detach(frame)
         if frame:
             frame.detach_print_response_handler()
             await frame.stop_frame_app()
             await frame.disconnect()
-        if display_thread:
-            display_thread.stop()
 
 if __name__ == "__main__":
     try:
