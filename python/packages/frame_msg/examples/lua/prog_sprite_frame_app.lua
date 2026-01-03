@@ -34,7 +34,7 @@ end
 function app_loop()
 	if frame.HARDWARE_VERSION ~= 'Frame' then
 		frame.display.power_save(false)
-		frame.display.set_brightness(50)
+		frame.display.set_brightness(-2)
 	end
 
 	print('Frame App Started')
