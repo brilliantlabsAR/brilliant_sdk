@@ -9,7 +9,7 @@ async def main():
 
         # initialize Halo display
         if frame._type == BrilliantDeviceType.HALO:
-            await frame.send_lua("frame.display.power_save(false);frame.display.set_brightness(50);print(0)", await_print=True)
+            await frame.send_lua("frame.display.power_save(false);frame.display.brightness(25);print(0)", await_print=True)
 
         # Print "Hello, Frame!" on the Frame display
         # wait for a printed string to come back from Frame to ensure the Lua has executed, not just that the command was sent successfully

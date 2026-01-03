@@ -12,26 +12,27 @@ async def set_palette(f: FrameBle, palette_data: bytes):
         chunk = palette_data[i:i+3]
         if len(chunk) == 3:  # only process complete RGB triples
             r, g, b = chunk
-            await f.send_lua(f"frame.display.assign_color({i//3+1},{r},{g},{b})print(0)", await_print=True)
+            await f.send_lua(f"frame.display.assign_color({i//3},{r},{g},{b})print(0)", await_print=True)
     return 
 
 async def restore_default_palette(frame: FrameBle):
     # Set the palette back to the firmware default
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(1, 0, 4, 4);print(0)", await_print=True) # VOID
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(2, 15, 4, 4);print(0)", await_print=True) # WHITE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(3, 7, 4, 4);print(0)", await_print=True) # GREY
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(4, 5, 3, 6);print(0)", await_print=True) # RED
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(5, 9, 3, 5);print(0)", await_print=True) # PINK
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(6, 2, 2, 5);print(0)", await_print=True) # DARKBROWN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(7, 4, 2, 5);print(0)", await_print=True) # BROWN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(8, 9, 2, 5);print(0)", await_print=True) # ORANGE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(9, 13, 2, 4);print(0)", await_print=True) # YELLOW
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(10, 4, 4, 3);print(0)", await_print=True) # DARKGREEN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(12, 10, 1, 3);print(0)", await_print=True) # LIGHTGREEN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(13, 1, 5, 2);print(0)", await_print=True) # NIGHTBLUE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(14, 4, 5, 2);print(0)", await_print=True) # SEABLUE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(15, 8, 5, 2);print(0)", await_print=True) # SKYBLUE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(16, 13, 4, 3);print(0)", await_print=True) # CLOUDBLUE
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(0, 0, 4, 4);print(0)", await_print=True) # VOID
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(1, 15, 4, 4);print(0)", await_print=True) # WHITE
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(2, 7, 4, 4);print(0)", await_print=True) # GREY
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(3, 5, 3, 6);print(0)", await_print=True) # RED
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(4, 9, 3, 5);print(0)", await_print=True) # PINK
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(5, 2, 2, 5);print(0)", await_print=True) # DARKBROWN
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(6, 4, 2, 5);print(0)", await_print=True) # BROWN
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(7, 9, 2, 5);print(0)", await_print=True) # ORANGE
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(8, 13, 2, 4);print(0)", await_print=True) # YELLOW
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(9, 4, 4, 3);print(0)", await_print=True) # DARKGREEN
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(10, 6, 2, 3);print(0)", await_print=True) # GREEN
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(11, 10, 1, 3);print(0)", await_print=True) # LIGHTGREEN
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(12, 1, 5, 2);print(0)", await_print=True) # NIGHTBLUE
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(13, 4, 5, 2);print(0)", await_print=True) # SEABLUE
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(14, 8, 5, 2);print(0)", await_print=True) # SKYBLUE
+    await frame.send_lua(f"frame.display.assign_color_ycbcr(15, 13, 4, 3);print(0)", await_print=True) # CLOUDBLUE
     print("Default palette set.")
 
 async def main():
@@ -46,7 +47,7 @@ async def main():
             return print("This script is for Halo only")
             
         # initialize Halo display
-        await frame.send_lua("frame.display.power_save(false);frame.display.set_brightness(50);frame.display.clear();print(0)", await_print=True)
+        await frame.send_lua("frame.display.power_save(false);frame.display.brightness(25);frame.display.clear();print(0)", await_print=True)
 
         # debug only: check our current battery level and memory usage (which varies between 16kb and 31kb or so even after the VM init)
         batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)
