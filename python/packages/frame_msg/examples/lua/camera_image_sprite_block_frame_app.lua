@@ -11,9 +11,12 @@ data.parsers[CAPTURE_SETTINGS_MSG] = camera.parse_capture_settings
 data.parsers[IMAGE_SPRITE_BLOCK] = image_sprite_block.parse_image_sprite_block
 
 function clear_display()
-    frame.display.text(" ", 1, 1)
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
 end
 
 function show_flash()
@@ -29,6 +32,8 @@ function app_loop()
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
+
+	frame.camera.power_save(false)
 
 	while true do
         rc, err = pcall(
@@ -69,14 +74,16 @@ function app_loop()
 										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
 								end
 
-								frame.display.show()
+								if frame.HARDWARE_VERSION == 'Frame' then
+									frame.display.show()
+								end
 							end
 						end
 					end
 
 				end
 
-				if camera.is_auto_exp then
+				if frame.HARDWARE_VERSION == 'Frame' and camera.is_auto_exp then
 					camera.run_auto_exposure()
 				end
 
@@ -87,8 +94,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream
 			print(err)
-			frame.display.text(" ", 1, 1)
-			frame.display.show()
+			clear_display()
 			frame.sleep(0.04)
 			break
 		end

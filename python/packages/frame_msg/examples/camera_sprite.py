@@ -1,6 +1,7 @@
 import asyncio
 
 from frame_msg import FrameMsg, RxPhoto, TxCaptureSettings, TxSprite, TxImageSpriteBlock
+from frame_ble import BrilliantDeviceType
 
 async def main():
     """
@@ -43,7 +44,8 @@ async def main():
         photo_queue = await rx_photo.attach(frame)
 
         # Request the photo capture
-        await frame.send_message(0x0d, TxCaptureSettings(resolution=720, quality_index=0).pack())
+        resolution: int = 720 if frame.ble.type == BrilliantDeviceType.FRAME else 640
+        await frame.send_message(0x0d, TxCaptureSettings(resolution=resolution, quality_index=0).pack())
 
         # get the jpeg bytes as soon as they're ready
         jpeg_bytes = await asyncio.wait_for(photo_queue.get(), timeout=10.0)
