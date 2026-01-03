@@ -34,6 +34,9 @@ function app_loop()
 	print('Frame app is running')
 
 	frame.camera.power_save(false)
+	frame.display.power_save(false)
+	local new_image = true
+	local drawn_index = 0
 
 	while true do
         rc, err = pcall(
@@ -62,25 +65,55 @@ function app_loop()
 							-- either we have all the sprites, or we want to do progressive/incremental rendering
 							if isb.progressive_render or (isb.active_sprites == isb.total_sprites) then
 
-								for index = 1, isb.active_sprites do
+								-- on Frame, each draw call starts blank, so draw all sprites 1..n
+								if frame.HARDWARE_VERSION == 'Frame' then
+
+									for index = 1, isb.active_sprites do
+											local spr = isb.sprites[index]
+											local y_offset = isb.sprite_line_height * (index - 1)
+
+											-- set the palette the first time, all the sprites should have the same palette
+											if index == 1 then
+												image_sprite_block.set_palette(spr.num_colors, spr.palette_data)
+											end
+
+											frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
+									end
+									frame.display.show()
+
+									if isb.active_sprites == isb.total_sprites then
+										data.app_data[IMAGE_SPRITE_BLOCK] = nil
+									end
+								else
+									if new_image then
+										-- clear the display first, Halo doesn't automatically clear
+										frame.display.clear()
+										new_image = false
+									end
+
+									-- On Halo, draw calls are additive, so just draw the latest sprite(s)
+									for index = drawn_index + 1, isb.active_sprites do
 										local spr = isb.sprites[index]
 										local y_offset = isb.sprite_line_height * (index - 1)
 
-										-- set the palette the first time, all the sprites should have the same palette
 										if index == 1 then
-												image_sprite_block.set_palette(spr.num_colors, spr.palette_data)
+											-- set the palette the first time, all the sprites should have the same palette
+											image_sprite_block.set_palette(spr.num_colors, spr.palette_data)
 										end
 
 										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
-								end
+										drawn_index = index
 
-								if frame.HARDWARE_VERSION == 'Frame' then
-									frame.display.show()
+										if drawn_index == isb.total_sprites then
+											data.app_data[IMAGE_SPRITE_BLOCK] = nil
+											new_image = true
+											drawn_index = 0
+										end
+									end
 								end
 							end
 						end
 					end
-
 				end
 
 				if frame.HARDWARE_VERSION == 'Frame' and camera.is_auto_exp then

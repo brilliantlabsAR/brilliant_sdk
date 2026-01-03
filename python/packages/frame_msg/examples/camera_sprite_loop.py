@@ -2,9 +2,9 @@ import asyncio
 from PIL import Image
 import io
 import numpy as np
-import keyboard
 
 from frame_msg import FrameMsg, RxPhoto, TxCaptureSettings, TxSprite, TxImageSpriteBlock
+from frame_ble import BrilliantDeviceType
 
 async def main():
     """
@@ -47,54 +47,62 @@ async def main():
         photo_queue = await rx_photo.attach(frame)
 
         # compute the capture msg once
-        capture_msg_bytes = TxCaptureSettings(resolution=256, quality_index=0, pan=-40).pack()
+        resolution: int = 256 if frame.ble.type == BrilliantDeviceType.FRAME else 640
 
-        key_pressed = False
+        capture_msg_bytes = TxCaptureSettings(resolution=resolution, quality_index=0, pan=-40).pack()
 
-        # key press handler for stopping the loop
-        def on_key_press(event):
-            nonlocal key_pressed
-            key_pressed = True
+        print("Camera capture/display loop starting: Press Ctrl+C to quit")
 
-        keyboard.hook(on_key_press)  # Listen for key presses
+        while True:
 
-        print("Camera capture/display loop starting: Press 'q' to quit")
+            try:
+                # Request the photo capture
+                await frame.send_message(0x0d, capture_msg_bytes)
 
-        while not key_pressed:
+                # get the jpeg bytes as soon as they're ready
+                jpeg_bytes = await asyncio.wait_for(photo_queue.get(), timeout=10.0)
 
-            # Request the photo capture
-            await frame.send_message(0x0d, capture_msg_bytes)
+                # load the image with PIL
+                image = Image.open(io.BytesIO(jpeg_bytes))
 
-            # get the jpeg bytes as soon as they're ready
-            jpeg_bytes = await asyncio.wait_for(photo_queue.get(), timeout=10.0)
+                # if Halo device, crop to 256x256 center square
+                if frame.ble.type == BrilliantDeviceType.HALO:
+                    width, height = image.size
+                    new_size = 256
+                    left = (width - new_size) / 2
+                    top = (height - new_size) / 2
+                    right = (width + new_size) / 2
+                    bottom = (height + new_size) / 2
+                    image = image.crop((left, top, right, bottom))
 
-            # load the image with PIL
-            image = Image.open(io.BytesIO(jpeg_bytes))
-            # '1': black and white with dither
-            image = image.convert('1')
+                # '1': black and white with dither
+                image = image.convert('1')
 
-            # regrettably need to unpack the nicely packed bits into bytes
-            data_array = np.frombuffer(image.tobytes(), dtype=np.uint8)
-            unpacked = np.unpackbits(data_array)
+                # regrettably need to unpack the nicely packed bits into bytes
+                data_array = np.frombuffer(image.tobytes(), dtype=np.uint8)
+                unpacked = np.unpackbits(data_array)
 
-            # extract pixel data from unpacked.tobytes() at 1bpp and create TxSprite manually
-            sprite = TxSprite(width=256,
-                            height=256,
-                            num_colors=2,
-                            palette_data=bytes([0,0,0,255,255,255]),
-                            pixel_data=unpacked.tobytes())
+                # extract pixel data from unpacked.tobytes() at 1bpp and create TxSprite manually
+                sprite = TxSprite(width=256,
+                                height=256,
+                                num_colors=2,
+                                palette_data=bytes([0,0,0,255,255,255]),
+                                pixel_data=unpacked.tobytes())
 
-            # Quantize and send the image to Frame in chunks as an ImageSpriteBlock rendered progressively
-            # Note that the frameside app is expecting a message of type TxImageSpriteBlock on msgCode 0x20
-            isb = TxImageSpriteBlock(sprite, sprite_line_height=32)
+                # Quantize and send the image to Frame in chunks as an ImageSpriteBlock rendered progressively
+                # Note that the frameside app is expecting a message of type TxImageSpriteBlock on msgCode 0x20
+                isb = TxImageSpriteBlock(sprite, sprite_line_height=32)
 
-            # send the Image Sprite Block header
-            await frame.send_message(0x20, isb.pack())
+                # send the Image Sprite Block header
+                await frame.send_message(0x20, isb.pack())
 
-            # then send all the slices
-            for spr in isb.sprite_lines:
-                await frame.send_message(0x20, spr.pack())
+                # then send all the slices
+                for spr in isb.sprite_lines:
+                    await frame.send_message(0x20, spr.pack())
 
+            except asyncio.CancelledError:
+                print(f"Loop cancelled, exiting")
+                break
 
         # stop the photo receiver and clean up its resources
         rx_photo.detach(frame)
