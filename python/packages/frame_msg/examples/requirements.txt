@@ -4,6 +4,5 @@ bleak
 numpy
 pillow
 lz4
-keyboard
 opencv-python
 pvspeaker
