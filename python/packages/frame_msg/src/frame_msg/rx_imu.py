@@ -14,17 +14,17 @@ class SensorBuffer:
     """Buffer class to provide smoothed moving average of samples"""
     def __init__(self, max_size: int):
         self.max_size = max_size
-        self._buffer: list[Tuple[int, int, int]] = []
+        self._buffer: list[Tuple[float, float, float]] = []
 
-    def add(self, value: Tuple[int, int, int]) -> None:
+    def add(self, value: Tuple[float, float, float]) -> None:
         self._buffer.append(value)
         if len(self._buffer) > self.max_size:
             self._buffer.pop(0)
 
     @property
-    def average(self) -> Tuple[int, int, int]:
+    def average(self) -> Tuple[float, float, float]:
         if not self._buffer:
-            return (0, 0, 0)
+            return (0.0, 0.0, 0.0)
 
         sum_x = sum(x for x, _, _ in self._buffer)
         sum_y = sum(y for _, y, _ in self._buffer)
@@ -39,13 +39,13 @@ class SensorBuffer:
 
 @dataclass
 class IMURawData:
-    compass: Tuple[int, int, int]
-    accel: Tuple[int, int, int]
+    compass: Tuple[float, float, float]
+    accel: Tuple[float, float, float]
 
 @dataclass
 class IMUData:
-    compass: Tuple[int, int, int]
-    accel: Tuple[int, int, int]
+    compass: Tuple[float, float, float]
+    accel: Tuple[float, float, float]
     raw: Optional[IMURawData] = None
 
     @property
@@ -87,8 +87,8 @@ class RxIMU:
             _log.warning("Received data but queue not initialized - call start() first")
             return
 
-        # Parse six signed 16-bit integers from the data starting at offset 2
-        values = struct.unpack('<6h', data[2:14])
+        # Parse six 32-bit floats from the data starting at offset 2
+        values = struct.unpack('<6f', data[2:26])
 
         # Extract compass and accelerometer values
         raw_compass = (values[0], values[1], values[2])
