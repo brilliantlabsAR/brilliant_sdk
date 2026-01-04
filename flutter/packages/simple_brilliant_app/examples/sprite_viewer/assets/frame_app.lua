@@ -26,6 +26,7 @@ function app_loop()
     local last_batt_update = 0
 
 	if frame.HARDWARE_VERSION ~= 'Frame' then
+		-- TODO update to brightness(50) not set_brightness() from 0.7.0+
 		frame.display.set_brightness(50)
 		frame.display.power_save(false)
 	end
@@ -72,16 +73,18 @@ function app_loop()
 								end
 
 							else -- Halo
-								-- horizontally centre the image
+								-- horizontally and vertically centre the image
 								local width = math.min(isb.width, 320)
 								local x_offset = (320 - width) // 2 + 1
-								print(string.format("width = %d, height = %d, x_offset = %d", isb.width, isb.height, x_offset))
+								local height = math.min(isb.height, 240)
+								local y_offset = (240 - height) // 2 + 1
+								print(string.format("width = %d, height = %d, x_offset = %d, y_offset = %d", isb.width, isb.height, x_offset, y_offset))
 
 								for index = 1, isb.active_sprites do
 									local spr = isb.sprites[index]
-									local y_offset = isb.sprite_line_height * (index - 1)
+									local y_offset_line = isb.sprite_line_height * (index - 1) + y_offset
 
-									frame.display.bitmap(x_offset, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+									frame.display.bitmap(x_offset, y_offset_line + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
 								end
 							end
 
@@ -96,12 +99,9 @@ function app_loop()
 				end
 
 				-- periodic battery level updates
-				-- TODO work out what's happening with the Halo clock
-				if frame.HARDWARE_VERSION == 'Frame' then
-					last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
-				end
+				last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
 				-- can't sleep for long, might be lots of incoming bluetooth data to process
-				frame.sleep(0.001)
+				frame.sleep(0.01)
 			end
 		)
 		-- Catch the break signal here and clean up the display
