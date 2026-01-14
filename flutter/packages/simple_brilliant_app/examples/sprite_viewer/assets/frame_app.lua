@@ -73,10 +73,10 @@ function app_loop()
 
 							else -- Halo
 								-- horizontally and vertically centre the image
-								local width = math.min(isb.width, 320)
-								local x_offset = (320 - width) // 2 + 1
-								local height = math.min(isb.height, 240)
-								local y_offset = (240 - height) // 2 + 1
+								local width = math.min(isb.width, 256)
+								local x_offset = (256 - width) // 2 + 1
+								local height = math.min(isb.height, 256)
+								local y_offset = (256 - height) // 2 + 1
 								print(string.format("width = %d, height = %d, x_offset = %d, y_offset = %d", isb.width, isb.height, x_offset, y_offset))
 
 								for index = 1, isb.active_sprites do

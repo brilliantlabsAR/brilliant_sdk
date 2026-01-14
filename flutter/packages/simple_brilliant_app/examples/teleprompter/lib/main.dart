@@ -64,10 +64,10 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         // Read the file content
         String content = await file.readAsString();
       
-        var layout = CircularTextLayout(width: 320, height: 240,
+        var layout = CircularTextLayout(width: 256, height: 256,
                         circleMargin: 10.0,
                         fontSize: _textSizeValues[_textSizeIndex]);
-        // var layout = RectangularTextLayout(width: 320, height: 240,
+        // var layout = RectangularTextLayout(width: 256, height: 256,
         //                 fontSize: _textSizeValues[_textSizeIndex],
         //                 textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
 
@@ -257,7 +257,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                 // insert an image of the current TextSpriteBlock here
                 if (_currentPage >= 0 && _pngBytes.isNotEmpty)
                   Center(
-                    child: Image.memory(_pngBytes, width: 320, height: 240, fit: BoxFit.contain),
+                    child: Image.memory(_pngBytes, width: 256, height: 256, fit: BoxFit.contain),
                   ),
                 const Spacer(),
               ],
