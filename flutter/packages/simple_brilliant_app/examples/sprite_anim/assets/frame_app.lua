@@ -39,7 +39,7 @@ function app_loop()
 	local all_sprites = {}
 
 	if frame.HARDWARE_VERSION ~= 'Frame' then
-		frame.display.set_brightness(0)
+		frame.display.brightness(50)
 		-- special background color for this animation
 		frame.display.clear(0x18309C)
 	end

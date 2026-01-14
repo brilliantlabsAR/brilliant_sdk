@@ -26,8 +26,7 @@ function app_loop()
     local last_batt_update = 0
 
 	if frame.HARDWARE_VERSION ~= 'Frame' then
-		-- TODO update to brightness(50) not set_brightness() from 0.7.0+
-		--frame.display.set_brightness(50)
+		frame.display.brightness(50)
 		frame.display.power_save(false)
 	end
 

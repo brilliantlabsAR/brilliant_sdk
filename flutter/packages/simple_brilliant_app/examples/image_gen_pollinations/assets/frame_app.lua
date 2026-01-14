@@ -50,7 +50,7 @@ end
 -- Main app loop
 function app_loop()
 	if frame.HARDWARE_VERSION ~= "Frame" then
-		frame.display.set_brightness(30)
+		frame.display.brightness(30)
 	end
 
 	-- clear the display
