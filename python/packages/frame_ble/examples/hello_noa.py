@@ -18,7 +18,7 @@ async def main():
             # 4 colours, darkest to lightest
             cols = [0x000000, 0x61A4EA, 0x72B5F9, 0x9FCBFF, 0xECF3FF]
             for i in range(0, 4):
-                await frame.send_lua(f"frame.display.text('NOA', 150, {44-i}, {cols[i+1]});print(0)", await_print=True)
+                await frame.send_lua(f"frame.display.text('NOA', 110, {30-i}, {cols[i+1]});print(0)", await_print=True)
 
             # website font bitmap
             N = [0b11000110, 0b11100110, 0b11110110, 0b11011110, 0b11001110, 0b11000110]
@@ -40,9 +40,9 @@ async def main():
             palette_str = "".join([f"\\x{(c>>16)&0xFF:02X}\\x{(c>>8)&0xFF:02X}\\x{(c>>0)&0xFF:02X}" for c in cols])
             print(f"palette: {palette_str}")
 
-            # send the bitmap to the display (288 wide, x=1+16..320-16 to center horizontally, 108 high, y=1+66..240-66 to center vertically, )
+            # send the bitmap to the display (240 wide, x=1+8..256-8 to center horizontally, 60+30 high, y=1+45..256-45 to center vertically, )
             for i in range(0, 4):
-                await frame.send_lua(f"frame.display.bitmap(17, {67+48-i*12}, 24, 2, {i}, '{bitmap_str}', {{x_scale=12, y_scale=12, palette_data='{palette_str}'}});print(0)", await_print=True, show_me=True)
+                await frame.send_lua(f"frame.display.bitmap(9, {46+40-i*10}, 24, 2, {i}, '{bitmap_str}', {{x_scale=10, y_scale=10, palette_data='{palette_str}'}});print(0)", await_print=True, show_me=True)
 
         else:
             await frame.send_lua("frame.display.text('Hello, Frame!', 1, 1);frame.display.show();print(0)", await_print=True)
