@@ -11,11 +11,12 @@ import 'brilliant_scanned_device.dart';
 final _log = Logger("Bluetooth");
 
 class BrilliantBluetooth {
-
   static Future<void> requestPermission() async {
     try {
       // make sure the adapter is ready (iOS in particular)
-      await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+      await FlutterBluePlus.adapterState
+          .where((val) => val == BluetoothAdapterState.on)
+          .first;
       await FlutterBluePlus.startScan();
       await FlutterBluePlus.stopScan();
     } catch (error) {
@@ -27,7 +28,9 @@ class BrilliantBluetooth {
   static Stream<BrilliantScannedDevice> scan() async* {
     try {
       // make sure the adapter is ready (iOS in particular)
-      await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+      await FlutterBluePlus.adapterState
+          .where((val) => val == BluetoothAdapterState.on)
+          .first;
 
       _log.info("Starting to scan for devices");
       await FlutterBluePlus.startScan(
@@ -109,6 +112,25 @@ class BrilliantBluetooth {
     try {
       _log.info(() => "Will re-connect to device: $uuid once found");
 
+      // First, check if the device is already connected at the system level
+      try {
+        final connectedDevices = await FlutterBluePlus.systemDevices([
+          Guid('7a230001-5475-a6a4-654c-8431f6ad49c4'),
+          Guid('fe59'),
+        ]);
+        for (final device in connectedDevices) {
+          if (device.remoteId.str == uuid) {
+            _log.info(
+              () => "Reusing existing system connection for device: $uuid",
+            );
+            return await enableServices(device);
+          }
+        }
+      } catch (e) {
+        _log.fine(() => "Could not query system-connected devices: $e");
+      }
+
+      // Device is not system-connected, proceed with normal reconnect flow
       BluetoothDevice device = BluetoothDevice.fromId(uuid);
 
       await device.connect(
@@ -119,10 +141,12 @@ class BrilliantBluetooth {
         mtu: null,
       );
 
-      final connectionState = await device.connectionState.firstWhere((state) =>
-          state == BluetoothConnectionState.connected ||
-          (state == BluetoothConnectionState.disconnected &&
-              device.disconnectReason != null));
+      final connectionState = await device.connectionState.firstWhere(
+        (state) =>
+            state == BluetoothConnectionState.connected ||
+            (state == BluetoothConnectionState.disconnected &&
+                device.disconnectReason != null),
+      );
 
       _log.info(() => "Found reconnectable device: $uuid");
 
@@ -169,16 +193,18 @@ class BrilliantBluetooth {
 
             finalDevice.maxStringLength = device.mtuNow - 3;
             finalDevice.maxDataLength = device.mtuNow - 4;
-            _log.fine(() => "Max string length: ${finalDevice.maxStringLength}");
+            _log.fine(
+              () => "Max string length: ${finalDevice.maxStringLength}",
+            );
             _log.fine(() => "Max data length: ${finalDevice.maxDataLength}");
           }
         }
       }
-       if (service.serviceUuid == Guid('fe59')) {
+      if (service.serviceUuid == Guid('fe59')) {
         _log.fine("Found DFU service");
         finalDevice.state = BrilliantConnectionState.dfuConnected;
         return finalDevice;
-       }
+      }
     }
 
     // TODO ugly hack: need to work out what to await here to ensure the Frame is ready
