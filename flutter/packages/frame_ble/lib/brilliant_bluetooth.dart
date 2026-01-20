@@ -105,30 +105,54 @@ class BrilliantBluetooth {
     }
   }
 
+  /// This is a public method so apps can query real connection status on demand.
+  static Future<BluetoothDevice?> getSystemConnectedDevice(String uuid) async {
+    try {
+      final connectedDevices = await FlutterBluePlus.systemDevices([
+        Guid('7a230001-5475-a6a4-654c-8431f6ad49c4'),
+        Guid('fe59'),
+      ]);
+      for (final device in connectedDevices) {
+        if (device.remoteId.str == uuid) {
+          _log.info(() => "Device $uuid is already system-connected");
+          return device;
+        }
+      }
+    } catch (e) {
+      _log.fine(() => "Could not query system-connected devices: $e");
+    }
+    return null;
+  }
+
   static Future<BrilliantDevice> reconnect(String uuid) async {
     try {
       _log.info(() => "Will re-connect to device: $uuid once found");
 
+      // First, check if the device is already connected at the system level
+      BluetoothDevice? existingDevice = await getSystemConnectedDevice(uuid);
+      if (existingDevice != null) {
+        _log.info(() => "Reusing existing system connection for device: $uuid");
+        // Device is already connected, just enable services and return
+        return await enableServices(existingDevice);
+      }
+
+      // Device is not system-connected, proceed with normal reconnect flow
       BluetoothDevice device = BluetoothDevice.fromId(uuid);
 
       await device.connect(
         // note: changed so that sdk users (apps) directly specify reconnect behaviour
         // otherwise there are spurious reconnects even after programmatically disconnecting
         timeout: const Duration(days: 365),
-        //autoConnect: true,
         autoConnect: Platform.isIOS ? true : false,
         mtu: null,
-      ).catchError((e) {
-          _log.info(() => "Error connecting: ${e.toString()}");
-        }
       );
 
-      final connectionState = await device.connectionState.firstWhere((state) {
-          _log.info(() => "Connection state: $state, reason: ${device.disconnectReason?.description}");
-          return state == BluetoothConnectionState.connected ||
-          (state == BluetoothConnectionState.disconnected &&
-              device.disconnectReason != null);
-      });
+      final connectionState = await device.connectionState.firstWhere(
+        (state) =>
+            state == BluetoothConnectionState.connected ||
+            (state == BluetoothConnectionState.disconnected &&
+                device.disconnectReason != null),
+      );
 
       _log.info(() => "Found reconnectable device: $uuid");
 
