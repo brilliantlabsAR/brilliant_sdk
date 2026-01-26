@@ -58,6 +58,7 @@ sfxr.WAVEFORM = {
 -- @field 22050 22.05 kHz (`= 22050`)
 -- @field 44100 44.1 kHz (`= 44100`)
 sfxr.SAMPLERATE = {
+  [16000] = 16000, --- 16 kHz
   [22050] = 22050, --- 22.05 kHz
   [44100] = 44100 --- 44.1 kHz
 }
@@ -487,6 +488,8 @@ end
 function sfxr.Sound:generate(rate, depth)
     rate = rate or 44100
     depth = depth or 0
+    local ratio = rate / 44100
+
     assert(sfxr.SAMPLERATE[rate], "invalid sampling rate: " .. tostring(rate))
     assert(sfxr.BITDEPTH[depth], "invalid bit depth: " .. tostring(depth))
 
@@ -510,8 +513,8 @@ function sfxr.Sound:generate(rate, depth)
 
     --- Reset the sound period
     local function reset()
-        fperiod = 100 / (self.frequency.start^2 + 0.001)
-        maxperiod = 100 / (self.frequency.min^2 + 0.001)
+        fperiod = 100 / (self.frequency.start^2 + 0.001) * ratio
+        maxperiod = 100 / (self.frequency.min^2 + 0.001) * ratio
         period = trunc(fperiod)
 
         slide = 1.0 - self.frequency.slide^3 * 0.01
@@ -530,7 +533,7 @@ function sfxr.Sound:generate(rate, depth)
         if self.change.speed == 1 then
             chg_limit = 0
         else
-            chg_limit = trunc((1 - self.change.speed)^2 * 20000 + 32)
+            chg_limit = trunc(((1 - self.change.speed)^2 * 20000 + 32) * ratio)
         end
     end
 
@@ -569,7 +572,7 @@ function sfxr.Sound:generate(rate, depth)
     local vib_amp = self.vibrato.depth * 0.5
 
     local rep_time = 0
-    local rep_limit = trunc((1 - self.repeatspeed)^2 * 20000 + 32)
+    local rep_limit = trunc(((1 - self.repeatspeed)^2 * 20000 + 32) * ratio)
     if self.repeatspeed == 0 then
         rep_limit = 0
     end
@@ -731,18 +734,6 @@ function sfxr.Sound:generate(rate, depth)
         -- Hard limit
         ssample = clamp(ssample, -1, 1)
 
-        -- Frequency conversion
-        second_sample = not second_sample
-        if rate == 22050 and second_sample then
-            -- hah!
-            local nsample = next()
-            if nsample then
-                return (ssample + nsample) / 2
-            else
-                return nil
-            end
-        end
-
         -- bit conversions
         if depth == 0 then
             return ssample
@@ -763,12 +754,13 @@ end
 -- @raise "invalid sampling rate: x", "invalid bit depth: x"
 function sfxr.Sound:getEnvelopeLimit(rate)
     rate = rate or 44100
+    local ratio = rate / 44100
     assert(sfxr.SAMPLERATE[rate], "invalid sampling rate: " .. tostring(rate))
 
     local env_length = {
-        self.envelope.attack^2 * 100000, --- attack
-        self.envelope.sustain^2 * 100000, --- sustain
-        self.envelope.decay^2 * 100000 --- decay
+        self.envelope.attack^2 * 100000 * ratio, --- attack
+        self.envelope.sustain^2 * 100000 * ratio, --- sustain
+        self.envelope.decay^2 * 100000 * ratio --- decay
     }
     local limit = trunc(env_length[1] + env_length[2] + env_length[3] + 2)
 
