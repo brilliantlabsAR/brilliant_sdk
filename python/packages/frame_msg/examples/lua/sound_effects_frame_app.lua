@@ -17,6 +17,34 @@ function clear_display()
 	end
 end
 
+function randomize_sound(sound)
+	local random_choice = math.random(1, 7)
+	if random_choice == 1 then
+		sound:randomPickup()
+		print("Pickup!")
+	elseif random_choice == 2 then
+		sound:randomLaser()
+		print("Laser!")
+	elseif random_choice == 3 then
+		sound:randomExplosion()
+		print("Explosion!")
+	elseif random_choice == 4 then
+		sound:randomPowerup()
+		print("Powerup!")
+	elseif random_choice == 5 then
+		sound:randomHit()
+		print("Hit!")
+	elseif random_choice == 6 then
+		sound:randomJump()
+		print("Jump!")
+	elseif random_choice == 7 then
+		sound:randomBlip()
+		print("Blip!")
+	else
+		sound:randomExplosion()
+	end
+end
+
 -- Main app loop
 function app_loop()
 	clear_display()
@@ -63,7 +91,7 @@ function app_loop()
 								local one_period = table.concat(samples)
 
 								local repeat_count = math.ceil(rate / period) -- play enough periods for 1 second
-								for j = 1, repeat_count * 2 do
+								for j = 1, repeat_count do
 									frame.speaker.play(one_period)
 									frame.sleep(period/rate) -- yield to allow speaker buffer to drain
 								end
@@ -71,46 +99,38 @@ function app_loop()
 								-- Clear samples table and force garbage collection
 								local num_samples = #samples
 								for i=1, num_samples do samples[i]=nil end
-								collectgarbage('collect')
 							
 							elseif code.value == 3 then
 								print("Playing random sfxr sound effect")
-
-								local samples = {}
-								local pack = string.pack
 
 								print("New sound")
 								local sound = sfxr.newSound()
 								sound.waveform = sfxr.WAVEFORM.SQUARE
 
 								print("Randomizing sound")
-								sound:randomJump()
+								randomize_sound(sound)
 								sound.supersampling = 8
 
 								print("Generating and playing sound")
-								local gen = sound:generate(16000, 16)
-								local done = false
-								for loop = 1, 1 do -- in case we can generate and play in chunks without stuttering
-									for i = 1, 10000 do
-										local next_sample = gen()
-										if next_sample == nil then
-											done = true
-											break
-										end
-										samples[i] = pack("<i2", math.floor(next_sample))
-									end
-
-									frame.speaker.play(table.concat(samples))
-									
-									-- Clear samples table and force garbage collection
-									local num_samples = #samples
-									for i=1, num_samples do samples[i]=nil end
-									collectgarbage('collect')
-									if done then
+								local pack = string.pack
+								local t = {}
+								local i = 1
+								for v in sound:generate(16000, 16) do
+									t[i] = pack("<i2", math.floor(v))
+									i = i + 1
+									-- due to memory constraints, we need to bail after 20kB
+									if i > 10000 then
 										break
 									end
 								end
+								print("Sound generated")
+								frame.speaker.play(table.concat(t))
+								print("Sound played")
+								local num_samples = #t
+								for n=1, num_samples do t[n]=nil end
 							end
+
+							collectgarbage('collect')
 						else
 							frame.display.text('Speaker not available on Frame', 1, 1)
 							frame.display.show()

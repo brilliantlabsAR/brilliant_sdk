@@ -52,11 +52,11 @@ async def main():
         await frame.send_message(0x42, TxCode(2).pack())
         await asyncio.sleep(5.0)
 
-        for _ in range(3):
+        for _ in range(10):
             # Send the code to play one random sound effect
             # Note that the frameside app is expecting a message of type TxCode on msgCode 0x42
             await frame.send_message(0x42, TxCode(3).pack())
-            await asyncio.sleep(5.0)
+            await asyncio.sleep(8.0)
 
         # start the speaker
         await frame.send_message(0x42, TxCode(0).pack())
