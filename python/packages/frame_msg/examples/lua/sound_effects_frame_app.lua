@@ -56,7 +56,7 @@ function app_loop()
 								local period = math.floor(rate / pitch) -- samples in one period
 								
 								for i = 1, period do
-									local raw_num = math.sin(i * step_size) * 16384 -- scale to half volume signed 16-bit range
+									local raw_num = math.sin(i * step_size) * 8192 -- scale to quarter volume signed 16-bit range
 									local int_val = math.floor(raw_num)
 									samples[i] = pack("<i2", int_val)
 								end
@@ -85,12 +85,13 @@ function app_loop()
 
 								print("Randomizing sound")
 								sound:randomJump()
+								sound.supersampling = 8
 
 								print("Generating and playing sound")
-								local gen = sound:generate(44100, 16)
+								local gen = sound:generate(16000, 16)
 								local done = false
-								for loop = 1, 1000 do
-									for i = 1, 10 do
+								for loop = 1, 1 do -- in case we can generate and play in chunks without stuttering
+									for i = 1, 10000 do
 										local next_sample = gen()
 										if next_sample == nil then
 											done = true
