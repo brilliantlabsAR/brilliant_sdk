@@ -3,10 +3,15 @@ local code = require('code.min')
 local sfxr = require('sfxr')
 
 -- Phone to Frame flags
-USER_CODE_FLAG = 0x42
+local USER_CODE_FLAG = 0x42
+local SFXR_FLAG = 0x43
+
+local SAMPLE_RATE = 8000
+local BIT_DEPTH = 16
 
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[USER_CODE_FLAG] = code.parse_code
+data.parsers[SFXR_FLAG] = sfxr.parse_sfxr
 
 function clear_display()
 	if frame.HARDWARE_VERSION == 'Frame' then
@@ -68,7 +73,7 @@ function app_loop()
 						if frame.HARDWARE_VERSION ~= 'Frame' then
 							if code.value == 1 then
 								print("Starting speaker")
-								frame.speaker.start{encoder='pcm', sample_rate=16000, bit_depth=16, channels=1}
+								frame.speaker.start{encoder='pcm', sample_rate=SAMPLE_RATE, bit_depth=BIT_DEPTH, channels=1}
 							
 							elseif code.value == 0 then
 								print("Stopping speaker")
@@ -77,11 +82,10 @@ function app_loop()
 							elseif code.value == 2 then
 								print("Playing sine wave tone")
 								local pitch = 880 -- A5
-								local rate = 16000
 								local samples = {}
 								local pack = string.pack
-								local step_size = (2 * math.pi * pitch) / rate -- 440 Hz tone at 16 kHz sample rate
-								local period = math.floor(rate / pitch) -- samples in one period
+								local step_size = (2 * math.pi * pitch) / SAMPLE_RATE -- 880 Hz tone at 8 kHz sample rate
+								local period = math.floor(SAMPLE_RATE / pitch) -- samples in one period
 								
 								for i = 1, period do
 									local raw_num = math.sin(i * step_size) * 8192 -- scale to quarter volume signed 16-bit range
@@ -90,10 +94,10 @@ function app_loop()
 								end
 								local one_period = table.concat(samples)
 
-								local repeat_count = math.ceil(rate / period) -- play enough periods for 1 second
+								local repeat_count = math.ceil(SAMPLE_RATE / period) -- play enough periods for 1 second
 								for j = 1, repeat_count do
 									frame.speaker.play(one_period)
-									frame.sleep(period/rate) -- yield to allow speaker buffer to drain
+									frame.sleep(period/SAMPLE_RATE) -- yield to allow speaker buffer to drain
 								end
 									
 								-- Clear samples table and force garbage collection
@@ -109,17 +113,17 @@ function app_loop()
 
 								print("Randomizing sound")
 								randomize_sound(sound)
-								sound.supersampling = 8
+								sound.supersampling = 4
 
 								print("Generating and playing sound")
 								local pack = string.pack
 								local t = {}
 								local i = 1
-								for v in sound:generate(16000, 16) do
+								for v in sound:generate(SAMPLE_RATE, BIT_DEPTH) do
 									t[i] = pack("<i2", math.floor(v))
 									i = i + 1
-									-- due to memory constraints, we need to bail after 20kB
-									if i > 10000 then
+									-- due to memory constraints, let's bail after 10kB
+									if i > 5000 then
 										break
 									end
 								end
@@ -139,7 +143,24 @@ function app_loop()
 						-- clear the object and run the garbage collector right away
 						data.app_data[USER_CODE_FLAG] = nil
 						collectgarbage('collect')
+
+					elseif data.app_data[SFXR_FLAG] ~= nil then
+						local sfxr_sound = data.app_data[SFXR_FLAG]
+						if frame.HARDWARE_VERSION ~= 'Frame' then
+							print("Generating and playing received sfxr sound effect")
+							sfxr_sound.supersampling = 8
+							sfxr_sound:generate_and_play(SAMPLE_RATE, BIT_DEPTH, 5000)
+							print("Sound played")
+						else
+							frame.display.text('Speaker not available on Frame', 1, 1)
+							frame.display.show()
+						end
+
+						-- clear the object and run the garbage collector right away
+						data.app_data[SFXR_FLAG] = nil
+						collectgarbage('collect')
 					end
+
 
 				end
 

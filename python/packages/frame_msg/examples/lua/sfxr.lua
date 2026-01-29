@@ -1,5 +1,6 @@
 -- sfxr.lua
 -- original by Tomas Pettersson, ported to Lua by nucular
+-- modified for Halo by Brilliant Labs
 
 --[[
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,9 +26,13 @@ SOFTWARE.
 A port of the sfxr sound effect synthesizer to pure Lua, designed to be used
 together with the *awesome* [LÖVE](https://love2d.org) game framework.
 ]]--
+
+--[[--
+Stripped down version for Brilliant Labs Halo; Lua 5.3, 16kHz 16-bit output
+]]--
+
 -- @module sfxr
 local sfxr = {}
---local bit = bit32
 
 -- Constants
 
@@ -58,9 +63,10 @@ sfxr.WAVEFORM = {
 -- @field 22050 22.05 kHz (`= 22050`)
 -- @field 44100 44.1 kHz (`= 44100`)
 sfxr.SAMPLERATE = {
+  [8000]  = 8000,  --- 8 kHz
   [16000] = 16000, --- 16 kHz
   [22050] = 22050, --- 22.05 kHz
-  [44100] = 44100 --- 44.1 kHz
+  [44100] = 44100  --- 44.1 kHz
 }
 
 --- [Bit depth](https://en.wikipedia.org/wiki/Audio_bit_depth) constants
@@ -133,105 +139,6 @@ end
 -- @treturn number the number where `min <= n <= max`
 local function clamp(n, min, max)
     return math.max(min or -math.huge, math.min(max or math.huge, n))
-end
-
---- Copy a table (shallow) or a primitive.
--- @param t a table or primitive
--- @return a copy of t
-local function shallowcopy(t)
-    if type(t) == "table" then
-        local t2 = {}
-        for k,v in pairs(t) do
-            t2[k] = v
-        end
-        return t2
-    else
-        return t
-    end
-end
-
---- Recursively merge table t2 into t1.
--- @tparam tab t1 a table
--- @tparam tab t2 a table to merge into t1
--- @treturn tab t1
-local function mergetables(t1, t2)
-    for k, v in pairs(t2) do
-        if type(v) == "table" then
-            if type(t1[k] or false) == "table" then
-                mergetables(t1[k] or {}, t2[k] or {})
-            else
-                t1[k] = v
-            end
-        else
-            t1[k] = v
-        end
-    end
-    return t1
-end
-
---- Pack a number into a IEEE754 32-bit big-endian floating point binary string.
--- [source](https://stackoverflow.com/questions/14416734/)
--- @tparam number number a number
--- @treturn string a binary string
-local function packIEEE754(number)
-	if number == 0 then
-		return string.char(0x00, 0x00, 0x00, 0x00)
-	elseif number ~= number then
-		return string.char(0xFF, 0xFF, 0xFF, 0xFF)
-	else
-		local sign = 0x00
-		if number < 0 then
-			sign = 0x80
-			number = -number
-		end
-		local mantissa, exponent = math.frexp(number)
-		exponent = exponent + 0x7F
-		if exponent <= 0 then
-			mantissa = math.ldexp(mantissa, exponent - 1)
-			exponent = 0
-		elseif exponent > 0 then
-			if exponent >= 0xFF then
-				return string.char(sign + 0x7F, 0x80, 0x00, 0x00)
-			elseif exponent == 1 then
-				exponent = 0
-			else
-				mantissa = mantissa * 2 - 1
-				exponent = exponent - 1
-			end
-		end
-		mantissa = math.floor(math.ldexp(mantissa, 23) + 0.5)
-		return string.char(
-			sign + math.floor(exponent / 2),
-			(exponent % 2) * 0x80 + math.floor(mantissa / 0x10000),
-			math.floor(mantissa / 0x100) % 0x100,
-			mantissa % 0x100)
-	end
-end
-
---- Unpack a IEEE754 32-bit big-endian floating point string to a number.
--- [source](https://stackoverflow.com/questions/14416734/)
--- @tparam string packed a binary string
--- @treturn number a number
-local function unpackIEEE754(packed)
-	local b1, b2, b3, b4 = string.byte(packed, 1, 4)
-	local exponent = (b1 % 0x80) * 0x02 + math.floor(b2 / 0x80)
-	local mantissa = math.ldexp(((b2 % 0x80) * 0x100 + b3) * 0x100 + b4, -23)
-	if exponent == 0xFF then
-		if mantissa > 0 then
-			return 0 / 0
-		else
-			mantissa = math.huge
-			exponent = 0x7F
-		end
-	elseif exponent > 0 then
-		mantissa = mantissa + 1
-	else
-		exponent = exponent + 1
-	end
-	if b1 >= 0x80 then
-		mantissa = -mantissa
-	end
-	return math.ldexp(mantissa, exponent - 0x7F)
 end
 
 --- Construct and return a new @{Sound} instance.
@@ -478,16 +385,16 @@ function sfxr.Sound:sanitizeParameters()
 end
 
 --- Generate the sound and yield the sample data.
--- @tparam[opt=44100] SAMPLERATE rate the sampling rate
--- @tparam[opt=0] BITDEPTH depth the bit depth
+-- @tparam[opt=16000] SAMPLERATE rate the sampling rate
+-- @tparam[opt=16] BITDEPTH depth the bit depth
 -- @treturn function() a generator that yields the next sample when called
--- @usage for s in sound:generate(44100, 0) do
+-- @usage for s in sound:generate(16000, 16) do
 --   -- do something with s
 -- end
 -- @raise "invalid sampling rate: x", "invalid bit depth: x"
 function sfxr.Sound:generate(rate, depth)
-    rate = rate or 44100
-    depth = depth or 0
+    rate = rate or 16000
+    depth = depth or 16
     local ratio = rate / 44100
 
     assert(sfxr.SAMPLERATE[rate], "invalid sampling rate: " .. tostring(rate))
@@ -750,10 +657,10 @@ end
 --- Get the maximum sample limit allowed by the current envelope.
 -- Does not take any other limits into account, so the returned count might be
 -- higher than samples actually generated. Still useful though.
--- @tparam[opt=44100] SAMPLERATE rate the sampling rate
+-- @tparam[opt=16000] SAMPLERATE rate the sampling rate
 -- @raise "invalid sampling rate: x", "invalid bit depth: x"
 function sfxr.Sound:getEnvelopeLimit(rate)
-    rate = rate or 44100
+    rate = rate or 16000
     local ratio = rate / 44100
     assert(sfxr.SAMPLERATE[rate], "invalid sampling rate: " .. tostring(rate))
 
@@ -1082,36 +989,35 @@ function sfxr.Sound:randomBlip(seed)
     self.highpass.cutoff = 0.1
 end
 
---- Load the sound parameters from a file in the sfxr binary format
--- (version 100-102)
--- @within Serialization
--- @tparam ?string|file|love.filesystem.File f a path or file in `rb`-mode
--- (passed files will not be closed)
--- @raise "incompatible version: x", "unexpected file length"
-function sfxr.Sound:loadBinary(f)
-    local close = false
-    if type(f) == "string" then
-        f = io.open(f, "r")
-        close = true
+-- generate and play the sound effect, up to max_samples samples on Halo
+function sfxr.Sound:generate_and_play(rate, depth, max_samples)
+    local pack = string.pack
+    local t = {}
+    local i = 1
+    for v in self:generate(rate, depth) do
+        t[i] = pack("<i2", math.floor(v))
+        i = i + 1
+        -- due to memory constraints, we need to bail after max_samples
+        if i > max_samples then
+            break
+        end
     end
+    frame.speaker.play(table.concat(t))
+    local num_samples = #t
+    for n=1, num_samples do t[n]=nil end
+end
 
-    local s
-    if io.type(f) == "file" then
-        s = f:read("*a")
-    else
-        s = f:read()
-    end
+-- static function for parsing a sfxr data string into a new Sound object
+function sfxr.parse_sfxr(data)
+    local s = data
 
-    if close then
-        f:close()
-    end
-
-    self:resetParameters()
+    local snd = sfxr.newSound()
+    snd:resetParameters()
 
     local off = 1
 
     local function readFloat()
-        local f = unpackIEEE754(s:sub(off, off+3):reverse())
+        local f = string.unpack("<f", s:sub(off, off+3))
         off = off + 4
         return f
     end
@@ -1124,45 +1030,61 @@ function sfxr.Sound:loadBinary(f)
         error("incompatible version: " .. tostring(version))
     end
 
-    self.waveform = s:byte(off)
+    snd.waveform = s:byte(off)
     off = off + 4
-    self.volume.sound = version==102 and readFloat() or 0.5
+    snd.volume.sound = version==102 and readFloat() or 0.5
 
-    self.frequency.start = readFloat()
-    self.frequency.min = readFloat()
-    self.frequency.slide = readFloat()
-    self.frequency.dslide = version>=101 and readFloat() or 0
+    snd.frequency.start = readFloat()
+    snd.frequency.min = readFloat()
+    snd.frequency.slide = readFloat()
+    snd.frequency.dslide = version>=101 and readFloat() or 0
 
-    self.duty.ratio = readFloat()
-    self.duty.sweep = readFloat()
+    snd.duty.ratio = readFloat()
+    snd.duty.sweep = readFloat()
 
-    self.vibrato.depth = readFloat()
-    self.vibrato.speed = readFloat()
-    self.vibrato.delay = readFloat()
+    snd.vibrato.depth = readFloat()
+    snd.vibrato.speed = readFloat()
+    snd.vibrato.delay = readFloat()
 
-    self.envelope.attack = readFloat()
-    self.envelope.sustain = readFloat()
-    self.envelope.decay = readFloat()
-    self.envelope.punch = readFloat()
+    snd.envelope.attack = readFloat()
+    snd.envelope.sustain = readFloat()
+    snd.envelope.decay = readFloat()
+    snd.envelope.punch = readFloat()
 
     off = off + 1 -- filter_on - seems to be ignored in the C++ version
-    self.lowpass.resonance = readFloat()
-    self.lowpass.cutoff = readFloat()
-    self.lowpass.sweep = readFloat()
-    self.highpass.cutoff = readFloat()
-    self.highpass.sweep = readFloat()
+    snd.lowpass.resonance = readFloat()
+    snd.lowpass.cutoff = readFloat()
+    snd.lowpass.sweep = readFloat()
+    snd.highpass.cutoff = readFloat()
+    snd.highpass.sweep = readFloat()
 
-    self.phaser.offset = readFloat()
-    self.phaser.sweep = readFloat()
+    snd.phaser.offset = readFloat()
+    snd.phaser.sweep = readFloat()
 
-    self.repeatspeed = readFloat()
+    snd.repeatspeed = readFloat()
 
     if version >= 101 then
-        self.change.speed = readFloat()
-        self.change.amount = readFloat()
+        snd.change.speed = readFloat()
+        snd.change.amount = readFloat()
     end
 
     assert(off-1 == s:len(), "unexpected file length")
+    
+    snd:sanitizeParameters()
+
+    -- loop over fields and print values for debugging
+    -- for k, v in pairs(snd) do
+    --     if type(v) ~= "table" then
+    --         print(k .. ": " .. tostring(v))
+    --     else
+    --         print(k .. ":")
+    --         for k2, v2 in pairs(v) do
+    --             print("  " .. k2 .. ": " .. tostring(v2))
+    --         end
+    --     end
+    -- end
+
+    return snd
 end
 
 return sfxr

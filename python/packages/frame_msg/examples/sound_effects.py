@@ -2,6 +2,7 @@ import asyncio
 
 from frame_msg import FrameMsg, TxCode
 from frame_ble import BrilliantDeviceType
+from tx_sfxr import TxSfxr
 
 async def main():
     """
@@ -58,7 +59,45 @@ async def main():
             await frame.send_message(0x42, TxCode(3).pack())
             await asyncio.sleep(8.0)
 
-        # start the speaker
+        # play a custom sound effect
+        # Serialized form from https://sfxr.me/
+        # Fields oldParams, sample_rate and sample_size are ignored
+        json_str = """
+        {
+        "oldParams": true,
+        "wave_type": 1,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.057618190556563066,
+        "p_env_punch": 0.30185874480172864,
+        "p_env_decay": 0.4368680073095399,
+        "p_base_freq": 0.5934552840654337,
+        "p_freq_limit": 0,
+        "p_freq_ramp": 0,
+        "p_freq_dramp": 0,
+        "p_vib_strength": 0,
+        "p_vib_speed": 0,
+        "p_arp_mod": 0.22593832650601764,
+        "p_arp_speed": 0.6939804840009989,
+        "p_duty": 0,
+        "p_duty_ramp": 0,
+        "p_repeat_speed": 0,
+        "p_pha_offset": 0,
+        "p_pha_ramp": 0,
+        "p_lpf_freq": 1,
+        "p_lpf_ramp": 0,
+        "p_lpf_resonance": 0,
+        "p_hpf_freq": 0,
+        "p_hpf_ramp": 0,
+        "sound_vol": 0.25,
+        "sample_rate": 16000,
+        "sample_size": 8
+        }
+        """
+        sfx = TxSfxr.from_json(json_str)
+        await frame.send_message(0x43, sfx.pack())
+        await asyncio.sleep(15.0)
+
+        # stop the speaker
         await frame.send_message(0x42, TxCode(0).pack())
         await asyncio.sleep(1.0)
 
