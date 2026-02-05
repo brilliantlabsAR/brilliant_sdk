@@ -89,11 +89,41 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     }
   }
 
+  Future<void> runRandom() async {
+    currentState = ApplicationState.running;
+    if (mounted) setState(() {});
+
+    try {
+        // send the code telling Halo to generate and play a random SFXR sound effect
+        await frame!.sendMessage(0x21, TxCode().pack());
+
+        await Future.delayed(const Duration(milliseconds: 3000));
+
+        currentState = ApplicationState.ready;
+        if (mounted) setState(() {});
+        return;
+    } catch (e) {
+      _log.fine('Error executing application logic: $e');
+      currentState = ApplicationState.ready;
+      if (mounted) setState(() {});
+    }
+  }
+
   @override
   Future<void> cancel() async {
     currentState = ApplicationState.ready;
     if (mounted) setState(() {});
   }
+
+  FloatingActionButton? getRandomFloatingActionButtonWidget(
+    Icon ready, Icon running) {
+    return currentState == ApplicationState.ready
+        ? FloatingActionButton(onPressed: runRandom, child: ready)
+        : currentState == ApplicationState.running
+            ? FloatingActionButton(onPressed: cancel, child: running)
+            : null;
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +159,15 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
             ],
           ),
         ),
-        floatingActionButton: getFloatingActionButtonWidget(const Icon(Icons.play_arrow), const Icon(Icons.stop)),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            getRandomFloatingActionButtonWidget(const Icon(Icons.tag_faces_rounded), const Icon(Icons.stop)) ?? const SizedBox.shrink(),
+            const SizedBox(height: 16),
+            getFloatingActionButtonWidget(const Icon(Icons.play_arrow), const Icon(Icons.stop)) ?? const SizedBox.shrink(),
+          ],
+        ),
         persistentFooterButtons: getFooterButtonsWidget(),
       ),
     ),

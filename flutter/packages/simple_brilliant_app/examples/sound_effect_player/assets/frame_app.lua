@@ -5,11 +5,14 @@ local sfxr = require('sfxr.min')
 
 -- Phone to Frame flags
 PLAY_SFXR_MSG = 0x20
-CLEAR_MSG = 0x10
+PLAY_RANDOM_MSG = 0x21
 
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[PLAY_SFXR_MSG] = sfxr.parse_sfxr
-data.parsers[CLEAR_MSG] = code.parse_code
+data.parsers[PLAY_RANDOM_MSG] = code.parse_code
+
+local SAMPLE_RATE = 16000
+local BIT_DEPTH = 16
 
 function clear_display()
     if frame.HARDWARE_VERSION == 'Frame' then
@@ -17,6 +20,35 @@ function clear_display()
 		frame.display.show()
 	else
 		frame.display.clear()
+	end
+end
+
+function randomize_sound(sound)
+	local random_choice = math.random(1, 6)
+	if random_choice == 1 then
+			sound:randomPickup()
+			print("Pickup!")
+	elseif random_choice == 2 then
+			sound:randomLaser()
+			print("Laser!")
+	elseif random_choice == 3 then
+			sound:randomPowerup()
+			print("Powerup!")
+	elseif random_choice == 4 then
+			sound:randomHit()
+			print("Hit!")
+	elseif random_choice == 5 then
+			sound:randomJump()
+			print("Jump!")
+	elseif random_choice == 6 then
+			sound:randomBlip()
+			print("Blip!")
+	-- elseif random_choice == 7 then
+	-- 		sound:randomExplosion()
+	-- 		print("Explosion!")
+	-- Explosions have lots of low frequencies that can blow out the speaker, so we'll skip them for now
+	else
+			sound:randomPickup()
 	end
 end
 
@@ -46,8 +78,6 @@ function app_loop()
 						local sound = data.app_data[PLAY_SFXR_MSG]
 						print('Playing SFXR sound effect')
 
-						local SAMPLE_RATE = 8000
-						local BIT_DEPTH = 16
 						sound.supersampling = 8					
 						frame.speaker.start{encoder='pcm', sample_rate=SAMPLE_RATE, bit_depth=BIT_DEPTH, channels=1}
 						
@@ -67,12 +97,40 @@ function app_loop()
 						print("Sound played")
 						local num_samples = #t
 						for n=1, num_samples do t[n]=nil end
+
+						data.app_data[PLAY_SFXR_MSG] = nil
 					end
 
-					if (data.app_data[CLEAR_MSG] ~= nil) then
-						-- clear the display
-						clear_display()
-						data.app_data[CLEAR_MSG] = nil
+					if (data.app_data[PLAY_RANDOM_MSG] ~= nil) then
+						print("Playing random sfxr sound effect")
+						local sound = sfxr.newSound()
+						sound.waveform = sfxr.WAVEFORM.SQUARE
+
+						print("Randomizing sound")
+						randomize_sound(sound)
+						sound.supersampling = 8
+
+						frame.speaker.start{encoder='pcm', sample_rate=SAMPLE_RATE, bit_depth=BIT_DEPTH, channels=1}
+
+						print("Generating and playing sound")
+						local pack = string.pack
+						local t = {}
+						local i = 1
+						for v in sound:generate(SAMPLE_RATE, BIT_DEPTH) do
+							t[i] = pack("<i2", math.floor(v))
+							i = i + 1
+							-- due to memory constraints, let's bail after 10kB
+							if i > 5000 then
+									break
+							end
+						end
+						print("Sound generated")
+						frame.speaker.play(table.concat(t))
+						print("Sound played")
+						local num_samples = #t
+						for n=1, num_samples do t[n]=nil end
+
+						data.app_data[PLAY_RANDOM_MSG] = nil
 					end
 				end
 
