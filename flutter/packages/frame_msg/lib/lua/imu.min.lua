@@ -1,1 +1,1 @@
-local _M={}local a=0x0A;function _M.send_imu_data(b)local c=b or a;local d=frame.imu.raw()local e=string.pack("<Bxhhhhhh",c,d.compass.x,d.compass.y,d.compass.z,d.accelerometer.x,d.accelerometer.y,d.accelerometer.z)pcall(frame.bluetooth.send,e)end;return _M
+local _M={}local a=0x0A;function _M.send_imu_data(b)local c=b or a;local d=frame.imu.raw()local e=string.pack("<Bxffffff",c,d.compass.x,d.compass.y,d.compass.z,d.accelerometer.x,d.accelerometer.y,d.accelerometer.z)pcall(frame.bluetooth.send,e)end;return _M
