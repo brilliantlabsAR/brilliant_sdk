@@ -1,0 +1,32 @@
+name: sound_effect_player
+description: "SFXR sound effect player for Brilliant Labs Halo"
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  logging: ^1.2.0
+  simple_frame_app:
+    # Note: We use a path dependency because the example apps & library packages are bundled together.
+    # In *your* app you should use a versioned dependency from pub.dev
+    path: ../../
+  frame_msg:
+    path: ../../../frame_msg
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - packages/frame_msg/lua/battery.min.lua
+    - packages/frame_msg/lua/code.min.lua
+    - packages/frame_msg/lua/data.min.lua
+    - assets/sfxr.min.lua
+    - assets/frame_app.lua
