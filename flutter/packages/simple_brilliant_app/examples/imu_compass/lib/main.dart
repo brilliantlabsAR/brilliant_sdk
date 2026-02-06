@@ -31,9 +31,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   double _calibrationProgress = 0.0;
 
   // magnetometer outputs need to be calibrated/zeroed with offsets
-  int _rawMagX = 0;
-  int _rawMagY = 0;
-  int _rawMagZ = 0;
+  double _rawMagX = 0;
+  double _rawMagY = 0;
+  double _rawMagZ = 0;
 
   double _offsetX = 0.0;
   double _offsetY = 0.0;
@@ -56,9 +56,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
   // accelerometer outputs get normalised to 1.0 == 1g
   static const int accelFactor = 4096;
-  int _rawAccelX = 0;
-  int _rawAccelY = 0;
-  int _rawAccelZ = 0;
+  double _rawAccelX = 0;
+  double _rawAccelY = 0;
+  double _rawAccelZ = 0;
 
   double _normAccelX = 0.0;
   double _normAccelY = 0.0;
@@ -313,9 +313,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                           mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text('Raw Accel X: $_rawAccelX'),
-                            Text('Raw Accel Y: $_rawAccelY'),
-                            Text('Raw Accel Z: $_rawAccelZ'),
+                            Text('Raw Accel X: ${_rawAccelX.toStringAsFixed(2)}'),
+                            Text('Raw Accel Y: ${_rawAccelY.toStringAsFixed(2)}'),
+                            Text('Raw Accel Z: ${_rawAccelZ.toStringAsFixed(2)}'),
                             const SizedBox(height: 12),
                             Text('Norm Accel X: ${_normAccelX.toStringAsFixed(2)}'),
                             Text('Norm Accel Y: ${_normAccelY.toStringAsFixed(2)}'),
@@ -329,9 +329,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                           mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text('Raw Mag X: $_rawMagX'),
-                            Text('Raw Mag Y: $_rawMagY'),
-                            Text('Raw Mag Z: $_rawMagZ'),
+                            Text('Raw Mag X: ${_rawMagX.toStringAsFixed(2)}'),
+                            Text('Raw Mag Y: ${_rawMagY.toStringAsFixed(2)}'),
+                            Text('Raw Mag Z: ${_rawMagZ.toStringAsFixed(2)}'),
                             const SizedBox(height: 12),
                             Text('Calib Mag X: ${_calibMagX.toStringAsFixed(2)}'),
                             Text('Calib Mag Y: ${_calibMagY.toStringAsFixed(2)}'),
