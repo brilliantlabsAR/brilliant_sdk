@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frame_msg/rx/imu.dart';
 import 'package:frame_msg/tx/code.dart';
 import 'package:frame_msg/tx/plain_text.dart';
-
 import 'package:simple_frame_app/simple_frame_app.dart';
 
 import 'magnetometer_calibrator.dart';
@@ -54,8 +53,6 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   final TextEditingController _offsetZController = TextEditingController();
   final TextEditingController _declinationController = TextEditingController();
 
-  // accelerometer outputs get normalised to 1.0 == 1g
-  static const int accelFactor = 4096;
   double _rawAccelX = 0;
   double _rawAccelY = 0;
   double _rawAccelZ = 0;
@@ -108,11 +105,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         _rawAccelY = imuData.accel.$2;
         _rawAccelZ = imuData.accel.$3;
 
-        // accelerometer is configured so that ±2g maps to ±8192,
-        // so normalize to 1g == 1.0
-        _normAccelX = _rawAccelX / accelFactor;
-        _normAccelY = _rawAccelY / accelFactor;
-        _normAccelZ = _rawAccelZ / accelFactor;
+        _normAccelX = _rawAccelX;
+        _normAccelY = _rawAccelY;
+        _normAccelZ = _rawAccelZ;
 
         // normalize to a magnitude of 1g
         double normAccel = sqrt(_normAccelX * _normAccelX + _normAccelY * _normAccelY + _normAccelZ * _normAccelZ);
