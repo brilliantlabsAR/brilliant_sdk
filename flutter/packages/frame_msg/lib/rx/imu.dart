@@ -9,30 +9,30 @@ final _log = Logger("RxIMU");
 /// Buffer class to allow us to provide a smoothed moving average of samples
 class SensorBuffer {
   final int maxSize;
-  final List<(int x, int y, int z)> _buffer = [];
+  final List<(double x, double y, double z)> _buffer = [];
 
   SensorBuffer(this.maxSize);
 
-  void add((int x, int y, int z) value) {
+  void add((double x, double y, double z) value) {
     _buffer.add(value);
     if (_buffer.length > maxSize) {
       _buffer.removeAt(0);
     }
   }
 
-  (int x, int y, int z) get average {
-    if (_buffer.isEmpty) return (0, 0, 0);
+  (double x, double y, double z) get average {
+    if (_buffer.isEmpty) return (0.0, 0.0, 0.0);
 
-    int sumX = 0, sumY = 0, sumZ = 0;
+    double sumX = 0, sumY = 0, sumZ = 0;
     for (var value in _buffer) {
       sumX += value.$1;
       sumY += value.$2;
       sumZ += value.$3;
     }
     return (
-      (sumX ~/ _buffer.length),
-      (sumY ~/ _buffer.length),
-      (sumZ ~/ _buffer.length)
+      (sumX / _buffer.length),
+      (sumY / _buffer.length),
+      (sumZ / _buffer.length)
     );
   }
 }
@@ -77,13 +77,28 @@ class RxIMU {
       dataResponseSubs = dataResponse
         .where((data) => data[0] == imuFlag)
         .listen((data) {
-          Uint8List bytes = Uint8List.fromList(data);
-          // reinterpret the bytes after offset 2 as signed 16-bit integers
-          Int16List s16 = bytes.buffer.asInt16List(2);
+          // data structure: [flag, ?, float, float, float, float, float, float]
+          // offsets: 0, 1, 2..5, 6..9, 10..13, 14..17, 18..21, 22..25
+          // total length should be at least 2 + 6*4 = 26 bytes.
+          
+          if (data.length < 26) {
+             // Not enough data for 6 floats + header
+             return;
+          }
+
+          final byteData = ByteData.sublistView(Uint8List.fromList(data));
+          
+          // Read 6 32-bit little-endian floats starting at offset 2
+          double cX = byteData.getFloat32(2, Endian.little);
+          double cY = byteData.getFloat32(6, Endian.little);
+          double cZ = byteData.getFloat32(10, Endian.little);
+          double aX = byteData.getFloat32(14, Endian.little);
+          double aY = byteData.getFloat32(18, Endian.little);
+          double aZ = byteData.getFloat32(22, Endian.little);
 
           // Get raw values
-          var rawCompass = (s16[0], s16[1], s16[2]);
-          var rawAccel = (s16[3], s16[4], s16[5]);
+          var rawCompass = (cX, cY, cZ);
+          var rawAccel = (aX, aY, aZ);
 
           // Add to buffers
           _compassBuffer.add(rawCompass);
@@ -113,8 +128,8 @@ class RxIMU {
 }
 
 class IMURawData {
-  final (int x, int y, int z) compass;
-  final (int x, int y, int z) accel;
+  final (double x, double y, double z) compass;
+  final (double x, double y, double z) accel;
 
   IMURawData({
     required this.compass,
@@ -123,8 +138,8 @@ class IMURawData {
 }
 
 class IMUData {
-  final (int x, int y, int z) compass;
-  final (int x, int y, int z) accel;
+  final (double x, double y, double z) compass;
+  final (double x, double y, double z) accel;
   final IMURawData? raw;
 
   IMUData({
