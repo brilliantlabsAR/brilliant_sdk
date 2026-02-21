@@ -23,7 +23,7 @@ async def main():
         await frame.ble.send_lua("frame.display.power_save(false);frame.display.brightness(25);print(0)", await_print=True)
 
         # send the std lua files to Frame that handle data accumulation and text display
-        await frame.upload_stdlua_libs(lib_names=['data', 'code'])
+        await frame.upload_stdlua_libs(lib_names=['data', 'code', 'text_sprite_block'])
 
         # Upload the helper code for managing the layout
         await frame.ble.upload_file(local_file_path="lua/layout/view.lua", frame_file_path="view.lua")
@@ -54,31 +54,37 @@ async def main():
         txc_speech = TxCode(1)
         await frame.send_message(0x41, txc_speech.pack())
 
-        # # Send the text for display
-        # # Note that the frameside app is expecting a message of type TxTextSpriteBlock on msgCode 0x20
-        # # the width needs to match the NoaLayout body width (216)
-        # tsb = TxTextSpriteBlock(width=216,
-        #                         font_size=12,
-        #                         max_display_rows=3,
-        #                         text="Dogica Pixel",
-        #                         font_family="fonts/dogicapixel.ttf"
-        # )
+        # Send the text for display
+        # Note that the frameside app is expecting a message of type TxTextSpriteBlock on msgCode 0x20
+        # the width needs to match the NoaLayout body width (216)
+        tsb = TxTextSpriteBlock(width=216,
+                                line_height=25,
+                                font_size=20,
+                                max_display_lines=4,
+                                font_family="fonts/dogicapixel.ttf"
+        )
 
-        # # send the Image Sprite Block header
-        # await frame.send_message(0x50, tsb.pack())
-        # # then send all the slices
-        # for spr in tsb.sprites:
-        #     await frame.send_message(0x50, spr.pack())
-        #     await asyncio.sleep(1)
+        sprite_lines = tsb.create_text_sprites("your local\nweather is\n30° celsius\nand sunny")
 
-        # in recording mode for 5 seconds
-        await asyncio.sleep(5.0)
+        # send the Image Sprite Block header
+        await frame.send_message(0x50, tsb.pack())
+        # then send all the slices
+        for spr in sprite_lines:
+            await frame.send_message(0x50, spr.pack())
+            await asyncio.sleep(0.5)
 
         # send a code to switch off speech wave animation
         txc_speech = TxCode(0)
         await frame.send_message(0x41, txc_speech.pack())
 
-        await asyncio.sleep(2.0)
+        # in recording mode for 4 seconds
+        await asyncio.sleep(4)
+
+        # clear the text
+        txc_clear_txt = TxCode(0)
+        await frame.send_message(0x51, txc_clear_txt.pack())
+
+        await asyncio.sleep(2)
 
         # send a code to switch off recording mode
         txc_record = TxCode(0)

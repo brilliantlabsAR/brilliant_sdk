@@ -22,7 +22,8 @@ end
 function View:clear()
     -- Base view draw logic (e.g., just a black rectangle)
     frame.display.rect(self.x, self.y, self.w, self.h, 0x000000, true)
-    frame.display.rect(self.x, self.y, self.w, self.h, 0xA00000, false)
+    -- debug red border to visualize view boundaries
+    -- frame.display.rect(self.x, self.y, self.w, self.h, 0xA00000, false)
 end
 
 function View:render()

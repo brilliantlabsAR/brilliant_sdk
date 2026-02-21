@@ -1,14 +1,19 @@
 local data = require('data.min')
 local code = require('code.min')
+local text_sprite_block = require('text_sprite_block.min')
 local NoaLayout = require("noa_layout")
 
 -- Phone to Frame flags
 REC_MSG = 0x40
 SPEECH_MSG = 0x41
+TSB_MSG = 0x50
+CLEAR_TXT_MSG = 0x51
 
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[REC_MSG] = code.parse_code
 data.parsers[SPEECH_MSG] = code.parse_code
+data.parsers[TSB_MSG] = text_sprite_block.parse_text_sprite_block
+data.parsers[CLEAR_TXT_MSG] = code.parse_code
 
 local ui = NoaLayout:new()
 local last_time = frame.time.utc() - 0.05 -- Initialize to one frame ago
@@ -44,10 +49,27 @@ while true do
             end
         end
 
-        --     ui.body:push_line("Message number " .. tostring(1))
-        --     ui.body:push_line("Message number " .. tostring(2))
-        --     ui.body:push_line("Message number " .. tostring(3))
-        --     ui.body:push_line("Message number " .. tostring(4))
+        if (data.app_data[CLEAR_TXT_MSG] ~= nil) then
+            ui.body:clear_lines()
+            data.app_data[CLEAR_TXT_MSG] = nil
+
+            if (data.app_data[TSB_MSG] ~= nil) then
+                data.app_data[TSB_MSG] = nil
+                collectgarbage()
+            end
+        end
+
+        if (data.app_data[TSB_MSG] ~= nil) then
+            print('Received text sprite block with line_height=' .. tostring(data.app_data[TSB_MSG].line_height) .. ' and width=' .. tostring(data.app_data[TSB_MSG].width))
+            local tsb = data.app_data[TSB_MSG]
+            -- clear the text area before drawing new text sprites
+            frame.display.rect(ui.body.x, ui.body.y, tsb.width, tsb.max_display_lines * tsb.line_height, 0x000000, true)
+
+            if #tsb.sprites > 0 then
+                print('Setting ' .. tostring(#tsb.sprites) .. ' text sprites in body view')
+                ui.body:set_lines(tsb.sprites, tsb.line_height)
+            end
+        end
     end
 
     ui:update(dt)
