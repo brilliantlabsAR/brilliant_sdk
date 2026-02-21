@@ -1,0 +1,24 @@
+-- Header: Notification area
+-- -------------------------
+local View = require("view")
+
+local HeaderView = setmetatable({}, {__index = View})
+HeaderView.__index = HeaderView
+function HeaderView:set_recording(is_recording)
+    print("HeaderView: set_recording called with: " .. tostring(is_recording))
+    self.is_recording = is_recording
+    self:invalidate()
+end
+function HeaderView:render()
+    print("Rendering header, recording state:" .. tostring(self.is_recording or false))
+    local col = 0x000000
+    if self.is_recording then
+        print("Header is in recording state, using red color")
+        col = 0xF00000
+    end
+
+    frame.display.circle(self.x+8, self.y+10, 8, col, true)
+    self.is_dirty = false
+end
+
+return HeaderView

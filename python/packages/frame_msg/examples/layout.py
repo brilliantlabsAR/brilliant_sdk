@@ -26,10 +26,15 @@ async def main():
         await frame.upload_stdlua_libs(lib_names=['data', 'code'])
 
         # Upload the helper code for managing the layout
-        await frame.ble.upload_file(local_file_path="lua/layout.lua", frame_file_path="layout.lua")
+        await frame.ble.upload_file(local_file_path="lua/layout/view.lua", frame_file_path="view.lua")
+        await frame.ble.upload_file(local_file_path="lua/layout/bg_view.lua", frame_file_path="bg_view.lua")
+        await frame.ble.upload_file(local_file_path="lua/layout/header_view.lua", frame_file_path="header_view.lua")
+        await frame.ble.upload_file(local_file_path="lua/layout/body_view.lua", frame_file_path="body_view.lua")
+        await frame.ble.upload_file(local_file_path="lua/layout/footer_view.lua", frame_file_path="footer_view.lua")
+        await frame.ble.upload_file(local_file_path="lua/layout/noa_layout.lua", frame_file_path="noa_layout.lua")
 
         # Upload the main frame app that will run the layout example
-        await frame.upload_frame_app(local_filename="lua/layout_frame_app.lua")
+        await frame.upload_frame_app(local_filename="lua/layout/layout_frame_app.lua")
 
         frame.attach_print_response_handler()
 
