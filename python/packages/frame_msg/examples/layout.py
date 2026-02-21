@@ -1,6 +1,6 @@
 import asyncio
 
-from frame_msg import FrameMsg, TxCode
+from frame_msg import FrameMsg, TxCode, TxTextSpriteBlock
 from frame_ble import BrilliantDeviceType
 
 async def main():
@@ -42,8 +42,49 @@ async def main():
         await frame.start_frame_app()
 
         print(f"Starting layout")
-        
-        await asyncio.sleep(8.0)
+
+        await asyncio.sleep(3.0)
+
+        # send a code to switch to recording mode
+        txc_record = TxCode(1)
+        await frame.send_message(0x40, txc_record.pack())
+
+        await asyncio.sleep(3.0)
+
+        txc_speech = TxCode(1)
+        await frame.send_message(0x41, txc_speech.pack())
+
+        # # Send the text for display
+        # # Note that the frameside app is expecting a message of type TxTextSpriteBlock on msgCode 0x20
+        # # the width needs to match the NoaLayout body width (216)
+        # tsb = TxTextSpriteBlock(width=216,
+        #                         font_size=12,
+        #                         max_display_rows=3,
+        #                         text="Dogica Pixel",
+        #                         font_family="fonts/dogicapixel.ttf"
+        # )
+
+        # # send the Image Sprite Block header
+        # await frame.send_message(0x50, tsb.pack())
+        # # then send all the slices
+        # for spr in tsb.sprites:
+        #     await frame.send_message(0x50, spr.pack())
+        #     await asyncio.sleep(1)
+
+        # in recording mode for 5 seconds
+        await asyncio.sleep(5.0)
+
+        # send a code to switch off speech wave animation
+        txc_speech = TxCode(0)
+        await frame.send_message(0x41, txc_speech.pack())
+
+        await asyncio.sleep(2.0)
+
+        # send a code to switch off recording mode
+        txc_record = TxCode(0)
+        await frame.send_message(0x40, txc_record.pack())
+
+        await asyncio.sleep(3.0)
 
         print(f"Stopping layout")
         frame.detach_print_response_handler()
