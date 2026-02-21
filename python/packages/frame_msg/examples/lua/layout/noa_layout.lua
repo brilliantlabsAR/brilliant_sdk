@@ -23,16 +23,15 @@ function NoaLayout:new()
 end
 
 function NoaLayout:update(dt)
-    -- Update all children
-    self.bg:update(dt)
-    self.header:update(dt)
-    self.body:update(dt)
-    self.footer:update(dt)
-
-    -- Check if we need to redraw the whole screen
-    -- If any child is dirty, the whole layout is considered dirty
-    if self.bg.is_dirty or self.header.is_dirty or self.body.is_dirty or self.footer.is_dirty then
-        self.is_dirty = true
+    -- Update children and mark layout dirty if any child becomes dirty
+    for _, name in ipairs({"bg", "header", "body", "footer"}) do
+        local child = self[name]
+        if child and child.update then
+            child:update(dt)
+            if child.is_dirty then
+                self.is_dirty = true
+            end
+        end
     end
 end
 
@@ -40,25 +39,13 @@ function NoaLayout:render()
     if not self.is_dirty then return end
 
     -- 1. Redraw everything in order
-    if self.bg.is_dirty then
-        self.bg:clear()
-        self.bg:render()
-        self.bg.is_dirty = false
-    end
-    if self.header.is_dirty then
-        self.header:clear()
-        self.header:render()
-        self.header.is_dirty = false
-    end
-    if self.body.is_dirty then
-        self.body:clear()
-        self.body:render()
-        self.body.is_dirty = false
-    end
-    if self.footer.is_dirty then
-        self.footer:clear()
-        self.footer:render()
-        self.footer.is_dirty = false
+    for _, name in ipairs({"bg", "header", "body", "footer"}) do
+        local child = self[name]
+        if child and child.is_dirty then
+            child:clear()
+            child:render()
+            child.is_dirty = false
+        end
     end
 
     -- 2. Clean the NoaLayout dirty flag

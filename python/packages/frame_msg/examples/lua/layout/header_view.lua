@@ -5,12 +5,10 @@ local View = require("view")
 local HeaderView = setmetatable({}, {__index = View})
 HeaderView.__index = HeaderView
 function HeaderView:set_recording(is_recording)
-    print("HeaderView: set_recording called with: " .. tostring(is_recording))
     self.is_recording = is_recording
     self:invalidate()
 end
 function HeaderView:render()
-    print("Rendering header, recording state:" .. tostring(self.is_recording or false))
     local col = 0x000000
     if self.is_recording then
         col = 0xF00000

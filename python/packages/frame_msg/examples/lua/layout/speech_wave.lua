@@ -1,6 +1,6 @@
 -- SpeechWave Class
 -- Call `:start()` when speech begins, `:stop()` when it ends.
--- Call `:update()` in your 50ms main loop; it returns 14 {r,g,b,height} bars.
+-- Call `:update()` in the 50ms main loop; it returns 14 {r,g,b,height} bars.
 -- Usage: local sw = SpeechWave:new(); sw:start(); sw:update(); sw:draw(x,y)
 
 local SpeechWave = {}
@@ -81,6 +81,8 @@ function SpeechWave:update()
   return self.bars
 end
 
+-- Draw the speech wave with the top-left corner at (x,y). 
+-- Each bar is 2px wide with 8px spacing.
 function SpeechWave:draw(x, y)
   local cy = y + self.h // 2
   for i, b in ipairs(self.bars) do

@@ -12,22 +12,23 @@ while true do
     local dt = current_time - last_time
     
     if not step_one_done and (current_time - start_time > 3.0) then
-        print("Setting recording status set to true after 3 seconds")
         ui.header:set_recording(true)
         ui.footer.speech_wave:start() -- Start speech wave animation
-        -- local recording status
+        ui.body:push_line("Message number " .. tostring(1))
+        ui.body:push_line("Message number " .. tostring(2))
         step_one_done = true
     end
 
     if not step_two_done and (current_time - start_time > 6.0) then
-        print("Setting recording status set to false after 6 seconds")
         ui.header:set_recording(false)
         ui.footer.speech_wave:stop() -- Stop speech wave animation
+        ui.body:push_line("Message number " .. tostring(3))
+        ui.body:push_line("Message number " .. tostring(4))
         step_two_done = true
     end
 
     ui:update(dt)
-    ui:render() -- Redraws ONLY if ui.is_dirty was set in the update
+    ui:render()
     
     frame.sleep(0.05) -- Sleep to limit frame rate
     last_time = current_time
