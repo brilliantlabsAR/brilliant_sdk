@@ -1,18 +1,29 @@
 local data = require('data.min')
+local code = require('code.min')
 local text_sprite_block = require('text_sprite_block.min')
 
 -- Phone to Frame flags
 TEXT_SPRITE_BLOCK = 0x20
+RESET_TEXT_BLOCK = 0x21
 
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[TEXT_SPRITE_BLOCK] = text_sprite_block.parse_text_sprite_block
+data.parsers[RESET_TEXT_BLOCK] = code.parse_code
 
+function clear_display()
+	if frame.HARDWARE_VERSION ~= 'Frame' then
+		frame.display.clear()
+		frame.display.show()
+	else
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	end
+end
 
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
-	frame.display.set_brightness(0)
+	clear_display()
+	frame.display.set_brightness(1)
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
@@ -26,31 +37,38 @@ function app_loop()
 				-- one or more full messages received
 				if items_ready > 0 then
 
+					if (data.app_data[RESET_TEXT_BLOCK] ~= nil) then
+						clear_display()
+
+						if data.app_data[TEXT_SPRITE_BLOCK] ~= nil then
+							-- also clear any existing text sprite block data
+							tsb = data.app_data[TEXT_SPRITE_BLOCK]
+							for k in pairs(tsb.sprites) do tsb[k] = nil end
+							data.app_data[TEXT_SPRITE_BLOCK] = nil
+							collectgarbage()
+						end
+						data.app_data[RESET_TEXT_BLOCK] = nil
+					end
+
 					if (data.app_data[TEXT_SPRITE_BLOCK] ~= nil) then
 						-- show the text sprite block
 						local tsb = data.app_data[TEXT_SPRITE_BLOCK]
+						--print('Received text sprite block with line_height=' .. tostring(tsb.line_height) .. ' and width=' .. tostring(tsb.width))
 
 						-- it can be that we haven't got any sprites yet, so only proceed if we have a sprite
-						if tsb.first_sprite_index > 0 then
-							-- either we have all the sprites, or we want to do progressive/incremental rendering
-							if tsb.progressive_render or (tsb.active_sprites == tsb.total_sprites) then
-
-								-- clear the display first, Halo doesn't automatically clear
-								if frame.HARDWARE_VERSION ~= 'Frame' then
-									frame.display.clear()
-								end
-
-								for index, spr in ipairs(tsb.sprites) do
-									print('Drawing sprite index ' .. tostring(index) .. ' at y=' .. tostring(tsb.offsets[index].y+1) .. ' spr.width=' .. tostring(spr.width) .. ' bpp=' .. tostring(spr.bpp) .. ' num_colors=' .. tostring(2^spr.bpp))
-									for i = 0, 0 do
-										local new_width = spr.width + i
-										frame.display.bitmap(1, tsb.offsets[index].y + 1, new_width, 2^spr.bpp, 0+index-1, spr.pixel_data)
-										frame.sleep(0.5)
-									end
-								end
-
-								frame.display.show()
+						if #tsb.sprites > 0 then
+							if frame.HARDWARE_VERSION ~= 'Frame' then
+								-- clear a rect the size of the text block to erase any previous text
+								frame.display.rect(0, 0, tsb.width, tsb.max_display_lines * tsb.line_height, 0x000000, true)
 							end
+
+							for index, spr in ipairs(tsb.sprites) do
+								local y_offset = tsb.line_height * (index-1) + 1
+								--print('Drawing sprite index ' .. tostring(index) .. ' at y=' .. tostring(y_offset) .. ' spr.width=' .. tostring(spr.width) .. ' spr.height=' .. tostring(spr.height) .. ' bpp=' .. tostring(spr.bpp) .. ' num_colors=' .. tostring(2^spr.bpp))
+								frame.display.bitmap(1, y_offset, spr.width, 2^spr.bpp, 0+index-1, spr.pixel_data)
+							end
+
+							frame.display.show()
 						end
 					end
 
@@ -64,8 +82,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end
