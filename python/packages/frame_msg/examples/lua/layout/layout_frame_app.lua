@@ -5,18 +5,25 @@ local last_time = frame.time.utc() - 0.05 -- Initialize to one frame ago
 local start_time = last_time
 print("Layout app started. Running main loop...")
 
-local recording = false
+local step_one_done = false
+local step_two_done = false
 while true do
     local current_time = frame.time.utc()
     local dt = current_time - last_time
     
-    if not recording and (current_time - start_time > 3.0) then
+    if not step_one_done and (current_time - start_time > 3.0) then
         print("Setting recording status set to true after 3 seconds")
         ui.header:set_recording(true)
-        ui.header:invalidate() -- Mark header as dirty to trigger redraw
-        print("Header is dirty: " .. tostring(ui.header.is_dirty)) -- Debug print to verify state
+        ui.footer.speech_wave:start() -- Start speech wave animation
         -- local recording status
-        recording = true
+        step_one_done = true
+    end
+
+    if not step_two_done and (current_time - start_time > 6.0) then
+        print("Setting recording status set to false after 6 seconds")
+        ui.header:set_recording(false)
+        ui.footer.speech_wave:stop() -- Stop speech wave animation
+        step_two_done = true
     end
 
     ui:update(dt)

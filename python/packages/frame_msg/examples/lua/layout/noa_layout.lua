@@ -32,7 +32,6 @@ function NoaLayout:update(dt)
     -- Check if we need to redraw the whole screen
     -- If any child is dirty, the whole layout is considered dirty
     if self.bg.is_dirty or self.header.is_dirty or self.body.is_dirty or self.footer.is_dirty then
-        print("NoaLayout marked dirty due to child view")
         self.is_dirty = true
     end
 end

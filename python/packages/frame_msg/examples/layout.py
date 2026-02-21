@@ -31,6 +31,7 @@ async def main():
         await frame.ble.upload_file(local_file_path="lua/layout/header_view.lua", frame_file_path="header_view.lua")
         await frame.ble.upload_file(local_file_path="lua/layout/body_view.lua", frame_file_path="body_view.lua")
         await frame.ble.upload_file(local_file_path="lua/layout/footer_view.lua", frame_file_path="footer_view.lua")
+        await frame.ble.upload_file(local_file_path="lua/layout/speech_wave.lua", frame_file_path="speech_wave.lua")
         await frame.ble.upload_file(local_file_path="lua/layout/noa_layout.lua", frame_file_path="noa_layout.lua")
 
         # Upload the main frame app that will run the layout example

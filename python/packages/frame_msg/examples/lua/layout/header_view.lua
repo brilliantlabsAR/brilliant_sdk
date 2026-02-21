@@ -13,7 +13,6 @@ function HeaderView:render()
     print("Rendering header, recording state:" .. tostring(self.is_recording or false))
     local col = 0x000000
     if self.is_recording then
-        print("Header is in recording state, using red color")
         col = 0xF00000
     end
 
