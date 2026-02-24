@@ -69,6 +69,7 @@ class TxTextSpriteBlock extends TxMsg {
   /// Text lines as TxSprites are returned as a List, and the caller can decide how many to send to Frame, and when.
 Future<List<TxSprite>> createTextSprites(String text) async {
     final List<TxSprite> sprites = [];
+    final double dpr = ui.window.devicePixelRatio;
 
     // 1. Force a massive line height to space lines far apart.
     // This guarantees ascenders/descenders from adjacent lines
@@ -105,6 +106,9 @@ Future<List<TxSprite>> createTextSprites(String text) async {
         final pictureRecorder = ui.PictureRecorder();
         final canvas = ui.Canvas(pictureRecorder);
 
+        // Scale the canvas by DPR so the text is rendered at high fidelity
+        canvas.scale(dpr);
+
         // Clip the canvas exactly to our sprite dimensions
         canvas.clipRect(Rect.fromLTWH(0, 0, lineWidth.toDouble(), _lineHeight.toDouble()));
 
@@ -114,17 +118,33 @@ Future<List<TxSprite>> createTextSprites(String text) async {
         canvas.drawParagraph(paragraph, ui.Offset.zero);
         final ui.Picture picture = pictureRecorder.endRecording();
 
-        final ui.Image image = await picture.toImage(lineWidth, _lineHeight);
-        var byteData = (await image.toByteData(format: ui.ImageByteFormat.rawUnmodified))!;
+        final int scaledWidth = (lineWidth * dpr).round();
+        final int scaledHeight = (_lineHeight * dpr).round();
+        final ui.Image image = await picture.toImage(scaledWidth, scaledHeight);
 
-        var linePixelData = Uint8List(lineWidth * _lineHeight);
+        // Force RGBA for predictable byte-access on Android/iOS
+        final ByteData? byteData = (await image.toByteData(format: ui.ImageByteFormat.rawStraightRgba))!;
+        if (byteData == null) continue;
 
-        for (int i = 0; i < _lineHeight; i++) {
-          // Because the image is exactly the size of the sprite, we just read it straight through
-          var sourceRow = byteData.buffer.asUint8List(i * lineWidth * 4, lineWidth * 4);
-          for (int j = 0; j < lineWidth; j++) {
-            // Extract the red channel for grayscale thresholding
-            linePixelData[i * lineWidth + j] = sourceRow[4 * j] >= 128 ? 1 : 0;
+        final Uint8List pixels = byteData.buffer.asUint8List();
+        final Uint8List linePixelData = Uint8List(lineWidth * _lineHeight);
+
+        // 4. Downsample: Map the high-res buffer back to your 1-bit grid
+        for (int y = 0; y < _lineHeight; y++) {
+          for (int x = 0; x < lineWidth; x++) {
+            // Calculate the "center" pixel of the DPR-scaled block
+            // This ensures we aren't sampling an anti-aliased edge pixel
+            int centerX = (x * dpr + dpr / 2).floor();
+            int centerY = (y * dpr + dpr / 2).floor();
+            
+            // Index in the RGBA8888 byte array
+            int pos = (centerY * scaledWidth + centerX) * 4;
+
+            // Thresholding logic: 
+            // iOS Impeller might need a slightly lower threshold (e.g., 100) 
+            // if your fonts appear too thin.
+            int threshold = 110; 
+            linePixelData[y * lineWidth + x] = pixels[pos] >= threshold ? 1 : 0;
           }
         }
 
