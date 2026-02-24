@@ -14,4 +14,4 @@ export 'tx/image_sprite_block.dart';
 export 'tx/manual_exp_settings.dart';
 export 'tx/plain_text.dart';
 export 'tx/sprite.dart';
-export 'tx/text_sprite_block.dart';
+export 'tx/text_page.dart';

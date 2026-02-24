@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frame_msg/tx/text_sprite_block.dart';
+import 'package:frame_msg/tx/text_page.dart';
 
 void main() {
   // Ensure Flutter binding is initialized for text rendering
@@ -156,7 +156,7 @@ void main() {
     });
     
     test('should create empty block with empty text', () {
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: '',
       );
@@ -167,7 +167,7 @@ void main() {
     
     test('should track remaining text', () async {
       final shortText = 'Hello World';
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: shortText,
       );
@@ -182,7 +182,7 @@ void main() {
                    'It should wrap text across multiple lines. '
                    'Each line should be measured correctly.';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
@@ -196,7 +196,7 @@ void main() {
     test('should rasterize page when requested', () async {
       final text = 'This is a test of the text layout system.';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
@@ -217,7 +217,7 @@ void main() {
                           'The five boxing wizards jump quickly. '
                           'Sphinx of black quartz, judge my vow.';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: originalText,
       );
@@ -248,7 +248,7 @@ void main() {
       );
       
       final text = 'One Two Three Four Five';
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
@@ -271,7 +271,7 @@ void main() {
                    'Line four content here. '
                    'Line five content here.';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
@@ -314,7 +314,7 @@ void main() {
       final text = 'This text should wrap in a circular pattern. '
                    'Each line gets narrower near the edges.';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
@@ -327,7 +327,7 @@ void main() {
     test('should have varying line widths in circular layout', () async {
       final text = 'Line one. Line two. Line three. Line four. Line five. Line six.';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
@@ -347,7 +347,7 @@ void main() {
       final originalText = 'The quick brown fox jumps over the lazy dog. '
                           'Pack my box with five dozen liquor jugs.';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: originalText,
       );
@@ -377,7 +377,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: 'Test text',
       );
@@ -395,7 +395,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: 'Test text',
       );
@@ -415,7 +415,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: 'Test text',
       );
@@ -432,7 +432,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: 'Test text',
       );
@@ -453,7 +453,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: 'Test text',
       );
@@ -472,7 +472,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: 'Test text',
       );
@@ -494,7 +494,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: '   \n  \t  ',
       );
@@ -510,7 +510,7 @@ void main() {
       );
       
       final longWord = 'Supercalifragilisticexpialidocious';
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: longWord,
       );
@@ -527,7 +527,7 @@ void main() {
       );
       
       final text = 'Word1    Word2     Word3';
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
@@ -543,7 +543,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: 'A',
       );
@@ -560,7 +560,7 @@ void main() {
         fontSize: 32,
       );
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: 'This should not fit',
       );
@@ -582,7 +582,7 @@ void main() {
       final text = 'This is a complete integration test. '
                    'It should measure, rasterize, and pack successfully.';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
@@ -614,7 +614,7 @@ void main() {
       
       final text = 'Test convenience method';
       
-      final tsb = TxTextSpriteBlock(
+      final tsb = TxTextPage(
         layout: layout,
         text: text,
       );
