@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:frame_msg/tx/text_sprite_block.dart';
 import 'package:logging/logging.dart';
@@ -18,6 +19,8 @@ class MainApp extends StatefulWidget {
 
 /// SimpleFrameAppState mixin helps to manage the lifecycle of the Frame connection outside of this file
 class MainAppState extends State<MainApp> with SimpleFrameAppState {
+  Uint8List? pngBytes;
+
   MainAppState() {
     Logger.root.level = Level.INFO;
     Logger.root.onRecord.listen((record) {
@@ -44,23 +47,18 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
       await frame!.sendMessage(0x41, txcSpeech.pack());
 
 
-      // # Send the text for display
-      // # Note that the frameside app is expecting a message of type TxTextSpriteBlock on msgCode 0x20
-      // # the width needs to match the NoaLayout body width (216)
-      // tsb = TxTextSpriteBlock(width=216,
-      //                         line_height=25,
-      //                         font_size=20,
-      //                         max_display_lines=4,
-      //                         font_family="fonts/dogicapixel.ttf"
-      // )
       final tsb = TxTextSpriteBlock(
           width: 216,
-          lineHeight: 25,
-          fontSize: 20,
+          lineHeight: 24,
+          fontSize: 16,
           maxDisplayLines: 4,
-          fontFamily: "fonts/dogicapixel.ttf");
+          fontFamily: "DogicaPixel");
 
       final spriteLines = await tsb.createTextSprites("your local\nweather is\n30° celsius\nand sunny");
+
+      pngBytes = await tsb.toPngBytes(rasterizedSprites: spriteLines);
+      if (mounted) setState(() {});
+
 
       // send the Text Sprite Block header
       await frame!.sendMessage(0x50, tsb.pack());
@@ -92,8 +90,6 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
       _log.info("Stopping layout");
 
-      await Future.delayed(const Duration(seconds: 3));
-
       currentState = ApplicationState.ready;
       if (mounted) setState(() {});
     } catch (e) {
@@ -120,13 +116,18 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
           appBar: AppBar(
               title: const Text('Layout'),
               actions: [getBatteryWidget()]),
-          body: const Padding(
-            padding: EdgeInsets.all(8.0),
+          body: Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Spacer(),
+                const Spacer(),
+                if (pngBytes != null)
+                  Center(
+                    child: Image.memory(pngBytes!),
+                  ),
+                const Spacer(),
               ],
             ),
           ),

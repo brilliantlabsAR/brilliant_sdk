@@ -25,11 +25,11 @@ function app_loop()
 
     local step_one_done = false
     local step_two_done = false
+    local last_batt_update = 0
 
     while true do
         local current_time = frame.time.utc()
         local dt = current_time - last_time
-        local last_batt_update = 0
 
         -- process any raw data items, if ready
         local items_ready = data.process_raw_items()
@@ -79,7 +79,7 @@ function app_loop()
 
         last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
 
-        frame.sleep(0.05) -- Sleep to limit frame rate
+        frame.sleep(0.02)
         last_time = current_time
     end
 end

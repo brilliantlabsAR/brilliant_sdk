@@ -23,8 +23,10 @@ function BodyView:set_lines(lines, line_height)
 end
 
 function BodyView:clear_lines()
-    for k in pairs(self.lines) do self.lines[k] = nil end
-    self.lines = nil
+    if self.lines then
+        for k in pairs(self.lines) do self.lines[k] = nil end
+        self.lines = nil
+    end
     self:invalidate()
 end
 

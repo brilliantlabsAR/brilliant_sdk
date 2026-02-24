@@ -41,4 +41,8 @@ flutter:
     - assets/header_view.lua
     - assets/speech_wave.lua
     - assets/view.lua
-  
+  fonts:
+    - family: DogicaPixel
+      fonts:
+        - asset: assets/fonts/dogica/dogicapixel.ttf
+          weight: 700
