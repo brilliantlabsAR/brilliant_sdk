@@ -65,7 +65,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         String content = await file.readAsString();
       
         var layout = CircularTextLayout(width: 256, height: 256,
-                        circleMargin: 10.0,
+                        circleMargin: 60.0,
                         fontSize: _textSizeValues[_textSizeIndex]);
         // var layout = RectangularTextLayout(width: 256, height: 256,
         //                 fontSize: _textSizeValues[_textSizeIndex],
