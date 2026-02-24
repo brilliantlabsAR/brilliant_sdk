@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:frame_msg/tx/text_sprite_block.dart';
 import 'package:logging/logging.dart';
 
 import 'package:simple_frame_app/simple_frame_app.dart';
 import 'package:frame_msg/tx/code.dart';
-import 'package:frame_msg/tx/plain_text.dart';
 
 void main() => runApp(const MainApp());
 
@@ -32,15 +32,67 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     if (mounted) setState(() {});
 
     try {
-      // TODO do something, e.g. send some text, wait a while, send a clear message
+      _log.info("Starting layout");
+
       // Check the assets/frame_app.lua to find the corresponding frameside handling for these (arbitrarily-chosen) msgCodes
-      final plainText = TxPlainText(text: 'Hello, Frame!');
-      await frame!.sendMessage(0x12, plainText.pack());
+      var txcRecord = TxCode(value: 1);
+      await frame!.sendMessage(0x40, txcRecord.pack());
 
-      await Future.delayed(const Duration(seconds: 10));
+      await Future.delayed(const Duration(seconds: 3));
 
-      final code = TxCode();
-      await frame!.sendMessage(0x10, code.pack());
+      var txcSpeech = TxCode(value: 1);
+      await frame!.sendMessage(0x41, txcSpeech.pack());
+
+
+      // # Send the text for display
+      // # Note that the frameside app is expecting a message of type TxTextSpriteBlock on msgCode 0x20
+      // # the width needs to match the NoaLayout body width (216)
+      // tsb = TxTextSpriteBlock(width=216,
+      //                         line_height=25,
+      //                         font_size=20,
+      //                         max_display_lines=4,
+      //                         font_family="fonts/dogicapixel.ttf"
+      // )
+      final tsb = TxTextSpriteBlock(
+          width: 216,
+          lineHeight: 25,
+          fontSize: 20,
+          maxDisplayLines: 4,
+          fontFamily: "fonts/dogicapixel.ttf");
+
+      final spriteLines = await tsb.createTextSprites("your local\nweather is\n30° celsius\nand sunny");
+
+      // send the Text Sprite Block header
+      await frame!.sendMessage(0x50, tsb.pack());
+
+      // then send all the slices
+      for (var spr in spriteLines) {
+        await frame!.sendMessage(0x50, spr.pack());
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      // send a code to switch off speech wave animation
+      txcSpeech = TxCode(value: 0);
+      await frame!.sendMessage(0x41, txcSpeech.pack());
+
+      // in recording mode for 4 seconds
+      await Future.delayed(const Duration(seconds: 4));
+
+      // clear the text
+      final txcClearTxt = TxCode(value: 0);
+      await frame!.sendMessage(0x51, txcClearTxt.pack());
+
+      await Future.delayed(const Duration(seconds: 2));
+
+      // send a code to switch off recording mode
+      txcRecord = TxCode(value: 0);
+      await frame!.sendMessage(0x40, txcRecord.pack());
+
+      await Future.delayed(const Duration(seconds: 3));
+
+      _log.info("Stopping layout");
+
+      await Future.delayed(const Duration(seconds: 3));
 
       currentState = ApplicationState.ready;
       if (mounted) setState(() {});
