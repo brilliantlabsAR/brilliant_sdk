@@ -67,99 +67,76 @@ class TxTextSpriteBlock extends TxMsg {
   /// are async functions, there needs to be an async function not just the constructor.
   /// Plus we want the caller to decide how many lines of a long paragraph to rasterize, and when.
   /// Text lines as TxSprites are returned as a List, and the caller can decide how many to send to Frame, and when.
-  Future<List<TxSprite>> createTextSprites(String text) async {
+Future<List<TxSprite>> createTextSprites(String text) async {
     final List<TxSprite> sprites = [];
 
+    // 1. Force a massive line height to space lines far apart.
+    // This guarantees ascenders/descenders from adjacent lines
+    // won't bleed into the current line's isolated bounding box.
     final paragraphBuilder = ui.ParagraphBuilder(ui.ParagraphStyle(
       textAlign: textAlign,
       textDirection: textDirection,
-      fontFamily: fontFamily, // gets platform default if null
-      fontSize: _fontSize.toDouble(), // Adjust font size as needed
+      fontFamily: fontFamily,
+      fontSize: _fontSize.toDouble(),
+      height: 5.0, // Massive multiplier to isolate lines
     ));
 
     paragraphBuilder.addText(text);
     final ui.Paragraph paragraph = paragraphBuilder.build();
 
     paragraph.layout(ui.ParagraphConstraints(width: width.toDouble()));
-
-    // work out height using metrics after paragraph.layout() call
-    List<LineMetrics> lineMetrics= paragraph.computeLineMetrics();
+    List<ui.LineMetrics> lineMetrics = paragraph.computeLineMetrics();
 
     if (lineMetrics.isEmpty) {
       return sprites;
     }
 
-    final endIndex = lineMetrics.length - 1;
+    // 2. Choose a fixed baseline for all lines in this block.
+    // Placing the baseline at 80% of the line height is standard.
+    // For a 16px line height, this puts the baseline at Y=13,
+    // leaving 13px for ascenders and 3px for descenders.
+    final double fixedBaseline = (_lineHeight * 0.8).roundToDouble();
 
-    // Calculate the top and bottom boundaries for the selected lines
-    double topBoundary = 0;
-    double bottomBoundary = 0;
-
-    // work out a clip rectangle
-    topBoundary = lineMetrics[0].baseline - lineMetrics[0].ascent;
-    bottomBoundary = lineMetrics[endIndex].baseline + lineMetrics[endIndex].descent;
-
-    // Define the area to clip: a window over the selected lines
-    final clipRect = Rect.fromLTWH(
-      0, // Start from the left edge of the canvas
-      topBoundary, // Start clipping from the top of the startLine
-      width.toDouble(), // Full width of the paragraph
-      bottomBoundary - topBoundary, // Height of the selected lines
-    );
-
-    final pictureRecorder = ui.PictureRecorder();
-    final canvas = ui.Canvas(pictureRecorder);
-    canvas.clipRect(clipRect);
-
-    canvas.drawParagraph(paragraph, ui.Offset.zero);
-    final ui.Picture picture = pictureRecorder.endRecording();
-
-    final int totalHeight = (bottomBoundary - topBoundary).toInt();
-    final int topOffset = topBoundary.toInt();
-
-    final ui.Image image = await picture.toImage(_width, totalHeight);
-
-    var byteData =
-        (await image.toByteData(format: ui.ImageByteFormat.rawUnmodified))!;
-
-    // loop over each requested line of text in the paragraph and create a TxSprite
     for (var line in lineMetrics) {
-      final int tlX = line.left.toInt();
-      final int tlY = (line.baseline - line.ascent).toInt();
-      final int tlyShifted = tlY - topOffset;
-      int lineWidth = line.width.toInt();
-      int lineHeight = (line.ascent + line.descent).toInt();
+      final int lineWidth = line.width.ceil();
 
       // check for non-blank lines
-      if (lineWidth > 0 && lineHeight > 0) {
-        var linePixelData = Uint8List(lineWidth * lineHeight);
+      if (lineWidth > 0) {
+        final pictureRecorder = ui.PictureRecorder();
+        final canvas = ui.Canvas(pictureRecorder);
 
-        for (int i = 0; i < lineHeight; i++) {
-          // take one row of the source image byteData, remembering it's in RGBA so 4 bytes per pixel
-          // and remembering the origin of the image is the top of the startLine, so we need to
-          // shift all the top-left Ys by that first Y offset.
-          var sourceRow = byteData.buffer
-              .asUint8List(((tlyShifted + i) * _width + tlX) * 4, lineWidth * 4);
+        // Clip the canvas exactly to our sprite dimensions
+        canvas.clipRect(Rect.fromLTWH(0, 0, lineWidth.toDouble(), _lineHeight.toDouble()));
 
+        // 3. Align the line's specific baseline exactly to our fixedBaseline
+        canvas.translate(-line.left, fixedBaseline - line.baseline);
+
+        canvas.drawParagraph(paragraph, ui.Offset.zero);
+        final ui.Picture picture = pictureRecorder.endRecording();
+
+        final ui.Image image = await picture.toImage(lineWidth, _lineHeight);
+        var byteData = (await image.toByteData(format: ui.ImageByteFormat.rawUnmodified))!;
+
+        var linePixelData = Uint8List(lineWidth * _lineHeight);
+
+        for (int i = 0; i < _lineHeight; i++) {
+          // Because the image is exactly the size of the sprite, we just read it straight through
+          var sourceRow = byteData.buffer.asUint8List(i * lineWidth * 4, lineWidth * 4);
           for (int j = 0; j < lineWidth; j++) {
-            // take only every 4th byte because the source buffer is RGBA
-            // and map it to palette index 1 if it's 128 or bigger (monochrome palette only, and text rendering will be anti-aliased)
+            // Extract the red channel for grayscale thresholding
             linePixelData[i * lineWidth + j] = sourceRow[4 * j] >= 128 ? 1 : 0;
           }
         }
 
-        // make a Sprite out of the line and add to the list
         sprites.add(TxSprite(
           width: lineWidth,
-          height: lineHeight,
+          height: _lineHeight,
           numColors: 2,
           paletteData: _getPalette().data,
-          pixelData: linePixelData
+          pixelData: linePixelData,
         ));
-      }
-      else {
+      } else {
         // zero-width line, a blank line in the text block
-        // so we make a 1x1 px sprite in the void color
         sprites.add(TxSprite(
           width: 1,
           height: 1,
