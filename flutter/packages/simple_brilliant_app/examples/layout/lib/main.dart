@@ -100,14 +100,16 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
         _log.info("Stopping layout");
 
-        currentState = ApplicationState.ready;
-        if (mounted) setState(() {});
       } catch (e) {
         _log.fine(() => 'Error executing application logic: $e');
         currentState = ApplicationState.ready;
         if (mounted) setState(() {});
+        break;
       }
     }
+
+    currentState = ApplicationState.ready;
+    if (mounted) setState(() {});
   }
 
   @override
