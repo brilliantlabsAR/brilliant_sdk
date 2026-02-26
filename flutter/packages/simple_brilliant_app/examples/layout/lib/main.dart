@@ -43,10 +43,11 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     if (mounted) setState(() {});
 
     final textStrings = [
-      "your local\nweather is\n30° celsius\nand sunny.\ngood times!",
-      "私たちは\n知識を強化し\n理解を深め\n創造性を解き放ち\n共感を育むツールを",
-      "우리는 지식을\n갖추게 하고\n이해를 심화시키며\n창의력을 발휘하고,\n공감을 촉진하는",
-      "ہم ایسے اوزار بنانے\n کے لیے موجود ہیں جو\nہمیں علم سے آراستہ\nکرتے ہیں، سمجھ کو\nگہرا کرتے ہیں، تخلیقیل"
+      "We exist to build tools that empower knowledge, deepen understanding, unleash creativity, and foster empathy—all in service of our shared prosperity.\nAlways open source, we believe the future of computing belongs to all of us.",
+      "我们致力于打造能够赋能知识、加深理解、激发创造力并培养同理心的工具——所有这一切都旨在服务于我们共同的繁荣。\n我们始终坚持开源，并坚信计算的未来属于我们所有人。",
+      "私たちは、知識を強化し、理解を深め、創造性を解き放ち、共感を育むツールを構築するために存在しています。これらはすべて、私たちの共通の繁栄のために役立っています。\n常にオープンソースであり続ける私たちは、コンピューティングの未来は私たち全員のものだと確信しています。",
+      "우리는 지식을 갖추게 하고, 이해를 심화시키며, 창의력을 발휘하고, 공감을 촉진하는 도구를 만들기 위해 존재합니다. 모두 우리의 공동 번영을 위해 봉사합니다.\n항상 오픈 소스로 제공되는 우리는 컴퓨팅의 미래가 우리 모두에 의해 구축되어야 한다고 믿습니다.",
+      "ہم ایسے اوزار بنانے کے لیے موجود ہیں جو ہمیں علم سے آراستہ کرتے ہیں، سمجھ کو گہرا کرتے ہیں، تخلیقی صلاحیتوں کو جنم دیتے ہیں، اور ہمدردی کو فروغ دیتے ہیں - یہ سب کچھ ہماری مشترکہ خوشحالی کی خدمت میں ہے۔\nہمیشہ اوپن سورس، ہمیں یقین ہے کہ کمپیوٹنگ کا مستقبل ہم سب کے ذریعہ بنایا جانا چاہیے۔"
     ];
 
     final numLines = [3, 4, 5];
