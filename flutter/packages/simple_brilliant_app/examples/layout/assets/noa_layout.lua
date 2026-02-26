@@ -16,8 +16,8 @@ function NoaLayout:new()
     -- Set proportions on instantiation
     obj.bg     = BgView:new(0, 0, 256, 256)
     obj.header = HeaderView:new(120, 30, 256-2*120, 20)
-    obj.body   = BodyView:new(20, 76, 256-2*20, 100)
-    obj.footer = FooterView:new(60, 176, 256-2*60, 50)
+    obj.body   = BodyView:new(35, 66, 256-2*35, 85)
+    obj.footer = FooterView:new(60, 151, 256-2*60, 50)
     
     return obj
 end

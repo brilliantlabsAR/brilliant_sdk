@@ -8,7 +8,7 @@ function BgView:render()
     -- blue background
     frame.display.clear(0x4444FF)
     -- black circle
-    frame.display.circle(127, 127, 120, 0x000000, true)
+    frame.display.circle(127, 127, 110, 0x000000, true)
     self.is_dirty = false
 end
 
