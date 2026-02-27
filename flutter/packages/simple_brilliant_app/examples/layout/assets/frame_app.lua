@@ -20,11 +20,8 @@ data.parsers[CLEAR_TXT_MSG] = code.parse_code
 function app_loop()
     local ui = NoaLayout:new()
     local last_time = frame.time.utc() - 0.05 -- Initialize to one frame ago
-    local start_time = last_time
     print("Layout app started. Running main loop...")
 
-    local step_one_done = false
-    local step_two_done = false
     local last_batt_update = 0
 
     while true do
