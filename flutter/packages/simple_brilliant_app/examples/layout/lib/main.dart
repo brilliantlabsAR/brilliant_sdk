@@ -43,89 +43,126 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     if (mounted) setState(() {});
 
     try {
-      final textStrings = [
-        "We exist to build tools that empower knowledge, deepen understanding, unleash creativity, and foster empathy—all in service of our shared prosperity.\nAlways open source, we believe the future of computing belongs to all of us.",
-        "我们致力于打造能够赋能知识、加深理解、激发创造力并培养同理心的工具——所有这一切都旨在服务于我们共同的繁荣。\n我们始终坚持开源，并坚信计算的未来属于我们所有人。",
-        "私たちは、知識を強化し、理解を深め、創造性を解き放ち、共感を育むツールを構築するために存在しています。これらはすべて、私たちの共通の繁栄のために役立っています。\n常にオープンソースであり続ける私たちは、コンピューティングの未来は私たち全員のものだと確信しています。",
-        "우리는 지식을 갖추게 하고, 이해를 심화시키며, 창의력을 발휘하고, 공감을 촉진하는 도구를 만들기 위해 존재합니다. 모두 우리의 공동 번영을 위해 봉사합니다.\n항상 오픈 소스로 제공되는 우리는 컴퓨팅의 미래가 우리 모두에 의해 구축되어야 한다고 믿습니다.",
-        "ہم ایسے اوزار بنانے کے لیے موجود ہیں جو ہمیں علم سے آراستہ کرتے ہیں، سمجھ کو گہرا کرتے ہیں، تخلیقی صلاحیتوں کو جنم دیتے ہیں، اور ہمدردی کو فروغ دیتے ہیں - یہ سب کچھ ہماری مشترکہ خوشحالی کی خدمت میں ہے۔\nہمیشہ اوپن سورس، ہمیں یقین ہے کہ کمپیوٹنگ کا مستقبل ہم سب کے ذریعہ بنایا جانا چاہیے۔"
-      ];
-
-      final numLines = [4, 6, 8, 10];
-      final fontSizes = [20, 16, 11, 8];
-      final lineHeights = [28, 20, 15, 12];
-
       // first use the TextLayout
-      for (int i = 0; i < numLines.length; i++) {
-        final num = numLines[i];
-        final fontSize = fontSizes[i];
-        final lineHeight = lineHeights[i];
+      {
+        _log.info("Starting TextLayout");
 
-        for (int i = 0; i < textStrings.length; i++) {
-          final txt = textStrings[i];
+        final textStrings = [
+          "We exist to build tools that empower knowledge, deepen understanding, unleash creativity, and foster empathy—all in service of our shared prosperity.\nAlways open source, we believe the future of computing belongs to all of us.",
+          //"我们致力于打造能够赋能知识、加深理解、激发创造力并培养同理心的工具——所有这一切都旨在服务于我们共同的繁荣。\n我们始终坚持开源，并坚信计算的未来属于我们所有人。",
+          //"私たちは、知識を強化し、理解を深め、創造性を解き放ち、共感を育むツールを構築するために存在しています。これらはすべて、私たちの共通の繁栄のために役立っています。\n常にオープンソースであり続ける私たちは、コンピューティングの未来は私たち全員のものだと確信しています。",
+          //"우리는 지식을 갖추게 하고, 이해를 심화시키며, 창의력을 발휘하고, 공감을 촉진하는 도구를 만들기 위해 존재합니다. 모두 우리의 공동 번영을 위해 봉사합니다.\n항상 오픈 소스로 제공되는 우리는 컴퓨팅의 미래가 우리 모두에 의해 구축되어야 한다고 믿습니다.",
+          //"ہم ایسے اوزار بنانے کے لیے موجود ہیں جو ہمیں علم سے آراستہ کرتے ہیں، سمجھ کو گہرا کرتے ہیں، تخلیقی صلاحیتوں کو جنم دیتے ہیں، اور ہمدردی کو فروغ دیتے ہیں - یہ سب کچھ ہماری مشترکہ خوشحالی کی خدمت میں ہے۔\nہمیشہ اوپن سورس، ہمیں یقین ہے کہ کمپیوٹنگ کا مستقبل ہم سب کے ذریعہ بنایا جانا چاہیے۔"
+        ];
 
-          _log.info("Starting layout");
+        final numLines = [4, 6, 8, 10];
+        final fontSizes = [20, 16, 11, 8];
+        final lineHeights = [28, 20, 15, 12];
 
-          // Check the assets/frame_app.lua to find the corresponding frameside handling for these (arbitrarily-chosen) msgCodes
-          var txcRecord = TxCode(value: 1);
-          await frame!.sendMessage(0x40, txcRecord.pack());
+        var txcLayout = TxCode(value: 1);
+        await frame!.sendMessage(0x60, txcLayout.pack());
 
-          await Future.delayed(const Duration(seconds: 3));
+        for (int i = 0; i < numLines.length-3; i++) { // TODO reinstate
+          final num = numLines[i];
+          final fontSize = fontSizes[i];
+          final lineHeight = lineHeights[i];
 
-          //var txcSpeech = TxCode(value: 1);
-          //await frame!.sendMessage(0x41, txcSpeech.pack());
+          for (int i = 0; i < textStrings.length; i++) {
+            final txt = textStrings[i];
 
+            // Check the assets/frame_app.lua to find the corresponding frameside handling for these (arbitrarily-chosen) msgCodes
+            var txcRecord = TxCode(value: 1);
+            await frame!.sendMessage(0x40, txcRecord.pack());
 
-          final tsb = TxTextSpriteBlock(
-              width: 186, // Note: match body width in noa_layout.lua (256 - 2*35)
-              lineHeight: lineHeight, // 17 (5 lines), 21 (4 lines), 28 (3 lines)
-              fontSize: fontSize, // 12 (5 lines), 16 (4 lines), 20 (3 lines)
-              maxDisplayLines: num, // 5, 4 or 3
-              fontFamily: "DogicaPixel");
+            await Future.delayed(const Duration(seconds: 3));
 
-          final spriteLines = await tsb.createTextSprites(txt);
+            final tsb = TxTextSpriteBlock(
+                width: 186, // Note: match body width in noa_layout.lua (256 - 2*35)
+                lineHeight: lineHeight, // 17 (5 lines), 21 (4 lines), 28 (3 lines)
+                fontSize: fontSize, // 12 (5 lines), 16 (4 lines), 20 (3 lines)
+                maxDisplayLines: num, // 5, 4 or 3
+                fontFamily: "DogicaPixel");
 
-          pngBytes = await tsb.toPngBytes(rasterizedSprites: spriteLines);
-          if (mounted) setState(() {});
+            final spriteLines = await tsb.createTextSprites(txt);
 
+            pngBytes = await tsb.toPngBytes(rasterizedSprites: spriteLines);
+            if (mounted) setState(() {});
 
-          // send the Text Sprite Block header
-          await frame!.sendMessage(0x50, tsb.pack());
+            // send the Text Sprite Block header
+            await frame!.sendMessage(0x50, tsb.pack());
 
-          // then send all the slices
-          for (var spr in spriteLines) {
-            await frame!.sendMessage(0x50, spr.pack());
-            _log.info("Sent sprite line with width ${spr.width} and height ${spr.height}");
-            await Future.delayed(const Duration(milliseconds: 500));
+            // then send all the slices
+            for (var spr in spriteLines) {
+              await frame!.sendMessage(0x50, spr.pack());
+              await Future.delayed(const Duration(milliseconds: 500));
+            }
+
+            // in recording mode for 4 seconds
+            await Future.delayed(const Duration(seconds: 4));
+
+            // clear the text
+            final txcClearTxt = TxCode(value: 0);
+            await frame!.sendMessage(0x51, txcClearTxt.pack());
+
+            await Future.delayed(const Duration(seconds: 2));
+
+            // send a code to switch off recording mode
+            txcRecord = TxCode(value: 0);
+            await frame!.sendMessage(0x40, txcRecord.pack());
+
+            await Future.delayed(const Duration(seconds: 3));
+
           }
-
-          // send a code to switch off speech wave animation
-          //txcSpeech = TxCode(value: 0);
-          //await frame!.sendMessage(0x41, txcSpeech.pack());
-
-          // in recording mode for 4 seconds
-          await Future.delayed(const Duration(seconds: 4));
-
-          // clear the text
-          final txcClearTxt = TxCode(value: 0);
-          await frame!.sendMessage(0x51, txcClearTxt.pack());
-
-          await Future.delayed(const Duration(seconds: 2));
-
-          // send a code to switch off recording mode
-          txcRecord = TxCode(value: 0);
-          await frame!.sendMessage(0x40, txcRecord.pack());
-
-          await Future.delayed(const Duration(seconds: 3));
-
-          _log.info("Stopping layout");
-
         }
+        _log.info("Ending TextLayout");
       }
 
-      // TODO Then try the SpeechLayout
+      // Then try the SpeechLayout
+      {
+        _log.info("Starting SpeechLayout");
+
+        var txcLayout = TxCode(value: 2);
+        await frame!.sendMessage(0x60, txcLayout.pack());
+
+        var txcRecord = TxCode(value: 1);
+        await frame!.sendMessage(0x40, txcRecord.pack());
+
+        await Future.delayed(const Duration(seconds: 3));
+
+        // send a code to switch on speech wave animation
+        var txcSpeech = TxCode(value: 1);
+        await frame!.sendMessage(0x41, txcSpeech.pack());
+
+        await Future.delayed(const Duration(seconds: 5));
+
+        // send a code to switch off speech wave animation
+        txcSpeech = TxCode(value: 0);
+        await frame!.sendMessage(0x41, txcSpeech.pack());
+
+        await Future.delayed(const Duration(seconds: 5));
+
+        // send a code to switch on speech wave animation
+        txcSpeech = TxCode(value: 1);
+        await frame!.sendMessage(0x41, txcSpeech.pack());
+
+        await Future.delayed(const Duration(seconds: 5));
+
+        // send a code to switch off speech wave animation
+        txcSpeech = TxCode(value: 0);
+        await frame!.sendMessage(0x41, txcSpeech.pack());
+
+        _log.info("Ending SpeechLayout");
+      }
 
       // TODO Then try the EncounterLayout
+      {
+        _log.info("Starting EncounterLayout");
+        var txcLayout = TxCode(value: 3);
+        await frame!.sendMessage(0x60, txcLayout.pack());
+
+        await Future.delayed(const Duration(seconds: 5));
+        _log.info("Ending EncounterLayout");
+      }
 
     } catch (e) {
       _log.fine(() => 'Error executing application logic: $e');

@@ -34,9 +34,9 @@ flutter:
     - packages/frame_msg/lua/sprite.min.lua
     - packages/frame_msg/lua/text_sprite_block.min.lua
     - assets/lua/layout/base_layout.lua
-    - assets/lua/layout/noa_layout.lua
-    - assets/lua/layout/speech_layout.lua
     - assets/lua/layout/text_layout.lua
+    - assets/lua/layout/speech_layout.lua
+    - assets/lua/layout/encounter_layout.lua
     - assets/lua/view/bg_view.lua
     - assets/lua/view/text_view.lua
     - assets/lua/view/speech_wave_view.lua

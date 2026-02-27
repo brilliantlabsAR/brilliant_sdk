@@ -3,18 +3,22 @@ local code = require('code.min')
 local battery = require('battery.min')
 local text_sprite_block = require('text_sprite_block.min')
 local TextLayout = require("text_layout")
+local SpeechLayout = require("speech_layout")
+--local EncounterLayout = require("encounter_layout")
 
 -- Phone to Frame flags
 REC_MSG = 0x40
 SPEECH_MSG = 0x41
 TSB_MSG = 0x50
 CLEAR_TXT_MSG = 0x51
+SET_LAYOUT_MSG = 0x60
 
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[REC_MSG] = code.parse_code
 data.parsers[SPEECH_MSG] = code.parse_code
 data.parsers[TSB_MSG] = text_sprite_block.parse_text_sprite_block
 data.parsers[CLEAR_TXT_MSG] = code.parse_code
+data.parsers[SET_LAYOUT_MSG] = code.parse_code
 
 -- Main app loop
 function app_loop()
@@ -33,6 +37,32 @@ function app_loop()
 
         -- one or more full messages received
         if items_ready > 0 then
+
+            if (data.app_data[SET_LAYOUT_MSG] ~= nil) then
+                local layout_code = data.app_data[SET_LAYOUT_MSG].value
+
+                if layout_code == 1 then
+                    ui = TextLayout:new()
+                elseif layout_code == 2 then
+                    ui = SpeechLayout:new()
+                -- elseif layout_code == 3 then
+                --     ui = EncounterLayout:new()
+                else
+                    print("Warning: Received unknown layout code: " .. tostring(layout_code) .. ". Ignoring.")
+                end
+
+                data.app_data[SET_LAYOUT_MSG] = nil
+                collectgarbage()
+            end
+
+            if (data.app_data[REC_MSG] ~= nil) then
+                if data.app_data[REC_MSG].value == 1 then
+                    ui.header:set_recording(true)
+                else
+                    ui.header:set_recording(false)
+                end
+                data.app_data[REC_MSG] = nil
+            end
 
             if (data.app_data[REC_MSG] ~= nil) then
                 if data.app_data[REC_MSG].value == 1 then

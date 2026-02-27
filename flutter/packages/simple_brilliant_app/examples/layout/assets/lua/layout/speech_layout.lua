@@ -12,7 +12,7 @@ function SpeechLayout:new()
     
     obj:add_child("bg", BgView:new(0, 0, 256, 256))
     obj:add_child("header", HeaderView:new(120, 30, 256-2*120, 20))
-    obj:add_child("body", SpeechWaveView:new(60, 70, 136, 50))
+    obj:add_child("body", SpeechWaveView:new(60, 102, 136, 50))
     
     return obj
 end
