@@ -1,10 +1,10 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:frame_msg/frame_msg.dart';
 import 'package:frame_msg/tx/text_sprite_block.dart';
 import 'package:logging/logging.dart';
 
 import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:frame_msg/tx/code.dart';
 
 void main() => runApp(const MainApp());
 
@@ -19,7 +19,7 @@ class MainApp extends StatefulWidget {
 
 /// SimpleFrameAppState mixin helps to manage the lifecycle of the Frame connection outside of this file
 class MainAppState extends State<MainApp> with SimpleFrameAppState {
-  Uint8List? pngBytes;
+  Uint8List? _pngBytes;
 
   MainAppState() {
     Logger.root.level = Level.INFO;
@@ -62,7 +62,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         var txcLayout = TxCode(value: 1);
         await frame!.sendMessage(0x60, txcLayout.pack());
 
-        for (int i = 0; i < numLines.length-3; i++) { // TODO reinstate
+        for (int i = 0; i < numLines.length-4; i++) { // TODO reinstate
           final num = numLines[i];
           final fontSize = fontSizes[i];
           final lineHeight = lineHeights[i];
@@ -85,7 +85,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
             final spriteLines = await tsb.createTextSprites(txt);
 
-            pngBytes = await tsb.toPngBytes(rasterizedSprites: spriteLines);
+            _pngBytes = await tsb.toPngBytes(rasterizedSprites: spriteLines);
             if (mounted) setState(() {});
 
             // send the Text Sprite Block header
@@ -119,46 +119,91 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
       // Then try the SpeechLayout
       {
-        _log.info("Starting SpeechLayout");
+        if (false) { // TODO reinstate
+          _log.info("Starting SpeechLayout");
 
-        var txcLayout = TxCode(value: 2);
-        await frame!.sendMessage(0x60, txcLayout.pack());
+          var txcLayout = TxCode(value: 2);
+          await frame!.sendMessage(0x60, txcLayout.pack());
 
-        var txcRecord = TxCode(value: 1);
-        await frame!.sendMessage(0x40, txcRecord.pack());
+          var txcRecord = TxCode(value: 1);
+          await frame!.sendMessage(0x40, txcRecord.pack());
 
-        await Future.delayed(const Duration(seconds: 3));
+          await Future.delayed(const Duration(seconds: 3));
 
-        // send a code to switch on speech wave animation
-        var txcSpeech = TxCode(value: 1);
-        await frame!.sendMessage(0x41, txcSpeech.pack());
+          // send a code to switch on speech wave animation
+          var txcSpeech = TxCode(value: 1);
+          await frame!.sendMessage(0x41, txcSpeech.pack());
 
-        await Future.delayed(const Duration(seconds: 5));
+          await Future.delayed(const Duration(seconds: 5));
 
-        // send a code to switch off speech wave animation
-        txcSpeech = TxCode(value: 0);
-        await frame!.sendMessage(0x41, txcSpeech.pack());
+          // send a code to switch off speech wave animation
+          txcSpeech = TxCode(value: 0);
+          await frame!.sendMessage(0x41, txcSpeech.pack());
 
-        await Future.delayed(const Duration(seconds: 5));
+          await Future.delayed(const Duration(seconds: 5));
 
-        // send a code to switch on speech wave animation
-        txcSpeech = TxCode(value: 1);
-        await frame!.sendMessage(0x41, txcSpeech.pack());
+          // send a code to switch on speech wave animation
+          txcSpeech = TxCode(value: 1);
+          await frame!.sendMessage(0x41, txcSpeech.pack());
 
-        await Future.delayed(const Duration(seconds: 5));
+          await Future.delayed(const Duration(seconds: 5));
 
-        // send a code to switch off speech wave animation
-        txcSpeech = TxCode(value: 0);
-        await frame!.sendMessage(0x41, txcSpeech.pack());
+          // send a code to switch off speech wave animation
+          txcSpeech = TxCode(value: 0);
+          await frame!.sendMessage(0x41, txcSpeech.pack());
 
-        _log.info("Ending SpeechLayout");
+          _log.info("Ending SpeechLayout");
+        }
       }
 
-      // TODO Then try the EncounterLayout
+      // Then try the EncounterLayout
       {
         _log.info("Starting EncounterLayout");
         var txcLayout = TxCode(value: 3);
         await frame!.sendMessage(0x60, txcLayout.pack());
+
+        final tsb = TxTextSpriteBlock(
+            width: 146, // Note: match body width in encounter_layout.lua
+            lineHeight: 20,
+            fontSize: 16,
+            maxDisplayLines: 3,
+            fontFamily: "DogicaPixel");
+
+        final spriteLines = await tsb.createTextSprites("Let's play some Pong, jerk face!");
+
+        _pngBytes = await tsb.toPngBytes(rasterizedSprites: spriteLines);
+        if (mounted) setState(() {});
+
+        // send the Text Sprite Block header
+        await frame!.sendMessage(0x50, tsb.pack());
+
+        // then send all the slices
+        for (var spr in spriteLines) {
+          await frame!.sendMessage(0x50, spr.pack());
+        }
+
+        // load the noa_demon asset and turn it into a sprite
+        _log.info("Loading PNG asset");
+        final byteData = await rootBundle.load('assets/images/noa_demon.png');
+        final Uint8List demonBytes = byteData.buffer.asUint8List();
+
+        // preview the image we're about to send
+        _pngBytes = demonBytes;
+        if (mounted) setState(() {});
+
+        _log.info("Creating TxSprite from asset bytes");
+        TxSprite sprite = TxSprite.fromPngBytes(pngBytes: demonBytes);
+        // slice it into an image sprite block and send the header
+        TxImageSpriteBlock isb = TxImageSpriteBlock(image: sprite, spriteLineHeight: 16);
+        _log.info("Sending header");
+        await frame!.sendMessage(0x52, isb.pack());
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        _log.info("Sending sprite lines");
+        // then send all the slices
+        for (var spr in isb.spriteLines) {
+          await frame!.sendMessage(0x52, spr.pack());
+        }
 
         await Future.delayed(const Duration(seconds: 5));
         _log.info("Ending EncounterLayout");
@@ -195,9 +240,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Spacer(),
-                if (pngBytes != null)
+                if (_pngBytes != null)
                   Center(
-                    child: Image.memory(pngBytes!),
+                    child: Image.memory(_pngBytes!),
                   ),
                 const Spacer(),
               ],
