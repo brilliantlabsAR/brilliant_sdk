@@ -34,10 +34,13 @@ flutter:
     - packages/frame_msg/lua/sprite.min.lua
     - packages/frame_msg/lua/text_sprite_block.min.lua
     - assets/frame_app.lua
+    - assets/base_layout.lua
     - assets/noa_layout.lua
+    - assets/speech_layout.lua
+    - assets/text_layout.lua
     - assets/bg_view.lua
-    - assets/body_view.lua
-    - assets/footer_view.lua
+    - assets/text_view.lua
+    - assets/speech_wave_view.lua
     - assets/header_view.lua
     - assets/speech_wave.lua
     - assets/view.lua

@@ -1,8 +1,8 @@
 local View = require("view")
 local BgView = require("bg_view")
 local HeaderView = require("header_view")
-local BodyView = require("body_view")
-local FooterView = require("footer_view")
+local TextView = require("text_view")
+local SpeechWaveView = require("speech_wave_view")
 
 -- NoaLayout: Combines all views and manages updates/renders
 -- Noa-specific layout with header, body, footer, and background views
@@ -16,8 +16,8 @@ function NoaLayout:new()
     -- Set proportions on instantiation
     obj.bg     = BgView:new(0, 0, 256, 256)
     obj.header = HeaderView:new(120, 30, 256-2*120, 20)
-    obj.body   = BodyView:new(35, 66, 256-2*35, 85)
-    obj.footer = FooterView:new(60, 151, 256-2*60, 50)
+    obj.body   = TextView:new(35, 66, 256-2*35, 85)
+    obj.footer = SpeechWaveView:new(60, 151, 256-2*60, 50)
     
     return obj
 end

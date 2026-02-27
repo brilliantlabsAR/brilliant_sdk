@@ -2,7 +2,7 @@ local data = require('data.min')
 local code = require('code.min')
 local battery = require('battery.min')
 local text_sprite_block = require('text_sprite_block.min')
-local NoaLayout = require("noa_layout")
+local TextLayout = require("text_layout")
 
 -- Phone to Frame flags
 REC_MSG = 0x40
@@ -18,9 +18,9 @@ data.parsers[CLEAR_TXT_MSG] = code.parse_code
 
 -- Main app loop
 function app_loop()
-    local ui = NoaLayout:new()
+    local ui = TextLayout:new()
     local last_time = frame.time.utc() - 0.05 -- Initialize to one frame ago
-    print("Layout app started. Running main loop...")
+    print("Layout app started")
 
     local last_batt_update = 0
 
@@ -40,33 +40,47 @@ function app_loop()
                 else
                     ui.header:set_recording(false)
                 end
+                data.app_data[REC_MSG] = nil
             end
 
             if (data.app_data[SPEECH_MSG] ~= nil) then
-                if data.app_data[SPEECH_MSG].value == 1 then
-                    ui.footer.speech_wave:start() -- Start speech wave animation
+                if getmetatable(ui) == SpeechLayout then
+                    if data.app_data[SPEECH_MSG].value == 1 then
+                        ui.body.speech_wave:start() -- Start speech wave animation
+                    else
+                        ui.body.speech_wave:stop() -- Stop speech wave animation
+                    end
                 else
-                    ui.footer.speech_wave:stop() -- Stop speech wave animation
+                    print("Warning: Received SPEECH_MSG but current layout is not SpeechLayout. Ignoring.")
                 end
+                data.app_data[SPEECH_MSG] = nil
             end
 
             if (data.app_data[CLEAR_TXT_MSG] ~= nil) then
-                ui.body:clear_lines()
-                data.app_data[CLEAR_TXT_MSG] = nil
+                if getmetatable(ui) == TextLayout then
+                    ui.body:clear_lines()
 
-                if (data.app_data[TSB_MSG] ~= nil) then
-                    data.app_data[TSB_MSG] = nil
-                    collectgarbage()
+                    if (data.app_data[TSB_MSG] ~= nil) then
+                        data.app_data[TSB_MSG] = nil
+                        collectgarbage()
+                    end
+                else
+                    print("Warning: Received CLEAR_TXT_MSG but current layout is not TextLayout. Ignoring.")
                 end
+                data.app_data[CLEAR_TXT_MSG] = nil
             end
 
             if (data.app_data[TSB_MSG] ~= nil) then
-                local tsb = data.app_data[TSB_MSG]
-                -- clear the text area before drawing new text sprites
-                frame.display.rect(ui.body.x, ui.body.y, tsb.width, tsb.max_display_lines * tsb.line_height, 0x000000, true)
+                if getmetatable(ui) == TextLayout then
+                    local tsb = data.app_data[TSB_MSG]
+                    -- clear the text area before drawing new text sprites
+                    frame.display.rect(ui.body.x, ui.body.y, tsb.width, tsb.max_display_lines * tsb.line_height, 0x000000, true)
 
-                if #tsb.sprites > 0 then
-                    ui.body:set_lines(tsb.sprites, tsb.line_height)
+                    if #tsb.sprites > 0 then
+                        ui.body:set_lines(tsb.sprites, tsb.line_height)
+                    end
+                else
+                    print("Warning: Received TSB_MSG but current layout is not TextLayout. Ignoring.")
                 end
             end
         end

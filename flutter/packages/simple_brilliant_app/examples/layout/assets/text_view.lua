@@ -2,9 +2,9 @@
 -- ------------------
 local View = require("view")
 
-local BodyView = setmetatable({}, {__index = View})
-BodyView.__index = BodyView
-function BodyView:render()
+local TextView = setmetatable({}, {__index = View})
+TextView.__index = TextView
+function TextView:render()
     if self.lines then
         for i, spr in ipairs(self.lines) do
             local y_offset = self.y + (i-1) * self.line_height
@@ -16,13 +16,13 @@ function BodyView:render()
     self.is_dirty = false
 end
 
-function BodyView:set_lines(lines, line_height)
+function TextView:set_lines(lines, line_height)
     self.lines = lines
     self.line_height = line_height
     self:invalidate()
 end
 
-function BodyView:clear_lines()
+function TextView:clear_lines()
     if self.lines then
         for k in pairs(self.lines) do self.lines[k] = nil end
         self.lines = nil
@@ -30,4 +30,4 @@ function BodyView:clear_lines()
     self:invalidate()
 end
 
-return BodyView
+return TextView
