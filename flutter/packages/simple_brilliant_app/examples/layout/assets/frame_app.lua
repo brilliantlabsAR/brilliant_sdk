@@ -69,15 +69,6 @@ function app_loop()
                 data.app_data[REC_MSG] = nil
             end
 
-            if (data.app_data[REC_MSG] ~= nil) then
-                if data.app_data[REC_MSG].value == 1 then
-                    ui.header:set_recording(true)
-                else
-                    ui.header:set_recording(false)
-                end
-                data.app_data[REC_MSG] = nil
-            end
-
             if (data.app_data[SPEECH_MSG] ~= nil) then
                 if getmetatable(ui) == SpeechLayout then
                     if data.app_data[SPEECH_MSG].value == 1 then
@@ -122,6 +113,7 @@ function app_loop()
             if (data.app_data[CLEAR_ISB_MSG] ~= nil) then
                 if getmetatable(ui) == EncounterLayout then
                     ui.image:clear_lines()
+                    ui.bg:invalidate() -- force a full redraw (including bg_view) to clear the image area because the rectangle intersects with the circular boundary and we don't want to draw over it
 
                     if (data.app_data[ISB_MSG] ~= nil) then
                         data.app_data[ISB_MSG] = nil
@@ -136,8 +128,6 @@ function app_loop()
             if (data.app_data[ISB_MSG] ~= nil) then
                 if getmetatable(ui) == EncounterLayout then
                     local isb = data.app_data[ISB_MSG]
-                    -- clear the image area before drawing the new image sprite
-                    frame.display.rect(ui.image.x, ui.image.y, isb.width, isb.height, 0x000000, true)
 
                     if #isb.sprites > 0 then
                         ui.image:set_lines(isb.sprites, isb.sprite_line_height)

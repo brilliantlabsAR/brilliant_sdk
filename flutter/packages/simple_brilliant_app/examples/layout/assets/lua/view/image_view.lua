@@ -53,4 +53,8 @@ function ImageView:clear_lines()
     self:invalidate()
 end
 
+-- override the base clear so we don't draw over the circular boundary
+function ImageView:clear()
+end
+
 return ImageView

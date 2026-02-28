@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:frame_msg/frame_msg.dart';
@@ -49,10 +51,10 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
         final textStrings = [
           "We exist to build tools that empower knowledge, deepen understanding, unleash creativity, and foster empathy—all in service of our shared prosperity.\nAlways open source, we believe the future of computing belongs to all of us.",
-          //"我们致力于打造能够赋能知识、加深理解、激发创造力并培养同理心的工具——所有这一切都旨在服务于我们共同的繁荣。\n我们始终坚持开源，并坚信计算的未来属于我们所有人。",
-          //"私たちは、知識を強化し、理解を深め、創造性を解き放ち、共感を育むツールを構築するために存在しています。これらはすべて、私たちの共通の繁栄のために役立っています。\n常にオープンソースであり続ける私たちは、コンピューティングの未来は私たち全員のものだと確信しています。",
-          //"우리는 지식을 갖추게 하고, 이해를 심화시키며, 창의력을 발휘하고, 공감을 촉진하는 도구를 만들기 위해 존재합니다. 모두 우리의 공동 번영을 위해 봉사합니다.\n항상 오픈 소스로 제공되는 우리는 컴퓨팅의 미래가 우리 모두에 의해 구축되어야 한다고 믿습니다.",
-          //"ہم ایسے اوزار بنانے کے لیے موجود ہیں جو ہمیں علم سے آراستہ کرتے ہیں، سمجھ کو گہرا کرتے ہیں، تخلیقی صلاحیتوں کو جنم دیتے ہیں، اور ہمدردی کو فروغ دیتے ہیں - یہ سب کچھ ہماری مشترکہ خوشحالی کی خدمت میں ہے۔\nہمیشہ اوپن سورس، ہمیں یقین ہے کہ کمپیوٹنگ کا مستقبل ہم سب کے ذریعہ بنایا جانا چاہیے۔"
+          "我们致力于打造能够赋能知识、加深理解、激发创造力并培养同理心的工具——所有这一切都旨在服务于我们共同的繁荣。\n我们始终坚持开源，并坚信计算的未来属于我们所有人。",
+          "私たちは、知識を強化し、理解を深め、創造性を解き放ち、共感を育むツールを構築するために存在しています。これらはすべて、私たちの共通の繁栄のために役立っています。\n常にオープンソースであり続ける私たちは、コンピューティングの未来は私たち全員のものだと確信しています。",
+          "우리는 지식을 갖추게 하고, 이해를 심화시키며, 창의력을 발휘하고, 공감을 촉진하는 도구를 만들기 위해 존재합니다. 모두 우리의 공동 번영을 위해 봉사합니다.\n항상 오픈 소스로 제공되는 우리는 컴퓨팅의 미래가 우리 모두에 의해 구축되어야 한다고 믿습니다.",
+          "ہم ایسے اوزار بنانے کے لیے موجود ہیں جو ہمیں علم سے آراستہ کرتے ہیں، سمجھ کو گہرا کرتے ہیں، تخلیقی صلاحیتوں کو جنم دیتے ہیں، اور ہمدردی کو فروغ دیتے ہیں - یہ سب کچھ ہماری مشترکہ خوشحالی کی خدمت میں ہے۔\nہمیشہ اوپن سورس، ہمیں یقین ہے کہ کمپیوٹنگ کا مستقبل ہم سب کے ذریعہ بنایا جانا چاہیے۔"
         ];
 
         final numLines = [4, 6, 8, 10];
@@ -62,7 +64,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         var txcLayout = TxCode(value: 1);
         await frame!.sendMessage(0x60, txcLayout.pack());
 
-        for (int i = 0; i < numLines.length-4; i++) { // TODO reinstate
+        for (int i = 0; i < numLines.length; i++) {
           final num = numLines[i];
           final fontSize = fontSizes[i];
           final lineHeight = lineHeights[i];
@@ -119,41 +121,39 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
       // Then try the SpeechLayout
       {
-        if (false) { // TODO reinstate
-          _log.info("Starting SpeechLayout");
+        _log.info("Starting SpeechLayout");
 
-          var txcLayout = TxCode(value: 2);
-          await frame!.sendMessage(0x60, txcLayout.pack());
+        var txcLayout = TxCode(value: 2);
+        await frame!.sendMessage(0x60, txcLayout.pack());
 
-          var txcRecord = TxCode(value: 1);
-          await frame!.sendMessage(0x40, txcRecord.pack());
+        var txcRecord = TxCode(value: 1);
+        await frame!.sendMessage(0x40, txcRecord.pack());
 
-          await Future.delayed(const Duration(seconds: 3));
+        await Future.delayed(const Duration(seconds: 3));
 
-          // send a code to switch on speech wave animation
-          var txcSpeech = TxCode(value: 1);
-          await frame!.sendMessage(0x41, txcSpeech.pack());
+        // send a code to switch on speech wave animation
+        var txcSpeech = TxCode(value: 1);
+        await frame!.sendMessage(0x41, txcSpeech.pack());
 
-          await Future.delayed(const Duration(seconds: 5));
+        await Future.delayed(const Duration(seconds: 5));
 
-          // send a code to switch off speech wave animation
-          txcSpeech = TxCode(value: 0);
-          await frame!.sendMessage(0x41, txcSpeech.pack());
+        // send a code to switch off speech wave animation
+        txcSpeech = TxCode(value: 0);
+        await frame!.sendMessage(0x41, txcSpeech.pack());
 
-          await Future.delayed(const Duration(seconds: 5));
+        await Future.delayed(const Duration(seconds: 5));
 
-          // send a code to switch on speech wave animation
-          txcSpeech = TxCode(value: 1);
-          await frame!.sendMessage(0x41, txcSpeech.pack());
+        // send a code to switch on speech wave animation
+        txcSpeech = TxCode(value: 1);
+        await frame!.sendMessage(0x41, txcSpeech.pack());
 
-          await Future.delayed(const Duration(seconds: 5));
+        await Future.delayed(const Duration(seconds: 5));
 
-          // send a code to switch off speech wave animation
-          txcSpeech = TxCode(value: 0);
-          await frame!.sendMessage(0x41, txcSpeech.pack());
+        // send a code to switch off speech wave animation
+        txcSpeech = TxCode(value: 0);
+        await frame!.sendMessage(0x41, txcSpeech.pack());
 
-          _log.info("Ending SpeechLayout");
-        }
+        _log.info("Ending SpeechLayout");
       }
 
       // Then try the EncounterLayout
@@ -193,8 +193,19 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
         _log.info("Creating TxSprite from asset bytes");
         TxSprite sprite = TxSprite.fromPngBytes(pngBytes: demonBytes);
+
+        // create a new TxSprite with a circular crop at the bottom
+        Uint8List maskedPixelsixels = applyCircleMask(sprite.pixelData);
+        TxSprite maskedSprite = TxSprite(
+          width: sprite.width,
+          height: sprite.height,
+          numColors: sprite.numColors,
+          paletteData: sprite.paletteData,
+          pixelData: maskedPixelsixels,
+        );
+
         // slice it into an image sprite block and send the header
-        TxImageSpriteBlock isb = TxImageSpriteBlock(image: sprite, spriteLineHeight: 16);
+        TxImageSpriteBlock isb = TxImageSpriteBlock(image: maskedSprite, spriteLineHeight: 16);
         _log.info("Sending header");
         await frame!.sendMessage(0x52, isb.pack());
         await Future.delayed(const Duration(milliseconds: 500));
@@ -206,6 +217,14 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         }
 
         await Future.delayed(const Duration(seconds: 5));
+
+        // clear the image and the text
+        final txcClearImg = TxCode(value: 0);
+        await frame!.sendMessage(0x53, txcClearImg.pack());
+
+        final txcClearTxt = TxCode(value: 0);
+        await frame!.sendMessage(0x51, txcClearTxt.pack());
+
         _log.info("Ending EncounterLayout");
       }
 
@@ -214,6 +233,23 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     }
     currentState = ApplicationState.ready;
     if (mounted) setState(() {});
+  }
+
+  Uint8List applyCircleMask(Uint8List pixels) {
+    const int cx = 63, cy = 18, r2 = 110 * 110;
+    const int width = 128;
+
+    for (int y = 107; y < 128; y++) {
+      final int dy = y - cy;
+      final int dx = sqrt((r2 - dy * dy).toDouble()).floor();
+      final int xMin = (cx - dx).clamp(0, width);
+      final int xMax = (cx + dx + 1).clamp(0, width);
+
+      final int rowOffset = y * width;
+      pixels.fillRange(rowOffset, rowOffset + xMin, 0);
+      pixels.fillRange(rowOffset + xMax, rowOffset + width, 0);
+    }
+    return pixels;
   }
 
   @override
