@@ -171,26 +171,6 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     var txcLayout = TxCode(value: 3);
     await frame!.sendMessage(_msgCodeLayout, txcLayout.pack());
 
-    final tsb = TxTextSpriteBlock(
-        width: 146, // Note: match body width in encounter_layout.lua
-        lineHeight: 20,
-        fontSize: 16,
-        maxDisplayLines: 3,
-        fontFamily: "DogicaPixel");
-
-    final spriteLines = await tsb.createTextSprites("Let's play some Pong, jerk face!");
-
-    _pngBytes = await tsb.toPngBytes(rasterizedSprites: spriteLines);
-    if (mounted) setState(() {});
-
-    // send the Text Sprite Block header
-    await frame!.sendMessage(_msgCodeTextSprite, tsb.pack());
-
-    // then send all the slices
-    for (var spr in spriteLines) {
-      await frame!.sendMessage(_msgCodeTextSprite, spr.pack());
-    }
-
     // load the noa_demon asset and turn it into a sprite
     _log.info("Loading PNG asset");
     final byteData = await rootBundle.load('assets/images/noa_demon.png');
@@ -223,6 +203,26 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     // then send all the slices
     for (var spr in isb.spriteLines) {
       await frame!.sendMessage(_msgCodeImageSprite, spr.pack());
+    }
+
+    final tsb = TxTextSpriteBlock(
+        width: 146, // Note: match body width in encounter_layout.lua
+        lineHeight: 20,
+        fontSize: 16,
+        maxDisplayLines: 3,
+        fontFamily: "DogicaPixel");
+
+    final spriteLines = await tsb.createTextSprites("Let's play some Pong, jerk face!");
+
+    _pngBytes = await tsb.toPngBytes(rasterizedSprites: spriteLines);
+    if (mounted) setState(() {});
+
+    // send the Text Sprite Block header
+    await frame!.sendMessage(_msgCodeTextSprite, tsb.pack());
+
+    // then send all the slices
+    for (var spr in spriteLines) {
+      await frame!.sendMessage(_msgCodeTextSprite, spr.pack());
     }
 
     await Future.delayed(const Duration(seconds: 5));
