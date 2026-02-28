@@ -129,7 +129,9 @@ function app_loop()
                 if getmetatable(ui) == EncounterLayout then
                     local isb = data.app_data[ISB_MSG]
 
-                    if #isb.sprites > 0 then
+                    -- for progressive drawing, use "#isb.sprites > 0" but I'll wait for all of them
+                    -- 128px with 16px strips so 8 strips total
+                    if #isb.sprites == 8 then
                         ui.image:set_lines(isb.sprites, isb.sprite_line_height)
                     end
                 else
