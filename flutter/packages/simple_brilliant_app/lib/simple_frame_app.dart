@@ -527,7 +527,7 @@ mixin SimpleFrameAppState<T extends StatefulWidget> on State<T> {
     // TODO harmonize these APIs
     if (frame!.type == BrilliantDeviceType.halo) {
       await frame!.sendString(
-          'frame.display.clear(0x000000);frame.display.text(\'Loading...\',50,50,0xFFFFFF);print(0)',
+          'frame.display.power_save(false);frame.display.clear();frame.display.text(\'Loading...\',100,127,0xFFFFFF);print(0)',
           awaitResponse: true);
     } else {
       await frame!.sendString(
