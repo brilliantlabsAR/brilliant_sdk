@@ -163,6 +163,13 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     txcSpeech = TxCode(value: 0);
     await frame!.sendMessage(_msgCodeSpeechWave, txcSpeech.pack());
 
+    await Future.delayed(const Duration(seconds: 1));
+
+    txcRecord = TxCode(value: 0);
+    await frame!.sendMessage(_msgCodeRecordingMode, txcRecord.pack());
+
+    await Future.delayed(const Duration(seconds: 1));
+
     _log.info("Ending SpeechLayout");
   }
 
@@ -197,7 +204,6 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     TxImageSpriteBlock isb = TxImageSpriteBlock(image: maskedSprite, spriteLineHeight: 16);
     _log.info("Sending header");
     await frame!.sendMessage(_msgCodeImageSprite, isb.pack());
-    await Future.delayed(const Duration(milliseconds: 500));
 
     _log.info("Sending sprite lines");
     // then send all the slices
@@ -225,7 +231,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
       await frame!.sendMessage(_msgCodeTextSprite, spr.pack());
     }
 
-    await Future.delayed(const Duration(seconds: 5));
+    await Future.delayed(const Duration(seconds: 10));
 
     // clear the image and the text
     final txcClearImg = TxCode(value: 0);

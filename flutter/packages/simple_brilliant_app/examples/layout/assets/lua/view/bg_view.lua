@@ -45,26 +45,31 @@ end
 local BgView = setmetatable({}, {__index = View})
 BgView.__index = BgView
 function BgView:render()
-    -- black background
-    -- not necessary since we now cover the whole display
-    --frame.display.clear(0x000000)
+    if frame.HARDWARE_VERSION ~= 'Frame' then
+        -- black background
+        -- not necessary since we now cover the whole display
+        --frame.display.clear(0x000000)
 
-    -- blue/grey triangles for battery level
-    draw_battery(self.last_batt)
+        -- blue/grey triangles for battery level
+        draw_battery(self.last_batt)
 
-    -- black circle
-    frame.display.circle(127, 127, 110, 0x000000, true)
+        -- black circle
+        frame.display.circle(127, 127, 110, 0x000000, true)
+    end
     self.is_dirty = false
 end
 
 function BgView:update(dt)
-    local batt = frame.battery_level()
+    if frame.HARDWARE_VERSION ~= 'Frame' then
+            -- on Halo we need to redraw the battery indicator every frame since we don't have a separate view layer for it and we want it to be visible on all layouts, but on Frame we draw it once in the bg_view and it stays there since we have a separate view layer for it
+        local batt = frame.battery_level()
 
-    -- TODO smooth this out so we don't flap between two battery levels when hovering around a threshold
-    if batt ~= self.last_batt then
-        self.last_batt = batt
+        -- TODO smooth this out so we don't flap between two battery levels when hovering around a threshold
+        if batt ~= self.last_batt then
+            self.last_batt = batt
 
-        self:invalidate()
+            self:invalidate()
+        end
     end
 end
 

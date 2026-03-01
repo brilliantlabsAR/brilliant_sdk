@@ -100,7 +100,9 @@ function app_loop()
                 if getmetatable(ui) == TextLayout or getmetatable(ui) == EncounterLayout then
                     local tsb = data.app_data[TSB_MSG]
                     -- clear the text area before drawing new text sprites
-                    frame.display.rect(ui.body.x, ui.body.y, tsb.width, tsb.max_display_lines * tsb.line_height, 0x000000, true)
+                    if frame.HARDWARE_VERSION ~= 'Frame' then
+                        frame.display.rect(ui.body.x, ui.body.y, tsb.width, tsb.max_display_lines * tsb.line_height, 0x000000, true)
+                    end
 
                     if #tsb.sprites > 0 then
                         ui.body:set_lines(tsb.sprites, tsb.line_height)
@@ -141,7 +143,10 @@ function app_loop()
         end
 
         ui:update(dt)
-        ui:render()
+        if ui.is_dirty then
+            ui:render()
+            frame.display.show()
+        end
 
         last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
 
@@ -151,4 +156,4 @@ function app_loop()
 end
 
 -- run the main app loop
-app_loop()    
+app_loop()

@@ -20,10 +20,13 @@ function View:update(dt)
 end
 
 function View:clear()
-    -- Base view draw logic (e.g., just a black rectangle)
-    frame.display.rect(self.x, self.y, self.w, self.h, 0x000000, true)
-    -- debug red border to visualize view boundaries
-    -- frame.display.rect(self.x, self.y, self.w, self.h, 0xA00000, false)
+    -- Frame clears on every redraw, no need (and doesn't support rect)
+    if frame.HARDWARE_VERSION ~= 'Frame' then
+        -- Base view draw logic (e.g., just a black rectangle)
+        frame.display.rect(self.x, self.y, self.w, self.h, 0x000000, true)
+        -- debug red border to visualize view boundaries
+        -- frame.display.rect(self.x, self.y, self.w, self.h, 0xA00000, false)
+    end
 end
 
 function View:render()

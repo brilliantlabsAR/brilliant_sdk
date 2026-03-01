@@ -10,7 +10,8 @@ function TextView:render()
             local y_offset = self.y + (i-1) * self.line_height
             -- center the text sprites horizontally within the body view
             local x_offset = self.x + (self.w - spr.width) // 2
-            frame.display.assign_color(1, 255, 255, 255) -- TODO ideally the text sprites would come with their own palette data so we don't have to hardcode this
+            local col = frame.HARDWARE_VERSION ~= 'Frame' and 1 or 'WHITE'
+            frame.display.assign_color(col, 255, 255, 255) -- TODO ideally the text sprites would come with their own palette data so we don't have to hardcode this
             frame.display.bitmap(x_offset, y_offset, spr.width, 2^spr.bpp, 0, spr.pixel_data)
         end
     end

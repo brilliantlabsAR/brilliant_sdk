@@ -12,13 +12,17 @@ function SpeechWaveView:new(x, y, w, h)
 end
 
 function SpeechWaveView:update(dt)
-    self.speech_wave:update(dt) -- TODO no dt handling, just tick
-    self:invalidate() 
+    if frame.HARDWARE_VERSION ~= 'Frame' then
+        self.speech_wave:update(dt) -- TODO no dt handling, just tick
+        self:invalidate()
+    end
 end
 
 function SpeechWaveView:render()
-    self.speech_wave:draw(self.x, self.y)
-    self.is_dirty = false
+    if frame.HARDWARE_VERSION ~= 'Frame' then
+        self.speech_wave:draw(self.x, self.y)
+        self.is_dirty = false
+    end
 end
 
 return SpeechWaveView

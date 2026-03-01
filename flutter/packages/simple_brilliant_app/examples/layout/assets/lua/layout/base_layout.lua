@@ -33,7 +33,8 @@ function BaseLayout:render()
 
     for _, name in ipairs(self.children) do
         local child = self[name]
-        if child and child.is_dirty then
+        -- Frame always re-renders all views
+        if child and child.is_dirty or frame.HARDWARE_VERSION == 'Frame' then
             child:clear()
             child:render()
             child.is_dirty = false
