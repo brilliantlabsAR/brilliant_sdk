@@ -1,6 +1,6 @@
 -- Body: Content area
 -- ------------------
-local View = require("view")
+local View = require("view.min")
 
 local function set_palette(num_colors, palette_data)
 	local colors = {'VOID', 'WHITE', 'GREY', 'RED', 'PINK', 'DARKBROWN','BROWN', 'ORANGE', 'YELLOW', 'DARKGREEN', 'GREEN', 'LIGHTGREEN', 'NIGHTBLUE', 'SEABLUE', 'SKYBLUE', 'CLOUDBLUE'}
@@ -31,7 +31,9 @@ function ImageView:render()
         for i, spr in ipairs(self.lines) do
             local y_offset = self.y + (i-1) * self.line_height
             -- center the text sprites horizontally within the body view
-            local x_offset = self.x + (self.w - spr.width) // 2
+            -- NOTE: splitting over two lines to avoid a minifier bug: self.x + (self.w - spr.width) // 2 -> self.x+self.w-d.width//2
+            local width_diff = self.w - spr.width
+            local x_offset = self.x + width_diff // 2
             set_palette(spr.num_colors, spr.palette_data) -- TODO or inline the palette data in the bitmap call
             frame.display.bitmap(x_offset, y_offset, spr.width, 2^spr.bpp, 0, spr.pixel_data)
         end

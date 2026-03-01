@@ -34,17 +34,17 @@ flutter:
     - packages/frame_msg/lua/sprite.min.lua
     - packages/frame_msg/lua/text_sprite_block.min.lua
     - packages/frame_msg/lua/image_sprite_block.min.lua
-    - assets/lua/layout/base_layout.lua
-    - assets/lua/layout/text_layout.lua
-    - assets/lua/layout/speech_layout.lua
-    - assets/lua/layout/encounter_layout.lua
-    - assets/lua/view/bg_view.lua
-    - assets/lua/view/image_view.lua
-    - assets/lua/view/text_view.lua
-    - assets/lua/view/speech_wave_view.lua
-    - assets/lua/view/header_view.lua
-    - assets/lua/view/speech_wave.lua
-    - assets/lua/view/view.lua
+    - assets/lua/layout/base_layout.min.lua
+    - assets/lua/layout/text_layout.min.lua
+    - assets/lua/layout/speech_layout.min.lua
+    - assets/lua/layout/encounter_layout.min.lua
+    - assets/lua/view/bg_view.min.lua
+    - assets/lua/view/image_view.min.lua
+    - assets/lua/view/text_view.min.lua
+    - assets/lua/view/speech_wave_view.min.lua
+    - assets/lua/view/header_view.min.lua
+    - assets/lua/view/speech_wave.min.lua
+    - assets/lua/view/view.min.lua
     - assets/frame_app.lua
     - assets/images/
   fonts:

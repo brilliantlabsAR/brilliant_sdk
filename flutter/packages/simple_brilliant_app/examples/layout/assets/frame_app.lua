@@ -3,18 +3,18 @@ local code = require('code.min')
 local battery = require('battery.min')
 local text_sprite_block = require('text_sprite_block.min')
 local image_sprite_block = require('image_sprite_block.min')
-local TextLayout = require("text_layout")
-local SpeechLayout = require("speech_layout")
-local EncounterLayout = require("encounter_layout")
+local TextLayout = require("text_layout.min")
+local SpeechLayout = require("speech_layout.min")
+local EncounterLayout = require("encounter_layout.min")
 
 -- Phone to Frame flags
-REC_MSG = 0x40
-SPEECH_MSG = 0x41
-TSB_MSG = 0x50
-CLEAR_TSB_MSG = 0x51
-ISB_MSG = 0x52
-CLEAR_ISB_MSG = 0x53
-SET_LAYOUT_MSG = 0x60
+local REC_MSG = 0x40
+local SPEECH_MSG = 0x41
+local TSB_MSG = 0x50
+local CLEAR_TSB_MSG = 0x51
+local ISB_MSG = 0x52
+local CLEAR_ISB_MSG = 0x53
+local SET_LAYOUT_MSG = 0x60
 
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[REC_MSG] = code.parse_code

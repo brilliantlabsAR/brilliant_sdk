@@ -1,0 +1,1 @@
+local a=require("base_layout.min")local b=require("bg_view.min")local c=require("header_view.min")local d=require("text_view.min")local e=setmetatable({},{__index=a})e.__index=e;function e:new()local f=a.new(self,0,0,256,256)f:add_child("bg",b:new(0,0,256,256))f:add_child("header",c:new(120,30,256-2*120,20))f:add_child("body",d:new(35,67,185,120))return f end;return e

@@ -1,6 +1,6 @@
 -- Header: Notification area
 -- -------------------------
-local View = require("view")
+local View = require("view.min")
 
 local HeaderView = setmetatable({}, {__index = View})
 HeaderView.__index = HeaderView

@@ -1,8 +1,8 @@
 -- speech_layout.lua
-local BaseLayout = require("base_layout")
-local BgView = require("bg_view")
-local HeaderView = require("header_view")
-local SpeechWaveView = require("speech_wave_view") 
+local BaseLayout = require("base_layout.min")
+local BgView = require("bg_view.min")
+local HeaderView = require("header_view.min")
+local SpeechWaveView = require("speech_wave_view.min") 
 
 local SpeechLayout = setmetatable({}, {__index = BaseLayout})
 SpeechLayout.__index = SpeechLayout

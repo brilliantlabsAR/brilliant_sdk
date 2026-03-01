@@ -1,7 +1,7 @@
 -- Footer: Speech animation
 -- ------------------------
-local View = require("view")
-local SpeechWave = require("speech_wave")
+local View = require("view.min")
+local SpeechWave = require("speech_wave.min")
 
 local SpeechWaveView = setmetatable({}, {__index = View})
 SpeechWaveView.__index = SpeechWaveView

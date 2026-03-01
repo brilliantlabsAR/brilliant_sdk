@@ -1,6 +1,6 @@
 -- Background view (battery indicator plus circle)
 -- -----------------------------------------------
-local View = require("view")
+local View = require("view.min")
 
 -- Battery level: 0-100
 -- 8 triangles cover the full display (each covers 45 degrees)

@@ -1,8 +1,8 @@
 -- text_layout.lua
-local BaseLayout = require("base_layout")
-local BgView = require("bg_view")
-local HeaderView = require("header_view")
-local TextView = require("text_view")
+local BaseLayout = require("base_layout.min")
+local BgView = require("bg_view.min")
+local HeaderView = require("header_view.min")
+local TextView = require("text_view.min")
 
 local TextLayout = setmetatable({}, {__index = BaseLayout})
 TextLayout.__index = TextLayout

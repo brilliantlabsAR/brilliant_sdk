@@ -1,9 +1,9 @@
 -- encounter_layout.lua
-local BaseLayout = require("base_layout")
-local BgView = require("bg_view")
-local HeaderView = require("header_view")
-local TextView = require("text_view")
-local ImageView = require("image_view") 
+local BaseLayout = require("base_layout.min")
+local BgView = require("bg_view.min")
+local HeaderView = require("header_view.min")
+local TextView = require("text_view.min")
+local ImageView = require("image_view.min") 
 
 local EncounterLayout = setmetatable({}, {__index = BaseLayout})
 EncounterLayout.__index = EncounterLayout

@@ -1,5 +1,5 @@
 -- base_layout.lua
-local View = require("view")
+local View = require("view.min")
 
 local BaseLayout = setmetatable({}, {__index = View})
 BaseLayout.__index = BaseLayout
