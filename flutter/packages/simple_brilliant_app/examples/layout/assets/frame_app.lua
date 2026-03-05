@@ -9,7 +9,7 @@ local EncounterLayout = require("encounter_layout.min")
 
 -- Phone to Frame flags
 local REC_MSG = 0x40
-local SPEECH_MSG = 0x41
+local SPEECH_WAVE_MSG = 0x70
 local TSB_MSG = 0x50
 local CLEAR_TSB_MSG = 0x51
 local ISB_MSG = 0x52
@@ -18,7 +18,7 @@ local SET_LAYOUT_MSG = 0x60
 
 -- register the message parsers so they are automatically called when matching data comes in
 data.parsers[REC_MSG] = code.parse_code
-data.parsers[SPEECH_MSG] = code.parse_code
+data.parsers[SPEECH_WAVE_MSG] = code.parse_code
 data.parsers[TSB_MSG] = text_sprite_block.parse_text_sprite_block
 data.parsers[CLEAR_TSB_MSG] = code.parse_code
 data.parsers[ISB_MSG] = image_sprite_block.parse_image_sprite_block
@@ -69,17 +69,17 @@ function app_loop()
                 data.app_data[REC_MSG] = nil
             end
 
-            if (data.app_data[SPEECH_MSG] ~= nil) then
+            if (data.app_data[SPEECH_WAVE_MSG] ~= nil) then
                 if getmetatable(ui) == SpeechLayout then
-                    if data.app_data[SPEECH_MSG].value == 1 then
+                    if data.app_data[SPEECH_WAVE_MSG].value == 1 then
                         ui.body.speech_wave:start() -- Start speech wave animation
                     else
                         ui.body.speech_wave:stop() -- Stop speech wave animation
                     end
                 else
-                    print("Warning: Received SPEECH_MSG but current layout is not SpeechLayout. Ignoring.")
+                    print("Warning: Received SPEECH_WAVE_MSG but current layout is not SpeechLayout. Ignoring.")
                 end
-                data.app_data[SPEECH_MSG] = nil
+                data.app_data[SPEECH_WAVE_MSG] = nil
             end
 
             if (data.app_data[CLEAR_TSB_MSG] ~= nil) then

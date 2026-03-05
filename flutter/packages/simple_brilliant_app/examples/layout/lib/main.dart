@@ -24,7 +24,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   // Message codes for frame communication (arbitrarily-chosen identifiers)
   static const int _msgCodeLayout = 0x60;
   static const int _msgCodeRecordingMode = 0x40;
-  static const int _msgCodeSpeechWave = 0x41;
+  static const int _msgCodeSpeechWave = 0x70;
   static const int _msgCodeTextSprite = 0x50;
   static const int _msgCodeClearText = 0x51;
   static const int _msgCodeImageSprite = 0x52;
