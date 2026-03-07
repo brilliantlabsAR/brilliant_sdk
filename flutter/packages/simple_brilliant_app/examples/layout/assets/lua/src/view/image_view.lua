@@ -27,6 +27,7 @@ end
 local ImageView = setmetatable({}, {__index = View})
 ImageView.__index = ImageView
 function ImageView:render()
+    -- no need to self:clear()
     if self.lines then
         for i, spr in ipairs(self.lines) do
             local y_offset = self.y + (i-1) * self.line_height
@@ -57,10 +58,6 @@ function ImageView:clear_lines()
         self.lines = nil
     end
     self:invalidate()
-end
-
--- override the base clear so we don't draw over the circular boundary
-function ImageView:clear()
 end
 
 return ImageView

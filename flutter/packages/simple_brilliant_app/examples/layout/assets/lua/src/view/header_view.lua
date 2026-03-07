@@ -4,13 +4,16 @@ local View = require("view.min")
 
 local HeaderView = setmetatable({}, {__index = View})
 HeaderView.__index = HeaderView
+
 function HeaderView:set_recording(is_recording)
     self.is_recording = is_recording
     self:invalidate()
 end
+
 function HeaderView:render()
     if frame.HARDWARE_VERSION ~= 'Frame' then
-        -- draw a red circle in the top-left corner if recording, black otherwise
+        -- no need to clear; just overdraw
+        -- draw a red circle if recording, black otherwise
         local col = self.is_recording and 0xF00000 or 0x000000
         frame.display.circle(self.x+8, self.y+10, 8, col, true)
     else

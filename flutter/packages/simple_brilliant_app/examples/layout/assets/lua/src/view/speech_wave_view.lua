@@ -20,6 +20,7 @@ end
 
 function SpeechWaveView:render()
     if frame.HARDWARE_VERSION ~= 'Frame' then
+        self:clear()
         self.speech_wave:draw(self.x, self.y)
         self.is_dirty = false
     end

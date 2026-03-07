@@ -5,6 +5,7 @@ local View = require("view.min")
 local TextView = setmetatable({}, {__index = View})
 TextView.__index = TextView
 function TextView:render()
+    self:clear()
     if self.lines then
         for i, spr in ipairs(self.lines) do
             local y_offset = self.y + (i-1) * self.line_height

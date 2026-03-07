@@ -7,10 +7,11 @@ local TextLayout = setmetatable({}, {__index = BaseLayout})
 TextLayout.__index = TextLayout
 
 function TextLayout:new()
-    local obj = BaseLayout.new(self, 0, 0, 256, 256)
-    
+    local obj = BaseLayout:new(0, 0, 256, 256)
+    obj.type = "TextLayout"
+
     obj:add_child("header", HeaderView:new(120, 30, 256-2*120, 20))
-    obj:add_child("body", TextView:new(35, 67, 185, 120))
+    obj:add_child("body", TextView:new(37, 67, 182, 120))
     
     return obj
 end

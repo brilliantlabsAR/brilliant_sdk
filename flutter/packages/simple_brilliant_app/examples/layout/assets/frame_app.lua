@@ -57,6 +57,9 @@ function app_loop()
                 end
 
                 data.app_data[SET_LAYOUT_MSG] = nil
+                -- blank out the whole layout first
+                ui:clear()
+                ui:invalidate()
                 collectgarbage()
             end
 
@@ -70,7 +73,7 @@ function app_loop()
             end
 
             if (data.app_data[SPEECH_WAVE_MSG] ~= nil) then
-                if getmetatable(ui) == SpeechLayout then
+                if ui:is("SpeechLayout") then
                     if data.app_data[SPEECH_WAVE_MSG].value == 1 then
                         ui.body.speech_wave:start() -- Start speech wave animation
                     else
@@ -83,7 +86,7 @@ function app_loop()
             end
 
             if (data.app_data[CLEAR_TSB_MSG] ~= nil) then
-                if getmetatable(ui) == TextLayout or getmetatable(ui) == EncounterLayout then
+                if ui:is("EncounterLayout") or ui:is("TextLayout") then
                     ui.body:clear_lines()
 
                     if (data.app_data[TSB_MSG] ~= nil) then
@@ -97,7 +100,7 @@ function app_loop()
             end
 
             if (data.app_data[TSB_MSG] ~= nil) then
-                if getmetatable(ui) == TextLayout or getmetatable(ui) == EncounterLayout then
+                if ui:is("EncounterLayout") or ui:is("TextLayout") then
                     local tsb = data.app_data[TSB_MSG]
                     -- clear the text area before drawing new text sprites
                     if frame.HARDWARE_VERSION ~= 'Frame' then
@@ -113,9 +116,9 @@ function app_loop()
             end
 
             if (data.app_data[CLEAR_ISB_MSG] ~= nil) then
-                if getmetatable(ui) == EncounterLayout then
+                if ui:is("EncounterLayout") then
                     ui.image:clear_lines()
-                    ui.bg:invalidate() -- force a full redraw (including bg_view) to clear the image area because the rectangle intersects with the circular boundary and we don't want to draw over it
+                    ui.bg:invalidate() -- force a full redraw (including bg_view) to clear the image area because the rectangle intersects with the circular boundary
 
                     if (data.app_data[ISB_MSG] ~= nil) then
                         data.app_data[ISB_MSG] = nil
@@ -128,7 +131,7 @@ function app_loop()
             end
 
             if (data.app_data[ISB_MSG] ~= nil) then
-                if getmetatable(ui) == EncounterLayout then
+                if ui:is("EncounterLayout") then
                     local isb = data.app_data[ISB_MSG]
 
                     -- for progressive drawing, use "#isb.sprites > 0" but I'll wait for all of them

@@ -8,7 +8,8 @@ local EncounterLayout = setmetatable({}, {__index = BaseLayout})
 EncounterLayout.__index = EncounterLayout
 
 function EncounterLayout:new()
-    local obj = BaseLayout.new(self, 0, 0, 256, 256)
+    local obj = BaseLayout:new(0, 0, 256, 256)
+    obj.type = "EncounterLayout"
     
     -- Add children in the order they should be updated/rendered
     obj:add_child("header", HeaderView:new(120, 30, 256-2*120, 20))

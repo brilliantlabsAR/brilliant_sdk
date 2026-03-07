@@ -97,7 +97,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         await Future.delayed(const Duration(seconds: 3));
 
         final tsb = TxTextSpriteBlock(
-            width: 186, // Note: match body width in noa_layout.lua (256 - 2*35)
+            width: 182, // Note: match body width in noa_layout.lua (256 - 2*37)
             lineHeight: lineHeight, // 17 (5 lines), 21 (4 lines), 28 (3 lines)
             fontSize: fontSize, // 12 (5 lines), 16 (4 lines), 20 (3 lines)
             maxDisplayLines: num, // 5, 4 or 3
