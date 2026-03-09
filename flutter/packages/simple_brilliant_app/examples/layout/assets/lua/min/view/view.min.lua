@@ -1,0 +1,1 @@
+local a={}a.__index=a;function a:new(b,c,d,e)local f={x=b,y=c,w=d,h=e,is_dirty=true}return setmetatable(f,self)end;function a:invalidate()self.is_dirty=true end;function a:update(g)end;function a:clear()if frame.HARDWARE_VERSION~='Frame'then frame.display.rect(self.x,self.y,self.w,self.h,0x000000,true)end end;function a:render()end;return a

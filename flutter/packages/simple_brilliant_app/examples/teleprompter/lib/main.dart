@@ -6,7 +6,7 @@ import 'package:logging/logging.dart';
 
 import 'package:simple_frame_app/simple_frame_app.dart';
 import 'package:frame_msg/tx/code.dart';
-import 'package:frame_msg/tx/text_sprite_block.dart';
+import 'package:frame_msg/tx/text_page.dart';
 
 
 void main() => runApp(const MainApp());
@@ -65,20 +65,20 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         String content = await file.readAsString();
       
         var layout = CircularTextLayout(width: 256, height: 256,
-                        circleMargin: 10.0,
+                        circleMargin: 60.0,
                         fontSize: _textSizeValues[_textSizeIndex]);
         // var layout = RectangularTextLayout(width: 256, height: 256,
         //                 fontSize: _textSizeValues[_textSizeIndex],
         //                 textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
 
-        var tsb = TxTextSpriteBlock(
+        var tp = TxTextPage(
           layout: layout,
           text: content,
         );
 
         _pages.clear();
-        while (tsb.hasMoreText) {
-          final page = await tsb.measureNextPage();
+        while (tp.hasMoreText) {
+          final page = await tp.measureNextPage();
           if (page != null) {
             _pages.add(page);
           }

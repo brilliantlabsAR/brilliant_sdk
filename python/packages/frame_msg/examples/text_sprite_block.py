@@ -1,6 +1,6 @@
 import asyncio
 
-from frame_msg import FrameMsg, TxTextSpriteBlock
+from frame_msg import FrameMsg, TxCode, TxTextSpriteBlock
 
 async def main():
     """
@@ -11,14 +11,15 @@ async def main():
         await frame.connect()
 
         # debug only: check our current battery level and memory usage (which varies between 16kb and 31kb or so even after the VM init)
-        batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)
+        batt_mem = await frame.ble.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)
         print(f"Battery Level/Memory used: {batt_mem}")
+        await frame.ble.send_lua("frame.display.power_save(false);frame.display.set_brightness(1);print(0)", await_print=True)
 
         # Let the user know we're starting
         await frame.print_short_text('Loading...')
 
         # send the std lua files to Frame that handle data accumulation and sprite text display
-        await frame.upload_stdlua_libs(lib_names=['data', 'text_sprite_block'])
+        await frame.upload_stdlua_libs(lib_names=['data', 'code', 'text_sprite_block'])
 
         # Send the main lua application from this project to Frame that will run the app
         await frame.upload_frame_app(local_filename="lua/text_sprite_block_frame_app.lua")
@@ -40,53 +41,71 @@ async def main():
 
         # Send the text for display on Frame
         # Note that the frameside app is expecting a message of type TxTextSpriteBlock on msgCode 0x20
-        tsb = TxTextSpriteBlock(width=320,
-                                font_size=40,
-                                max_display_rows=7,
-                                text="Hello, friend!\nこんにちは、友人！\n朋友你好！\nПривет, друг!\n안녕, 친구!",
+        tsb = TxTextSpriteBlock(width=256,
+                                line_height=30,
+                                font_size=20,
+                                max_display_lines=4,
                                 font_family="fonts/NotoSansCJK-VF.ttf.ttc"
         )
 
+        # get the sprites for the text we want to display
+        sprites = tsb.create_text_sprites("Hello, friend!\nこんにちは、友人！\n朋友你好！\nПривет, друг!\n안녕, 친구!")
+
         # send the Image Sprite Block header
         await frame.send_message(0x20, tsb.pack())
         # then send all the slices
-        for spr in tsb.sprites:
+        for spr in sprites:
             await frame.send_message(0x20, spr.pack())
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
 
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(5.0)
+
+        # send a message to clear the display
+        await frame.send_message(0x21, TxCode().pack()) 
 
         # right-to-left script is also supported
-        tsb = TxTextSpriteBlock(width=320,
-                                font_size=40,
-                                max_display_rows=2,
-                                text="שלום, חבר!",
+        tsb = TxTextSpriteBlock(width=256,
+                                line_height=30,
+                                font_size=20,
+                                max_display_lines=1,
                                 font_family="fonts/NotoSansHebrew-Regular.ttf"
         )
 
+        sprites = tsb.create_text_sprites("שלום, חבר!")
+
         # send the Image Sprite Block header
         await frame.send_message(0x20, tsb.pack())
         # then send all the slices
-        for spr in tsb.sprites:
+        for spr in sprites:
             await frame.send_message(0x20, spr.pack())
+            await asyncio.sleep(0.5)
 
         await asyncio.sleep(2.0)
 
+        # send a message to clear the display and start a fresh TextSpriteBlock
+        await frame.send_message(0x21, TxCode().pack()) 
+
         # right-to-left script is also supported
-        tsb = TxTextSpriteBlock(width=600,
-                                font_size=40,
-                                max_display_rows=2,
-                                text="مرحبا يا صديق",
+        tsb = TxTextSpriteBlock(width=256,
+                                line_height=30,
+                                font_size=18,
+                                max_display_lines=1,
                                 font_family="fonts/NotoKufiArabic-Regular.ttf"
         )
 
+        sprites = tsb.create_text_sprites("مرحبا يا صديق")
+
         # send the Image Sprite Block header
         await frame.send_message(0x20, tsb.pack())
         # then send all the slices
-        for spr in tsb.sprites:
+        for spr in sprites:
             await frame.send_message(0x20, spr.pack())
+            await asyncio.sleep(0.5)
 
         await asyncio.sleep(2.0)
+
+        # send a message to clear the display and start a fresh TextSpriteBlock
+        await frame.send_message(0x21, TxCode().pack()) 
 
         # unhook the print handler
         frame.detach_print_response_handler()

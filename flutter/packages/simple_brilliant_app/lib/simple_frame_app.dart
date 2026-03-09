@@ -128,7 +128,7 @@ mixin SimpleFrameAppState<T extends StatefulWidget> on State<T> {
         await Future.delayed(const Duration(milliseconds: 500));
 
         await frame!.sendString(
-            'print("Connected to Frame " .. frame.FIRMWARE_VERSION .. ", Mem: " .. tostring(collectgarbage("count")))',
+            'print("Connected to " .. frame.HARDWARE_VERSION .. " " .. frame.FIRMWARE_VERSION .. ", Mem: " .. tostring(collectgarbage("count")))',
             awaitResponse: true);
 
         // Frame is ready to go!
@@ -386,12 +386,18 @@ mixin SimpleFrameAppState<T extends StatefulWidget> on State<T> {
     List<String> luaFiles = _filterLuaFiles(
         (await AssetManifest.loadFromAssetBundle(rootBundle)).listAssets());
 
+    _log.info("Lua asset files: $luaFiles");
+
     if (luaFiles.isNotEmpty) {
       for (var pathFile in luaFiles) {
         String fileName = pathFile.split('/').last;
         // send the lua script to the Frame
         await frame!.uploadScript(fileName, await rootBundle.loadString(pathFile));
       }
+
+      await frame!.sendString(
+          'print("Memory use after uploading scripts: " .. tostring(collectgarbage("count")))',
+          awaitResponse: true);
 
       // kick off the main application loop: if there is only one lua file, use it;
       // otherwise require a file called "assets/frame_app.min.lua", or "assets/frame_app.lua".
@@ -527,7 +533,7 @@ mixin SimpleFrameAppState<T extends StatefulWidget> on State<T> {
     // TODO harmonize these APIs
     if (frame!.type == BrilliantDeviceType.halo) {
       await frame!.sendString(
-          'frame.display.clear(0x000000);frame.display.text(\'Loading...\',50,50,0xFFFFFF);print(0)',
+          'frame.display.power_save(false);frame.display.clear();frame.display.text(\'Loading...\',100,127,0xFFFFFF);print(0)',
           awaitResponse: true);
     } else {
       await frame!.sendString(
