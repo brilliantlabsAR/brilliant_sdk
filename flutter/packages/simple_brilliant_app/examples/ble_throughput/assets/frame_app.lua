@@ -12,10 +12,11 @@ START_DATA_SEND_MSG = 0x30
 AUDIO_DATA_NON_FINAL_MSG = 0x05
 AUDIO_DATA_FINAL_MSG = 0x06
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[TEXT_MSG] = plain_text.parse_plain_text
-data.parsers[CLEAR_MSG] = code.parse_code
-data.parsers[START_DATA_SEND_MSG] = code.parse_code
+-- message parsers, keyed by message flag
+local parsers = {}
+parsers[TEXT_MSG] = plain_text.parse_plain_text
+parsers[CLEAR_MSG] = code.parse_code
+parsers[START_DATA_SEND_MSG] = code.parse_code
 
 function print_text(text)
     local i = 0
@@ -44,6 +45,36 @@ function clear_display()
 	end
 end
 
+-- message handlers, dispatched in arrival order by the main loop
+local handlers = {}
+
+handlers[TEXT_MSG] = function(parsed_data)
+	if parsed_data.string ~= nil then
+		print_text(parsed_data.string)
+	end
+end
+
+handlers[CLEAR_MSG] = function(parsed_data)
+	clear_display()
+end
+
+handlers[START_DATA_SEND_MSG] = function(parsed_data)
+	print_text("Streaming starting")
+	streaming = true
+	-- send back some data on code 0x30
+	payload = "\x30" .. string.rep("A", mtu - 1)
+
+	for i=1,NUM_PACKETS do
+		while true do
+			-- rapid sends can cause failure so retry immediately
+			if pcall(frame.bluetooth.send, payload) then
+				break
+			end
+		end
+	end
+
+	streaming = false
+end
 
 -- Main app loop
 function app_loop()
@@ -57,41 +88,22 @@ function app_loop()
 	print("Frame app started")
 
 	while true do
-		-- process any raw data items, if ready
-		local items_ready = data.process_raw_items()
+		-- process any raw data items, returns array of parsed items
+		local items = data.process_raw_items()
 
 		-- one or more full messages received
-		if items_ready > 0 then
+		if #items > 0 then
+			for i = 1, #items do
+				local flag = items[i][1]
+				local raw = items[i][2]
 
-			if (data.app_data[TEXT_MSG] ~= nil and data.app_data[TEXT_MSG].string ~= nil) then
-				print_text(data.app_data[TEXT_MSG].string)
-				data.app_data[TEXT_MSG] = nil
-			end
-
-			if (data.app_data[CLEAR_MSG] ~= nil) then
-				clear_display()
-				data.app_data[CLEAR_MSG] = nil
-			end
-
-			if (data.app_data[START_DATA_SEND_MSG] ~= nil) then
-				print_text("Streaming starting")
-				streaming = true
-				-- send back some data on code 0x30
-				payload = "\x30" .. string.rep("A", mtu - 1)
-				
-				for i=1,NUM_PACKETS do
-					while true do
-						-- rapid sends can cause failure so retry immediately
-						if pcall(frame.bluetooth.send, payload) then
-							break
-						end
+				if parsers[flag] then
+					local parsed = parsers[flag](raw)
+					if handlers[flag] then
+						handlers[flag](parsed)
 					end
 				end
-
-				streaming = false
-				data.app_data[START_DATA_SEND_MSG] = nil
 			end
-
 		end
 
         -- periodic battery level updates

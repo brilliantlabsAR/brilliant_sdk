@@ -64,12 +64,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         // Read the file content
         String content = await file.readAsString();
       
-        var layout = CircularTextLayout(width: 256, height: 256,
-                        circleMargin: 60.0,
-                        fontSize: _textSizeValues[_textSizeIndex]);
-        // var layout = RectangularTextLayout(width: 256, height: 256,
-        //                 fontSize: _textSizeValues[_textSizeIndex],
-        //                 textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
+        // var layout = CircularTextLayout(width: 256, height: 256,
+        //                 circleMargin: 60.0,
+        //                 fontSize: _textSizeValues[_textSizeIndex]);
+        var layout = RectangularTextLayout(width: 256, height: 256,
+                        fontSize: _textSizeValues[_textSizeIndex],
+                        textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
 
         var tp = TxTextPage(
           layout: layout,

@@ -13,15 +13,16 @@ SPRITE_TEXT_3 = 0x33
 CLEAR_MSG = 0x10
 NEXT_MSG = 0x11
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[SPRITE_1] = sprite.parse_sprite
-data.parsers[SPRITE_2] = sprite.parse_sprite
-data.parsers[SPRITE_3] = sprite.parse_sprite
-data.parsers[SPRITE_TEXT_1] = sprite.parse_sprite
-data.parsers[SPRITE_TEXT_2] = sprite.parse_sprite
-data.parsers[SPRITE_TEXT_3] = sprite.parse_sprite
-data.parsers[CLEAR_MSG] = code.parse_code
-data.parsers[NEXT_MSG] = code.parse_code
+-- message parsers, keyed by message flag
+local parsers = {}
+parsers[SPRITE_1] = sprite.parse_sprite
+parsers[SPRITE_2] = sprite.parse_sprite
+parsers[SPRITE_3] = sprite.parse_sprite
+parsers[SPRITE_TEXT_1] = sprite.parse_sprite
+parsers[SPRITE_TEXT_2] = sprite.parse_sprite
+parsers[SPRITE_TEXT_3] = sprite.parse_sprite
+parsers[CLEAR_MSG] = code.parse_code
+parsers[NEXT_MSG] = code.parse_code
 
 function clear_display()
     if frame.HARDWARE_VERSION == 'Frame' then
@@ -37,6 +38,7 @@ function app_loop()
 	clear_display()
     local last_batt_update = 0
 	local all_sprites = {}
+	local sprite_state = {}
 
 	if frame.HARDWARE_VERSION ~= 'Frame' then
 		frame.display.brightness(50)
@@ -46,70 +48,108 @@ function app_loop()
 
     print('Frame App Started')
 
+	-- message handlers, dispatched in arrival order by the main loop
+	-- (defined inside app_loop to access all_sprites and sprite_state)
+	local handlers = {}
+
+	handlers[SPRITE_1] = function(parsed_data)
+		sprite_state[SPRITE_1] = parsed_data
+		check_all_sprites_received()
+	end
+
+	handlers[SPRITE_2] = function(parsed_data)
+		sprite_state[SPRITE_2] = parsed_data
+		check_all_sprites_received()
+	end
+
+	handlers[SPRITE_3] = function(parsed_data)
+		sprite_state[SPRITE_3] = parsed_data
+		check_all_sprites_received()
+	end
+
+	handlers[SPRITE_TEXT_1] = function(parsed_data)
+		sprite_state[SPRITE_TEXT_1] = parsed_data
+		check_all_sprites_received()
+	end
+
+	handlers[SPRITE_TEXT_2] = function(parsed_data)
+		sprite_state[SPRITE_TEXT_2] = parsed_data
+		check_all_sprites_received()
+	end
+
+	handlers[SPRITE_TEXT_3] = function(parsed_data)
+		sprite_state[SPRITE_TEXT_3] = parsed_data
+		check_all_sprites_received()
+	end
+
+	handlers[CLEAR_MSG] = function(parsed_data)
+		-- clear the display
+		print('Clear display message received')
+		clear_display()
+	end
+
+	handlers[NEXT_MSG] = function(parsed_data)
+		print('Next sprite message received')
+		-- display the next sprite in the sequence
+		if #all_sprites > 0 then
+			print('Displaying next sprite')
+			local spr = table.remove(all_sprites, 1)
+			table.insert(all_sprites, spr)
+			local spr_text = table.remove(all_sprites, 1)
+			table.insert(all_sprites, spr_text)
+
+			-- draw the sprite
+			frame.display.clear(0x18309C)
+			-- 120x60 @ 101,71
+			frame.display.bitmap(101, 71, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+			-- 140x30 @ 91,136
+			frame.display.bitmap(91, 136, spr_text.width, 2^spr_text.bpp, 0, spr_text.pixel_data, {palette_data=spr_text.palette_data})
+		end
+	end
+
+	function check_all_sprites_received()
+		-- do we have all the sprites?
+		if (sprite_state[SPRITE_1] ~= nil and
+			sprite_state[SPRITE_TEXT_1] ~= nil and
+			sprite_state[SPRITE_2] ~= nil and
+			sprite_state[SPRITE_TEXT_2] ~= nil and
+			sprite_state[SPRITE_3] ~= nil and
+			sprite_state[SPRITE_TEXT_3] ~= nil
+		) then
+			print('All sprites received')
+			all_sprites = {
+				sprite_state[SPRITE_1],
+				sprite_state[SPRITE_TEXT_1],
+				sprite_state[SPRITE_2],
+				sprite_state[SPRITE_TEXT_2],
+				sprite_state[SPRITE_3],
+				sprite_state[SPRITE_TEXT_3]
+			}
+			sprite_state[SPRITE_1] = nil
+			sprite_state[SPRITE_2] = nil
+			sprite_state[SPRITE_3] = nil
+			sprite_state[SPRITE_TEXT_1] = nil
+			sprite_state[SPRITE_TEXT_2] = nil
+			sprite_state[SPRITE_TEXT_3] = nil
+		end
+	end
+
 	while true do
 		rc, err = pcall(
             function()
-				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				-- process any raw data items, returns array of parsed items
+				local items = data.process_raw_items()
 
 				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					-- do we have all the sprites?
-					if (data.app_data[SPRITE_1] ~= nil and 
-						data.app_data[SPRITE_TEXT_1] ~= nil and 
-						data.app_data[SPRITE_2] ~= nil and 
-						data.app_data[SPRITE_TEXT_2] ~= nil and 
-						data.app_data[SPRITE_3] ~= nil and
-						data.app_data[SPRITE_TEXT_3] ~= nil 
-					) then
-						print('All sprites received')
-						all_sprites = {
-							data.app_data[SPRITE_1], 
-							data.app_data[SPRITE_TEXT_1],
-							data.app_data[SPRITE_2], 
-							data.app_data[SPRITE_TEXT_2],
-							data.app_data[SPRITE_3],
-							data.app_data[SPRITE_TEXT_3]
-						}
-						data.app_data[SPRITE_1] = nil
-						data.app_data[SPRITE_2] = nil
-						data.app_data[SPRITE_3] = nil
-						data.app_data[SPRITE_TEXT_1] = nil
-						data.app_data[SPRITE_TEXT_2] = nil
-						data.app_data[SPRITE_TEXT_3] = nil
-					end
-
-					if (data.app_data[NEXT_MSG] ~= nil) then
-						print('Next sprite message received')
-						-- display the next sprite in the sequence
-						if #all_sprites > 0 then
-							print('Displaying next sprite')
-							local spr = table.remove(all_sprites, 1)
-							table.insert(all_sprites, spr)
-							local spr_text = table.remove(all_sprites, 1)
-							table.insert(all_sprites, spr_text)
-
-							-- clear just the display area
-							--print(#spr.pixel_data*8/spr.bpp/(spr.width+7//8))
-							--frame.display.bitmap(101, 71, 1, 2, 0, '\xFF', {palette_data='\x000000\x18309C', x_scale=spr.width, y_scale=#spr.pixel_data*8/spr.bpp/(spr.width+7//8)})
-							--frame.display.bitmap(101, 71, 1, 2, 0, '\xFF', {palette_data='\x00\x00\x00\x18\x30\x9C', x_scale=1, y_scale=spr.height//8})
-
-							-- draw the sprite
-							frame.display.clear(0x18309C)
-							-- 120x60 @ 101,71
-							frame.display.bitmap(101, 71, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
-							-- 140x30 @ 91,136
-							frame.display.bitmap(91, 136, spr_text.width, 2^spr_text.bpp, 0, spr_text.pixel_data, {palette_data=spr_text.palette_data})
+					if parsers[flag] then
+						local parsed = parsers[flag](raw)
+						if handlers[flag] then
+							handlers[flag](parsed)
 						end
-						data.app_data[NEXT_MSG] = nil
-					end
-
-					if (data.app_data[CLEAR_MSG] ~= nil) then
-						-- clear the display
-						print('Clear display message received')
-						clear_display()
-						data.app_data[CLEAR_MSG] = nil
 					end
 				end
 

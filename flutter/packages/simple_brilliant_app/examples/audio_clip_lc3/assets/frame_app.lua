@@ -15,13 +15,14 @@ STOP_PLAYBACK_MSG = 0x41
 AUDIO_DATA_NON_FINAL_MSG = 0x05
 AUDIO_DATA_FINAL_MSG = 0x06
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[TEXT_MSG] = plain_text.parse_plain_text
-data.parsers[CLEAR_MSG] = code.parse_code
-data.parsers[START_RECORDING_MSG] = code.parse_code
-data.parsers[STOP_RECORDING_MSG] = code.parse_code
-data.parsers[START_PLAYBACK_MSG] = code.parse_code
-data.parsers[STOP_PLAYBACK_MSG] = code.parse_code
+-- message parsers, keyed by message flag
+local parsers = {}
+parsers[TEXT_MSG] = plain_text.parse_plain_text
+parsers[CLEAR_MSG] = code.parse_code
+parsers[START_RECORDING_MSG] = code.parse_code
+parsers[STOP_RECORDING_MSG] = code.parse_code
+parsers[START_PLAYBACK_MSG] = code.parse_code
+parsers[STOP_PLAYBACK_MSG] = code.parse_code
 
 function show_text(text)
 	if frame.HARDWARE_VERSION == "Frame" then
@@ -44,6 +45,66 @@ function clear_display()
 	end
 end
 
+-- message handlers, dispatched in arrival order by the main loop
+local handlers = {}
+
+handlers[TEXT_MSG] = function(parsed_data)
+	if parsed_data.string ~= nil then
+		local i = 0
+		if frame.HARDWARE_VERSION ~= "Frame" then
+			frame.display.clear()
+		end
+		for line in parsed_data.string:gmatch("([^\n]*)\n?") do
+			if line ~= "" then
+				if frame.HARDWARE_VERSION == "Frame" then
+					frame.display.text(line, 1, i * 60 + 1)
+				else
+					frame.display.text(line, 50, 50 + i * 60)
+				end
+				i = i + 1
+			end
+		end
+		frame.display.show()
+	end
+end
+
+handlers[CLEAR_MSG] = function(parsed_data)
+	clear_display()
+end
+
+handlers[START_RECORDING_MSG] = function(parsed_data)
+	audio_data = ''
+	if frame.HARDWARE_VERSION == "Frame" then
+		pcall(frame.microphone.start, {sample_rate=8000, bit_depth=16})
+	else
+		-- Halo
+		pcall(frame.microphone.start, {sample_rate=8000, bit_depth=16, gain=0})
+	end
+	recording = true
+	show_text("Recording Audio")
+end
+
+handlers[STOP_RECORDING_MSG] = function(parsed_data)
+	pcall(frame.microphone.stop)
+	clear_display()
+end
+
+handlers[START_PLAYBACK_MSG] = function(parsed_data)
+	if frame.HARDWARE_VERSION ~= "Frame" then
+		playing = true
+		pcall(frame.speaker.start, {encoder="lc3", sample_rate=8000, channels=1, duration=1000, bitrate=32000, volume=100})
+	end
+	show_text("Playing Audio")
+end
+
+handlers[STOP_PLAYBACK_MSG] = function(parsed_data)
+	if frame.HARDWARE_VERSION ~= "Frame" then
+		playing = false
+		pcall(frame.speaker.stop)
+		clear_display()
+	end
+	show_text("Playback Stopped")
+end
 
 -- Main app loop
 function app_loop()
@@ -59,75 +120,21 @@ function app_loop()
 	print("Frame app started")
 
 	while true do
-		-- process any raw data items, if ready
-		local items_ready = data.process_raw_items()
+		-- process any raw data items, returns array of parsed items
+		local items = data.process_raw_items()
 
 		-- one or more full messages received
-		if items_ready > 0 then
+		if #items > 0 then
+			for i = 1, #items do
+				local flag = items[i][1]
+				local raw = items[i][2]
 
-			if (data.app_data[TEXT_MSG] ~= nil and data.app_data[TEXT_MSG].string ~= nil) then
-				local i = 0
-				if frame.HARDWARE_VERSION ~= "Frame" then
-					frame.display.clear()
-				end
-				for line in data.app_data[TEXT_MSG].string:gmatch("([^\n]*)\n?") do
-					if line ~= "" then
-						if frame.HARDWARE_VERSION == "Frame" then
-							frame.display.text(line, 1, i * 60 + 1)
-						else
-							frame.display.text(line, 50, 50 + i * 60)
-						end
-						i = i + 1
+				if parsers[flag] then
+					local parsed = parsers[flag](raw)
+					if handlers[flag] then
+						handlers[flag](parsed)
 					end
 				end
-				frame.display.show()
-			end
-
-			if (data.app_data[CLEAR_MSG] ~= nil) then
-				clear_display()
-				data.app_data[CLEAR_MSG] = nil
-			end
-
-			if (data.app_data[START_RECORDING_MSG] ~= nil) then
-				audio_data = ''
-				if frame.HARDWARE_VERSION == "Frame" then
-					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=16})
-				else
-					-- Halo
-					pcall(frame.microphone.start, {sample_rate=8000, bit_depth=16, gain=0})
-				end
-				recording = true
-				show_text("Recording Audio")
-
-				data.app_data[START_RECORDING_MSG] = nil
-			end
-
-			if (data.app_data[STOP_RECORDING_MSG] ~= nil) then
-				pcall(frame.microphone.stop)
-				clear_display()
-
-				data.app_data[STOP_RECORDING_MSG] = nil
-			end
-
-			if (data.app_data[START_PLAYBACK_MSG] ~= nil) then
-				if frame.HARDWARE_VERSION ~= "Frame" then
-					playing = true
-					pcall(frame.speaker.start, {encoder="lc3", sample_rate=8000, channels=1, duration=1000, bitrate=32000, volume=100})
-				end
-				show_text("Playing Audio")
-
-				data.app_data[START_PLAYBACK_MSG] = nil
-			end
-
-			if (data.app_data[STOP_PLAYBACK_MSG] ~= nil) then
-				if frame.HARDWARE_VERSION ~= "Frame" then
-					playing = false
-					pcall(frame.speaker.stop)
-					clear_display()
-				end
-				show_text("Playback Stopped")
-
-				data.app_data[STOP_PLAYBACK_MSG] = nil
 			end
 		end
 

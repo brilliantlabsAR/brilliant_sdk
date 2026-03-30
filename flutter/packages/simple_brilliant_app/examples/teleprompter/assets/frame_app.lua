@@ -8,9 +8,10 @@ local text_sprite_block = require('text_sprite_block')
 TEXT_SPRITE_BLOCK = 0x20
 CLEAR_MSG = 0x10
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[TEXT_SPRITE_BLOCK] = text_sprite_block.parse_text_sprite_block
-data.parsers[CLEAR_MSG] = code.parse_code
+-- message parsers, keyed by message flag
+local parsers = {}
+parsers[TEXT_SPRITE_BLOCK] = text_sprite_block.parse_text_sprite_block
+parsers[CLEAR_MSG] = code.parse_code
 
 function clear_display()
     if frame.HARDWARE_VERSION == 'Frame' then
@@ -26,53 +27,72 @@ function app_loop()
 	clear_display()
     local last_batt_update = 0
 
+    -- app-owned state for accumulating message types
+    local state = {}
+
 	if frame.HARDWARE_VERSION ~= 'Frame' then
 		frame.display.brightness(50)
 	end
 
     print('Frame App Started')
 
+	-- message handlers, dispatched in arrival order by the main loop
+	local handlers = {}
+
+	handlers[TEXT_SPRITE_BLOCK] = function(tsb)
+		-- it can be that we haven't got any sprites yet
+		local shift_y = 0
+		if #tsb.sprites > 0 then
+			for index = 1, #tsb.sprites do
+				local spr = tsb.sprites[index]
+				frame.display.bitmap(1, 1 + (index - 1)*spr.height, spr.width, 2^spr.bpp, 0, spr.pixel_data)
+			end
+
+			if frame.HARDWARE_VERSION == 'Frame' then
+				frame.display.show()
+			end
+			last_text_show = frame.time.utc()
+		end
+	end
+
+	handlers[CLEAR_MSG] = function(item)
+		clear_display()
+	end
+
     while true do
         rc, err = pcall(
             function()
-                -- process any raw data items, if ready
-                local items_ready = data.process_raw_items()
+                -- drain the message queue, parse and dispatch in arrival order
+                local items = data.process_raw_items()
 
-                -- one or more full messages received
-                if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw  = items[i][2]
 
-                    if (data.app_data[TEXT_SPRITE_BLOCK] ~= nil) then
-                        -- show the text sprite block
-                        local tsb = data.app_data[TEXT_SPRITE_BLOCK]
+					if parsers[flag] == nil then
+						print('Error: No parser for flag: ' .. tostring(flag))
+					else
+						local parsed
 
-                        -- it can be that we haven't got any sprites yet
-                        local shift_y = 0
-                        if tsb.first_sprite_index > 0 then
-                            shift_y = tsb.offsets[tsb.first_sprite_index].y
+						-- accumulating types: need to pass previous state to the parser
+						if flag == TEXT_SPRITE_BLOCK then
+							parsed = parsers[flag](raw, state[flag])
+							state[flag] = parsed
+						else
+							parsed = parsers[flag](raw)
+						end
 
-                            for index = tsb.first_sprite_index, tsb.last_sprite_index do
-                                local spr = tsb.sprites[index]
-                                frame.display.bitmap(tsb.offsets[index].x + 1, tsb.offsets[index].y + 1 - shift_y, spr.width, 2^spr.bpp, 0, spr.pixel_data)
-                            end
 
-                            if frame.HARDWARE_VERSION == 'Frame' then
-                                frame.display.show()
-                            end
-                            last_text_show = frame.time.utc()
-                        end
-                    end
+						if handlers[flag] ~= nil then
+							handlers[flag](parsed)
+						else
+							print('Error: No handler for flag: ' .. tostring(flag))
+						end
+					end
+				end
 
-                    if (data.app_data[CLEAR_MSG] ~= nil) then
-                        clear_display()
-                        data.app_data[CLEAR_MSG] = nil
-                    end
-                end
-
-                -- periodic battery level updates, 120s for a camera app
-                -- TODO switch back on for Halo when frame.time.utc() is fixed
-				if frame.HARDWARE_VERSION == 'Frame' then
-                    last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
-                end
+                -- periodic battery level updates
+                last_batt_update = battery.send_batt_if_elapsed(last_batt_update, 120)
                 frame.sleep(0.05)
             end
         )

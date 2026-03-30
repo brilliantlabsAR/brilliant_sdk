@@ -7,9 +7,10 @@ local sfxr = require('sfxr.min')
 PLAY_SFXR_MSG = 0x20
 PLAY_RANDOM_MSG = 0x21
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[PLAY_SFXR_MSG] = sfxr.parse_sfxr
-data.parsers[PLAY_RANDOM_MSG] = code.parse_code
+-- message parsers, keyed by message flag
+local parsers = {}
+parsers[PLAY_SFXR_MSG] = sfxr.parse_sfxr
+parsers[PLAY_RANDOM_MSG] = code.parse_code
 
 local SAMPLE_RATE = 16000
 local BIT_DEPTH = 16
@@ -64,73 +65,84 @@ function app_loop()
 
     print('Frame App Started')
 
+	-- message handlers, dispatched in arrival order by the main loop
+	local handlers = {}
+
+	handlers[PLAY_SFXR_MSG] = function(sound)
+		-- retrieve the sfxr data
+		print('Playing SFXR sound effect')
+
+		sound.supersampling = 8
+		frame.speaker.start{encoder='pcm', sample_rate=SAMPLE_RATE, bit_depth=BIT_DEPTH, channels=1}
+
+		local pack = string.pack
+		local t = {}
+		local i = 1
+		for v in sound:generate(SAMPLE_RATE, BIT_DEPTH) do
+				t[i] = pack("<i2", math.floor(v))
+				i = i + 1
+				-- due to memory constraints, let's bail after 10kB
+				if i > 5000 then
+						break
+				end
+		end
+		print("Sound generated")
+		frame.speaker.play(table.concat(t))
+		print("Sound played")
+		local num_samples = #t
+		for n=1, num_samples do t[n]=nil end
+	end
+
+	handlers[PLAY_RANDOM_MSG] = function(item)
+		print("Playing random sfxr sound effect")
+		local sound = sfxr.newSound()
+		sound.waveform = sfxr.WAVEFORM.SQUARE
+
+		print("Randomizing sound")
+		randomize_sound(sound)
+		sound.supersampling = 8
+
+		frame.speaker.start{encoder='pcm', sample_rate=SAMPLE_RATE, bit_depth=BIT_DEPTH, channels=1}
+
+		print("Generating and playing sound")
+		local pack = string.pack
+		local t = {}
+		local i = 1
+		for v in sound:generate(SAMPLE_RATE, BIT_DEPTH) do
+			t[i] = pack("<i2", math.floor(v))
+			i = i + 1
+			-- due to memory constraints, let's bail after 10kB
+			if i > 5000 then
+					break
+			end
+		end
+		print("Sound generated")
+		frame.speaker.play(table.concat(t))
+		print("Sound played")
+		local num_samples = #t
+		for n=1, num_samples do t[n]=nil end
+	end
+
 	while true do
 		rc, err = pcall(
             function()
-				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				-- drain the message queue, parse and dispatch in arrival order
+                local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw  = items[i][2]
 
-					if (data.app_data[PLAY_SFXR_MSG] ~= nil) then
-						-- retrieve the sfxr data
-						local sound = data.app_data[PLAY_SFXR_MSG]
-						print('Playing SFXR sound effect')
+					if parsers[flag] == nil then
+						print('Error: No parser for flag: ' .. tostring(flag))
+					else
+						local parsed = parsers[flag](raw)
 
-						sound.supersampling = 8					
-						frame.speaker.start{encoder='pcm', sample_rate=SAMPLE_RATE, bit_depth=BIT_DEPTH, channels=1}
-						
-						local pack = string.pack
-						local t = {}
-						local i = 1
-						for v in sound:generate(SAMPLE_RATE, BIT_DEPTH) do
-								t[i] = pack("<i2", math.floor(v))
-								i = i + 1
-								-- due to memory constraints, let's bail after 10kB
-								if i > 5000 then
-										break
-								end
+						if handlers[flag] ~= nil then
+							handlers[flag](parsed)
+						else
+							print('Error: No handler for flag: ' .. tostring(flag))
 						end
-						print("Sound generated")
-						frame.speaker.play(table.concat(t))
-						print("Sound played")
-						local num_samples = #t
-						for n=1, num_samples do t[n]=nil end
-
-						data.app_data[PLAY_SFXR_MSG] = nil
-					end
-
-					if (data.app_data[PLAY_RANDOM_MSG] ~= nil) then
-						print("Playing random sfxr sound effect")
-						local sound = sfxr.newSound()
-						sound.waveform = sfxr.WAVEFORM.SQUARE
-
-						print("Randomizing sound")
-						randomize_sound(sound)
-						sound.supersampling = 8
-
-						frame.speaker.start{encoder='pcm', sample_rate=SAMPLE_RATE, bit_depth=BIT_DEPTH, channels=1}
-
-						print("Generating and playing sound")
-						local pack = string.pack
-						local t = {}
-						local i = 1
-						for v in sound:generate(SAMPLE_RATE, BIT_DEPTH) do
-							t[i] = pack("<i2", math.floor(v))
-							i = i + 1
-							-- due to memory constraints, let's bail after 10kB
-							if i > 5000 then
-									break
-							end
-						end
-						print("Sound generated")
-						frame.speaker.play(table.concat(t))
-						print("Sound played")
-						local num_samples = #t
-						for n=1, num_samples do t[n]=nil end
-
-						data.app_data[PLAY_RANDOM_MSG] = nil
 					end
 				end
 

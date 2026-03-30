@@ -13,12 +13,12 @@ STOP_IMU_MSG = 0x41
 -- Frame to Phone flags
 IMU_DATA_MSG = 0x0A
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[TEXT_MSG] = plain_text.parse_plain_text
-data.parsers[CLEAR_MSG] = code.parse_code
-data.parsers[START_IMU_MSG] = code.parse_code
-data.parsers[STOP_IMU_MSG] = code.parse_code
-
+-- message parsers, keyed by message flag
+local parsers = {}
+parsers[TEXT_MSG] = plain_text.parse_plain_text
+parsers[CLEAR_MSG] = code.parse_code
+parsers[START_IMU_MSG] = code.parse_code
+parsers[STOP_IMU_MSG] = code.parse_code
 
 -- Main app loop
 function app_loop()
@@ -29,51 +29,63 @@ function app_loop()
 	local streaming = false
 	local stream_rate = 1
 
+	-- message handlers, dispatched in arrival order by the main loop
+	local handlers = {}
+
+	handlers[TEXT_MSG] = function(item)
+		if item.string ~= nil then
+			local i = 0
+			for line in item.string:gmatch("([^\n]*)\n?") do
+				if line ~= "" then
+					frame.display.text(line, 1, i * 60 + 1)
+					i = i + 1
+				end
+			end
+			frame.display.show()
+		end
+	end
+
+	handlers[CLEAR_MSG] = function(item)
+		-- clear the display
+		frame.display.text(" ", 1, 1)
+		frame.display.show()
+	end
+
+	handlers[START_IMU_MSG] = function(item)
+		streaming = true
+		local rate = item.value
+		if rate > 0 then
+			stream_rate = 1 / rate
+		end
+		frame.display.text("Streaming IMU Data", 1, 1)
+		frame.display.show()
+	end
+
+	handlers[STOP_IMU_MSG] = function(item)
+		streaming = false
+		-- clear the display
+		frame.display.text(" ", 1, 1)
+		frame.display.show()
+	end
+
 	while true do
-		-- process any raw data items, if ready
-		local items_ready = data.process_raw_items()
+		-- drain the message queue, parse and dispatch in arrival order
+		local items = data.process_raw_items()
 
-		-- one or more full messages received
-		if items_ready > 0 then
+		for i = 1, #items do
+			local flag = items[i][1]
+			local raw  = items[i][2]
 
-			if (data.app_data[TEXT_MSG] ~= nil and data.app_data[TEXT_MSG].string ~= nil) then
-				local i = 0
-				for line in data.app_data[TEXT_MSG].string:gmatch("([^\n]*)\n?") do
-					if line ~= "" then
-						frame.display.text(line, 1, i * 60 + 1)
-						i = i + 1
-					end
+			if parsers[flag] == nil then
+				print('Error: No parser for flag: ' .. tostring(flag))
+			else
+				local parsed = parsers[flag](raw)
+
+				if handlers[flag] ~= nil then
+					handlers[flag](parsed)
+				else
+					print('Error: No handler for flag: ' .. tostring(flag))
 				end
-				frame.display.show()
-			end
-
-			if (data.app_data[CLEAR_MSG] ~= nil) then
-				-- clear the display
-				frame.display.text(" ", 1, 1)
-				frame.display.show()
-
-				data.app_data[CLEAR_MSG] = nil
-			end
-
-			if (data.app_data[START_IMU_MSG] ~= nil) then
-				streaming = true
-				local rate = data.app_data[START_IMU_MSG].value
-				if rate > 0 then
-					stream_rate = 1 / rate
-				end
-				frame.display.text("Streaming IMU Data", 1, 1)
-				frame.display.show()
-
-				data.app_data[START_IMU_MSG] = nil
-			end
-
-			if (data.app_data[STOP_IMU_MSG] ~= nil) then
-				streaming = false
-				-- clear the display
-				frame.display.text(" ", 1, 1)
-				frame.display.show()
-
-				data.app_data[STOP_IMU_MSG] = nil
 			end
 		end
 

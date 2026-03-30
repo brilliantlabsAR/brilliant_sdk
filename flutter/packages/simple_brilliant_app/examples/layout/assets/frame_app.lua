@@ -16,14 +16,15 @@ local ISB_MSG = 0x52
 local CLEAR_ISB_MSG = 0x53
 local SET_LAYOUT_MSG = 0x60
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[REC_MSG] = code.parse_code
-data.parsers[SPEECH_WAVE_MSG] = code.parse_code
-data.parsers[TSB_MSG] = text_sprite_block.parse_text_sprite_block
-data.parsers[CLEAR_TSB_MSG] = code.parse_code
-data.parsers[ISB_MSG] = image_sprite_block.parse_image_sprite_block
-data.parsers[CLEAR_ISB_MSG] = code.parse_code
-data.parsers[SET_LAYOUT_MSG] = code.parse_code
+-- message parsers, keyed by message flag
+local parsers = {}
+parsers[REC_MSG] = code.parse_code
+parsers[SPEECH_WAVE_MSG] = code.parse_code
+parsers[TSB_MSG] = text_sprite_block.parse_text_sprite_block
+parsers[CLEAR_TSB_MSG] = code.parse_code
+parsers[ISB_MSG] = image_sprite_block.parse_image_sprite_block
+parsers[CLEAR_ISB_MSG] = code.parse_code
+parsers[SET_LAYOUT_MSG] = code.parse_code
 
 -- Main app loop
 function app_loop()
@@ -33,114 +34,127 @@ function app_loop()
 
     local last_batt_update = 0
 
+    -- app-owned state for accumulating message types (TSB, ISB)
+    local state = {}
+
+    -- message handlers, dispatched in arrival order by the main loop
+    local handlers = {}
+
+    handlers[SET_LAYOUT_MSG] = function(item)
+        local layout_code = item.value
+
+        if layout_code == 1 then
+            ui = TextLayout:new()
+        elseif layout_code == 2 then
+            ui = SpeechLayout:new()
+        elseif layout_code == 3 then
+            ui = EncounterLayout:new()
+        else
+            print("Warning: Received unknown layout code: " .. tostring(layout_code) .. ". Ignoring.")
+            return
+        end
+
+        -- blank out the whole layout first
+        ui:clear()
+        ui:invalidate()
+        collectgarbage()
+    end
+
+    handlers[REC_MSG] = function(item)
+        if item.value == 1 then
+            ui.header:set_recording(true)
+        else
+            ui.header:set_recording(false)
+        end
+    end
+
+    handlers[SPEECH_WAVE_MSG] = function(item)
+        if ui:is("SpeechLayout") then
+            if item.value == 1 then
+                ui.body.speech_wave:start()
+            else
+                ui.body.speech_wave:stop()
+            end
+        else
+            print("Warning: Received SPEECH_WAVE_MSG but current layout is not SpeechLayout. Ignoring.")
+        end
+    end
+
+    handlers[CLEAR_TSB_MSG] = function(item)
+        if ui:is("EncounterLayout") or ui:is("TextLayout") then
+            ui.body:clear_lines()
+            state[TSB_MSG] = nil
+            collectgarbage()
+        else
+            print("Warning: Received CLEAR_TSB_MSG but current layout is not TextLayout or EncounterLayout. Ignoring.")
+        end
+    end
+
+    handlers[TSB_MSG] = function(item)
+        if ui:is("EncounterLayout") or ui:is("TextLayout") then
+            -- clear the text area before drawing new text sprites
+            if frame.HARDWARE_VERSION ~= 'Frame' then
+                frame.display.rect(ui.body.x, ui.body.y, item.width, item.max_display_lines * item.line_height, 0x000000, true)
+            end
+
+            if #item.sprites > 0 then
+                ui.body:set_lines(item.sprites, item.line_height)
+            end
+        else
+            print("Warning: Received TSB_MSG but current layout is not TextLayout or EncounterLayout. Ignoring.")
+        end
+    end
+
+    handlers[CLEAR_ISB_MSG] = function(item)
+        if ui:is("EncounterLayout") then
+            ui.image:clear_lines()
+            ui.bg:invalidate() -- force a full redraw (including bg_view) to clear the image area because the rectangle intersects with the circular boundary
+            state[ISB_MSG] = nil
+            collectgarbage()
+        else
+            print("Warning: Received CLEAR_ISB_MSG but current layout is not EncounterLayout. Ignoring.")
+        end
+    end
+
+    handlers[ISB_MSG] = function(item)
+        if ui:is("EncounterLayout") then
+            -- for progressive drawing, use "#item.sprites > 0" but I'll wait for all of them
+            -- 128px with 16px strips so 8 strips total
+            if #item.sprites == 8 then
+                ui.image:set_lines(item.sprites, item.sprite_line_height)
+            end
+        else
+            print("Warning: Received ISB_MSG but current layout is not EncounterLayout. Ignoring.")
+        end
+    end
+
     while true do
         local current_time = frame.time.utc()
         local dt = current_time - last_time
 
-        -- process any raw data items, if ready
-        local items_ready = data.process_raw_items()
+        -- drain the message queue, parse and dispatch in arrival order
+        local items = data.process_raw_items()
+        for i = 1, #items do
+            local flag = items[i][1]
+            local raw  = items[i][2]
 
-        -- one or more full messages received
-        if items_ready > 0 then
+            if parsers[flag] == nil then
+                print('Error: No parser for flag: ' .. tostring(flag))
+            else
+                local parsed
 
-            if (data.app_data[SET_LAYOUT_MSG] ~= nil) then
-                local layout_code = data.app_data[SET_LAYOUT_MSG].value
-
-                if layout_code == 1 then
-                    ui = TextLayout:new()
-                elseif layout_code == 2 then
-                    ui = SpeechLayout:new()
-                elseif layout_code == 3 then
-                    ui = EncounterLayout:new()
+                -- accumulating types: thread app-owned state through the parser
+                if flag == TSB_MSG or flag == ISB_MSG then
+                    parsed = parsers[flag](raw, state[flag])
+                    state[flag] = parsed
                 else
-                    print("Warning: Received unknown layout code: " .. tostring(layout_code) .. ". Ignoring.")
+                    parsed = parsers[flag](raw)
                 end
 
-                data.app_data[SET_LAYOUT_MSG] = nil
-                -- blank out the whole layout first
-                ui:clear()
-                ui:invalidate()
-                collectgarbage()
-            end
-
-            if (data.app_data[REC_MSG] ~= nil) then
-                if data.app_data[REC_MSG].value == 1 then
-                    ui.header:set_recording(true)
+                if handlers[flag] ~= nil then
+                    handlers[flag](parsed)
                 else
-                    ui.header:set_recording(false)
-                end
-                data.app_data[REC_MSG] = nil
-            end
-
-            if (data.app_data[SPEECH_WAVE_MSG] ~= nil) then
-                if ui:is("SpeechLayout") then
-                    if data.app_data[SPEECH_WAVE_MSG].value == 1 then
-                        ui.body.speech_wave:start() -- Start speech wave animation
-                    else
-                        ui.body.speech_wave:stop() -- Stop speech wave animation
-                    end
-                else
-                    print("Warning: Received SPEECH_WAVE_MSG but current layout is not SpeechLayout. Ignoring.")
-                end
-                data.app_data[SPEECH_WAVE_MSG] = nil
-            end
-
-            if (data.app_data[CLEAR_TSB_MSG] ~= nil) then
-                if ui:is("EncounterLayout") or ui:is("TextLayout") then
-                    ui.body:clear_lines()
-
-                    if (data.app_data[TSB_MSG] ~= nil) then
-                        data.app_data[TSB_MSG] = nil
-                        collectgarbage()
-                    end
-                else
-                    print("Warning: Received CLEAR_TSB_MSG but current layout is not TextLayout or EncounterLayout. Ignoring.")
-                end
-                data.app_data[CLEAR_TSB_MSG] = nil
-            end
-
-            if (data.app_data[TSB_MSG] ~= nil) then
-                if ui:is("EncounterLayout") or ui:is("TextLayout") then
-                    local tsb = data.app_data[TSB_MSG]
-                    -- clear the text area before drawing new text sprites
-                    if frame.HARDWARE_VERSION ~= 'Frame' then
-                        frame.display.rect(ui.body.x, ui.body.y, tsb.width, tsb.max_display_lines * tsb.line_height, 0x000000, true)
-                    end
-
-                    if #tsb.sprites > 0 then
-                        ui.body:set_lines(tsb.sprites, tsb.line_height)
-                    end
-                else
-                    print("Warning: Received TSB_MSG but current layout is not TextLayout or EncounterLayout. Ignoring.")
-                end
-            end
-
-            if (data.app_data[CLEAR_ISB_MSG] ~= nil) then
-                if ui:is("EncounterLayout") then
-                    ui.image:clear_lines()
-                    ui.bg:invalidate() -- force a full redraw (including bg_view) to clear the image area because the rectangle intersects with the circular boundary
-
-                    if (data.app_data[ISB_MSG] ~= nil) then
-                        data.app_data[ISB_MSG] = nil
-                        collectgarbage()
-                    end
-                else
-                    print("Warning: Received CLEAR_ISB_MSG but current layout is not EncounterLayout. Ignoring.")
-                end
-                data.app_data[CLEAR_ISB_MSG] = nil
-            end
-
-            if (data.app_data[ISB_MSG] ~= nil) then
-                if ui:is("EncounterLayout") then
-                    local isb = data.app_data[ISB_MSG]
-
-                    -- for progressive drawing, use "#isb.sprites > 0" but I'll wait for all of them
-                    -- 128px with 16px strips so 8 strips total
-                    if #isb.sprites == 8 then
-                        ui.image:set_lines(isb.sprites, isb.sprite_line_height)
-                    end
-                else
-                    print("Warning: Received ISB_MSG but current layout is not EncounterLayout. Ignoring.")
+                    print('Error: No handler for flag: ' .. tostring(flag))
                 end
             end
         end
