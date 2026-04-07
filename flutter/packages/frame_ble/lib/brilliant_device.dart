@@ -60,7 +60,14 @@ class BrilliantDevice {
       }
       _log.info(
           "Connection state stream: Disconnected due to ${event.device.disconnectReason!.description}");
-      if (Platform.isAndroid) {
+      // Auto-reconnect on Android for non-user-initiated disconnects only.
+      // code == 23789258 is FlutterBluePlus's bmUserCanceledErrorCode (filtered
+      // out upstream by .where()), but code == 0 (GATT_SUCCESS/"success") is
+      // what Android reports when the local host calls gatt.disconnect() — i.e.
+      // a programmatic/user-initiated disconnect. Reconnecting in that case
+      // causes immediate spurious reconnection after an intentional disconnect.
+      if (Platform.isAndroid &&
+          event.device.disconnectReason!.code != 0) {
         event.device.connect(timeout: const Duration(days: 365));
       }
       return BrilliantDevice(
