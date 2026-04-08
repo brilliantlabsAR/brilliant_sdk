@@ -145,7 +145,7 @@ class BrilliantDevice {
   Future<void> sendBreakSignal() async {
     _log.info("Sending break signal");
     await sendString("\x03", awaitResponse: false, log: false);
-    // short delay to allow the break to complete on Frame before sending Lua commands
+    // short delay to allow the break to complete on Frame/Halo before sending Lua commands
     await Future.delayed(const Duration(milliseconds: 200));
   }
 
@@ -153,19 +153,21 @@ class BrilliantDevice {
     _log.info("Sending reset signal");
     await sendString("\x04", awaitResponse: false, log: false);
     if (type == BrilliantDeviceType.halo) {
-      // Halo may take longer to reset
-      await Future.delayed(const Duration(milliseconds: 3000));
+      await Future.delayed(const Duration(milliseconds: 200));
     } else {
       // Frame takes ~200ms reset
       await Future.delayed(const Duration(milliseconds: 200));
     }
-    await Future.delayed(const Duration(milliseconds: 200));
   }
 
   Future<void> sendRemoveSignal() async {
-    _log.info("Sending remove signal");
-    await sendString("\x05", awaitResponse: false, log: false);
-    await Future.delayed(const Duration(milliseconds: 200));
+    if (type == BrilliantDeviceType.halo) {
+      _log.info("Sending remove signal");
+      await sendString("\x05", awaitResponse: false, log: false);
+    } else {
+      _log.info("Remove signal is Halo-only");
+    }
+      //await Future.delayed(const Duration(milliseconds: 200));
   }
 
   Future<String?> sendString(
