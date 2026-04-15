@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "halo-emulator"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "lupa>=2.0,<3.0",
+    "numpy>=2.2.3,<3.0.0",
+    "pillow>=11.1.0,<12.0.0",
+    "lz4>=4.4.3,<5.0.0",
+    "pygame>=2.5.0,<3.0.0",
+]
+authors = [
+    { name = "CitizenOne" },
+]
+description = "Emulator for the Brilliant Labs Halo smart glasses Lua runtime"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "frame-msg>=5.2.1",
+]
+video = [
+    "imageio>=2.34.0",
+    "imageio-ffmpeg>=0.5.0",
+]
+
+[project.scripts]
+halo-emulator = "halo_emulator.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/halo_emulator"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

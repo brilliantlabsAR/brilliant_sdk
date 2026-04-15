@@ -1,0 +1,14 @@
+# Development install for the full SDK repo checkout.
+#
+# Use this instead of `pip install -e ".[dev,video]"` when working inside the
+# monorepo.  It installs all three sibling packages from local source as
+# editable installs, so halo-emulator examples use the local frame_msg and
+# frame_ble rather than whatever version is on PyPI.
+#
+# Usage:
+#   cd python/packages/halo_emulator
+#   pip install -r requirements-dev.txt
+
+-e ../frame_ble
+-e ../frame_msg
+-e .[dev,video]
