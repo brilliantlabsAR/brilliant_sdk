@@ -199,21 +199,31 @@ def test_button_press_fires_callback(emulator, tmp_path):
 
 ## Running Tests
 
-From the workspace root:
+Both `halo_emulator` and `frame_msg` have automated tests that run without hardware.
 
 ```bash
 cd python
-uv sync --all-packages --extra dev
+
+# Install all test dependencies
+uv sync --all-packages --all-extras
+
+# Run frame_msg tests (message packing/parsing, WAV conversion, handler dispatch)
+uv run pytest packages/frame_msg/tests/
+
+# Run halo_emulator tests (Lua VM, display, events)
 uv run pytest packages/halo_emulator/tests/
+
+# Run both together
+uv run pytest packages/frame_msg/tests/ packages/halo_emulator/tests/
 ```
 
-`halo_emulator` is the only package with automated tests that run without hardware. The `frame_ble` package has hardware integration tests (requires a connected Frame device) that can be run individually:
+The `frame_ble` package has hardware integration tests that require a connected Frame device:
 
 ```bash
 # Requires a connected Frame device over BLE
 uv run pytest packages/frame_ble/tests/test_ble.py
 
-# Or as standalone scripts (also require hardware):
+# Standalone hardware scripts (not pytest):
 uv run python packages/frame_ble/tests/test_display.py
 ```
 
