@@ -9,7 +9,7 @@ Low-level library for Bluetooth LE connection to [Brilliant Labs Frame](https://
 ## Installation
 
 ```bash
-pip install frame-ble
+uv add frame-ble
 ```
 
 ## Usage

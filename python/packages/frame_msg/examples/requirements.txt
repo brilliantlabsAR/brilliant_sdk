@@ -1,8 +1,0 @@
--e ../../frame_ble/
--e ../../frame_msg/
-bleak
-numpy
-pillow
-lz4
-opencv-python
-pvspeaker

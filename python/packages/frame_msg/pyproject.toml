@@ -1,11 +1,5 @@
 [build-system]
-requires = [
-    "hatchling",
-    "setuptools",
-    "wheel",
-    "sphinx>=7.0.0",
-    "sphinx-rtd-theme>=2.0.0",
-]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
@@ -28,6 +22,20 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
 ]
+
+[project.optional-dependencies]
+tests = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/frame_msg"]

@@ -9,7 +9,7 @@ A Python package for handling rich application-level messages for the [Brilliant
 ## Installation
 
 ```bash
-pip install frame-msg
+uv add frame-msg
 ```
 
 ## Usage
@@ -74,6 +74,23 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Running Tests
+
+From the workspace root:
+
+```bash
+cd python
+uv sync --all-packages --extra tests
+uv run pytest packages/frame_msg/tests/
+```
+
+The test suite covers all Tx message packing (TxCode, TxPlainText, TxSpriteCoords,
+TxCaptureSettings, TxAutoExpSettings, TxSprite bit-packing and factory methods,
+TxImageSpriteBlock, TxTextSpriteBlock) and Rx message parsing (RxAudio WAV
+conversion, RxMeteringData, RxAutoExpResult, RxIMU including IMUData pitch/roll
+and SensorBuffer smoothing, RxTap, and FrameMsg handler dispatch). No hardware
+is required.
 
 ## Acknowledgements
 

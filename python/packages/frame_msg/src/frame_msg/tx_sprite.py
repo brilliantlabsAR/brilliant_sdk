@@ -81,8 +81,12 @@ class TxSprite:
         if img.mode != 'P' or img.getcolors() is None or len(img.getcolors()) > 16:
             img = img.quantize(colors=16, method=Image.Quantize.MEDIANCUT)
 
-        # Get first 16 RGB colors from the palette
+        # Get first 16 RGB colors from the palette, padding unused slots to zero.
+        # Pillow 10+ returns only the colours actually present in the quantized image
+        # rather than always padding to 256 entries, so images with fewer than 16
+        # unique colours would otherwise produce a short palette list.
         palette = list(img.getpalette()[:48])
+        palette.extend([0] * (48 - len(palette)))
         pixel_data = np.array(img)
 
         # The quantized palette comes back in a luminance gradient from lightest to darkest.

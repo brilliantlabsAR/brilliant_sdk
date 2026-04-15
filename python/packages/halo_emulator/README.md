@@ -18,7 +18,7 @@ Key features:
 ## Installation
 
 ```bash
-pip install halo-emulator
+uv add halo-emulator
 ```
 
 ### Installing from the SDK repo
@@ -28,19 +28,12 @@ sibling packages as editable installs so the examples always use the local
 `frame_msg` and `frame_ble` rather than whatever version is on PyPI:
 
 ```bash
-cd python/packages/halo_emulator
-pip install -r requirements-dev.txt
+cd python
+uv sync --all-packages
 ```
 
-This is equivalent to:
-
-```bash
-pip install -e ../frame_ble -e ../frame_msg -e ".[dev,video]"
-```
-
-Do **not** use `pip install -e ".[dev]"` directly in the repo — it will pull
-`frame-msg` from PyPI and may install a version that is out of sync with the
-local source.
+The workspace configuration in `python/pyproject.toml` ensures `frame-ble` and
+`frame-msg` resolve to the local packages rather than PyPI.
 
 Dependencies: `lupa`, `numpy`, `pillow`, `lz4`, `pygame`
 
@@ -202,6 +195,36 @@ def test_button_press_fires_callback(emulator, tmp_path):
     emulator.inject_button_single()
     time.sleep(0.2)
     assert b'\x01' in emulator.get_bluetooth_sent()
+```
+
+## Running Tests
+
+Both `halo_emulator` and `frame_msg` have automated tests that run without hardware.
+
+```bash
+cd python
+
+# Install all test dependencies
+uv sync --all-packages --all-extras
+
+# Run frame_msg tests (message packing/parsing, WAV conversion, handler dispatch)
+uv run pytest packages/frame_msg/tests/
+
+# Run halo_emulator tests (Lua VM, display, events)
+uv run pytest packages/halo_emulator/tests/
+
+# Run both together
+uv run pytest packages/frame_msg/tests/ packages/halo_emulator/tests/
+```
+
+The `frame_ble` package has hardware integration tests that require a connected Frame device:
+
+```bash
+# Requires a connected Frame device over BLE
+uv run pytest packages/frame_ble/tests/test_ble.py
+
+# Standalone hardware scripts (not pytest):
+uv run python packages/frame_ble/tests/test_display.py
 ```
 
 ## Supported `frame.*` API
