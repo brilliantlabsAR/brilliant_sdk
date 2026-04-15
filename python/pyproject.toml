@@ -1,0 +1,10 @@
+[tool.uv.workspace]
+members = [
+    "packages/frame_ble",
+    "packages/frame_msg",
+    "packages/halo_emulator",
+]
+
+[tool.uv.sources]
+frame-ble = { workspace = true }
+frame-msg = { workspace = true }

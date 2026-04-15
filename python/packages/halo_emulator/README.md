@@ -18,7 +18,7 @@ Key features:
 ## Installation
 
 ```bash
-pip install halo-emulator
+uv add halo-emulator
 ```
 
 ### Installing from the SDK repo
@@ -28,19 +28,12 @@ sibling packages as editable installs so the examples always use the local
 `frame_msg` and `frame_ble` rather than whatever version is on PyPI:
 
 ```bash
-cd python/packages/halo_emulator
-pip install -r requirements-dev.txt
+cd python
+uv sync --all-packages
 ```
 
-This is equivalent to:
-
-```bash
-pip install -e ../frame_ble -e ../frame_msg -e ".[dev,video]"
-```
-
-Do **not** use `pip install -e ".[dev]"` directly in the repo — it will pull
-`frame-msg` from PyPI and may install a version that is out of sync with the
-local source.
+The workspace configuration in `python/pyproject.toml` ensures `frame-ble` and
+`frame-msg` resolve to the local packages rather than PyPI.
 
 Dependencies: `lupa`, `numpy`, `pillow`, `lz4`, `pygame`
 

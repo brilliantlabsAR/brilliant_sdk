@@ -9,7 +9,7 @@ A Python package for handling rich application-level messages for the [Brilliant
 ## Installation
 
 ```bash
-pip install frame-msg
+uv add frame-msg
 ```
 
 ## Usage
