@@ -331,6 +331,21 @@ class TestFromImageBytes:
         s = TxSprite.from_image_bytes(_make_rgb_png(20, 10))
         assert len(s.pixel_data) == s.width * s.height
 
+    def test_palette_always_48_bytes_for_uniform_image(self):
+        """Solid-colour input (1 unique colour) must still yield a 48-byte palette."""
+        s = TxSprite.from_image_bytes(_make_rgb_png(16, 16))   # solid (128,64,32)
+        assert len(s.palette_data) == 48
+
+    def test_palette_always_48_bytes_for_two_color_image(self):
+        """An image with only 2 distinct colours must still yield a 48-byte palette."""
+        img = Image.new('RGB', (16, 16))
+        half = 16 * 8
+        img.putdata([(255, 0, 0)] * half + [(0, 0, 255)] * half)
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        s = TxSprite.from_image_bytes(buf.getvalue())
+        assert len(s.palette_data) == 48
+
 
 # ---------------------------------------------------------------------------
 # TxImageSpriteBlock
