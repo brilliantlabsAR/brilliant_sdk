@@ -309,12 +309,14 @@ docs = [
 ]
 tests = [
     { name = "aioconsole" },
+    { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "aioconsole", marker = "extra == 'tests'" },
     { name = "bleak", specifier = ">=0.22.3,<1.0.0" },
+    { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
 ]

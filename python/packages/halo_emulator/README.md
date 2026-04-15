@@ -197,6 +197,26 @@ def test_button_press_fires_callback(emulator, tmp_path):
     assert b'\x01' in emulator.get_bluetooth_sent()
 ```
 
+## Running Tests
+
+From the workspace root:
+
+```bash
+cd python
+uv sync --all-packages --extra dev
+uv run pytest packages/halo_emulator/tests/
+```
+
+`halo_emulator` is the only package with automated tests that run without hardware. The `frame_ble` package has hardware integration tests (requires a connected Frame device) that can be run individually:
+
+```bash
+# Requires a connected Frame device over BLE
+uv run pytest packages/frame_ble/tests/test_ble.py
+
+# Or as standalone scripts (also require hardware):
+uv run python packages/frame_ble/tests/test_display.py
+```
+
 ## Supported `frame.*` API
 
 ### System
