@@ -75,6 +75,23 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## Running Tests
+
+From the workspace root:
+
+```bash
+cd python
+uv sync --all-packages --extra tests
+uv run pytest packages/frame_msg/tests/
+```
+
+The test suite covers all Tx message packing (TxCode, TxPlainText, TxSpriteCoords,
+TxCaptureSettings, TxAutoExpSettings, TxSprite bit-packing and factory methods,
+TxImageSpriteBlock, TxTextSpriteBlock) and Rx message parsing (RxAudio WAV
+conversion, RxMeteringData, RxAutoExpResult, RxIMU including IMUData pitch/roll
+and SensorBuffer smoothing, RxTap, and FrameMsg handler dispatch). No hardware
+is required.
+
 ## Acknowledgements
 
 * An early port of [TxSprite](https://github.com/CitizenOneX/frame_msg/blob/main/lib/tx/sprite.dart) from Flutter to Python was contributed by [David Khachatryan](https://github.com/KhachDavid) - _thanks!_

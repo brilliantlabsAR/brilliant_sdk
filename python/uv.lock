@@ -341,6 +341,10 @@ docs = [
     { name = "sphinx", version = "9.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "sphinx-rtd-theme" },
 ]
+tests = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -348,10 +352,12 @@ requires-dist = [
     { name = "lz4", specifier = ">=4.4.3,<5.0.0" },
     { name = "numpy", specifier = ">=2.2.3,<3.0.0" },
     { name = "pillow", specifier = ">=11.1.0,<12.0.0" },
+    { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'tests'", specifier = ">=0.23" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
 ]
-provides-extras = ["docs"]
+provides-extras = ["tests", "docs"]
 
 [[package]]
 name = "halo-emulator"

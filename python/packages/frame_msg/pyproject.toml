@@ -24,10 +24,18 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+tests = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
 docs = [
     "sphinx>=7.0.0",
     "sphinx-rtd-theme>=2.0.0",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/frame_msg"]
