@@ -4,10 +4,6 @@ local image_sprite_block = require('image_sprite_block.min')
 -- Phone to Frame flags
 IMAGE_SPRITE_BLOCK = 0x20
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[IMAGE_SPRITE_BLOCK] = image_sprite_block.parse_image_sprite_block
-
-
 -- Main app loop
 function app_loop()
 	frame.display.text('Frame App Started', 1, 1)
@@ -16,21 +12,24 @@ function app_loop()
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
 
+	-- accumulator for image sprite block (persists across loop iterations)
+	local isb = nil
+
 	while true do
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if (data.app_data[IMAGE_SPRITE_BLOCK] ~= nil) then
-						-- show the image sprite block
-						local isb = data.app_data[IMAGE_SPRITE_BLOCK]
+					if flag == IMAGE_SPRITE_BLOCK then
+						isb = image_sprite_block.parse_image_sprite_block(raw, isb)
 
 						-- it can be that we haven't got any sprites yet, so only proceed if we have a sprite
-						if isb.current_sprite_index > 0 then
+						if isb ~= nil and isb.current_sprite_index > 0 then
 							-- either we have all the sprites, or we want to do progressive/incremental rendering
 							if isb.progressive_render or (isb.active_sprites == isb.total_sprites) then
 
@@ -40,7 +39,7 @@ function app_loop()
 
 									-- set the palette the first time, all the sprites should have the same palette
 									if index == 1 then
-											image_sprite_block.set_palette(spr.num_colors, spr.palette_data)
+										image_sprite_block.set_palette(spr.num_colors, spr.palette_data)
 									end
 
 									-- handle "just in time" decompression for this sprite data
@@ -63,7 +62,6 @@ function app_loop()
 							end
 						end
 					end
-
 				end
 
 				-- can't sleep for long, might be lots of incoming bluetooth data to process

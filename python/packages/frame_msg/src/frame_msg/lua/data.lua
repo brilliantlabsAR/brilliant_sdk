@@ -1,23 +1,15 @@
 -- Module containing generic data handling code.
--- Messages with a specific message code are accumulated, concatenated,
--- and parsed into an app_data table item
+-- BLE packets with a specific message code are accumulated and concatenated,
+-- then enqueued in arrival order for the caller to parse and dispatch.
 local _M = {}
 
 -- accumulates chunks of input message into this table
 local app_data_accum = {}
 _M.app_data_accum = app_data_accum
 
--- after table.concat, this table contains the message code mapped to the full input message payload
-local app_data_block = {}
-_M.app_data_block = app_data_block
-
--- contains typed objects representing full messages
-local app_data = {}
-_M.app_data = app_data
-
--- table of parsers per message type
-local parsers = {}
-_M.parsers = parsers
+-- ordered queue of completed messages {msg_flag, block_data} in arrival order
+local app_data_queue = {}
+local app_data_queue_len = 0
 
 -- Data Handler: called when data arrives, must execute quickly.
 -- Update the app_data_accum item based on the contents of the current packet
@@ -26,9 +18,9 @@ _M.parsers = parsers
 -- If the key is not present, initialise a new app data item
 -- Accumulate chunks of data of the specified type, for later processing
 -- The message codes and message length fields are not included in the accumulated chunks.
--- When the message is fully received, the full concatenated bytes are saved in the block
--- table associated to the message type, so no need to pass on the length or message type in the payload
--- TODO add reliability features (packet acknowledgement is present, but dropped packet retransmission requests, message and packet sequence numbers are possible)
+-- When the message is fully received, the completed message is appended to the ordered queue
+-- so no need to pass on the length or message type in the payload
+-- TODO add reliability features (packet acknowledgement or dropped packet retransmission requests, message and packet sequence numbers)
 function _M.update_app_data_accum(data)
     rc, err = pcall(
         function()
@@ -47,7 +39,8 @@ function _M.update_app_data_accum(data)
                 item.recv_bytes = string.len(data) - 3
 
                 if item.recv_bytes == item.size then
-                    _M.app_data_block[msg_flag] = item.chunk_table[1]
+                    app_data_queue_len = app_data_queue_len + 1
+                    app_data_queue[app_data_queue_len] = {msg_flag, item.chunk_table[1]}
                     item.size = 0
                     item.recv_bytes = 0
                     item.num_chunks = 0
@@ -59,11 +52,11 @@ function _M.update_app_data_accum(data)
                 item.num_chunks = item.num_chunks + 1
                 item.recv_bytes = item.recv_bytes + string.len(data) - 1
 
-                -- if all bytes are received, concat and move message to block
-                -- but don't parse yet
+                -- if all bytes are received, concat and enqueue the completed message
                 if item.recv_bytes == item.size then
                     collectgarbage('collect')
-                    _M.app_data_block[msg_flag] = table.concat(item.chunk_table)
+                    app_data_queue_len = app_data_queue_len + 1
+                    app_data_queue[app_data_queue_len] = {msg_flag, table.concat(item.chunk_table)}
                     for k, v in pairs(item.chunk_table) do item.chunk_table[k] = nil end
                     collectgarbage('collect')
                     item.size = 0
@@ -77,7 +70,8 @@ function _M.update_app_data_accum(data)
             -- and send_message() must use await_data=True
             while true do
                 -- If the Bluetooth is busy, this simply tries again until it gets through
-                if (pcall(frame.bluetooth.send, '\x00')) then
+                -- data/ack/success
+                if (pcall(frame.bluetooth.send, '\x01\x00\x00')) then
                     break
                 end
                 frame.sleep(0.0025)
@@ -90,7 +84,8 @@ function _M.update_app_data_accum(data)
         print('Error in data accumulator: ' .. err)
         while true do
             -- If the Bluetooth is busy, this simply tries again until it gets through
-            if (pcall(frame.bluetooth.send, '\x01')) then
+            -- data/ack/failure
+            if (pcall(frame.bluetooth.send, '\x01\x00\x01')) then
                 break
             end
             frame.sleep(0.0025)
@@ -103,39 +98,31 @@ end
 -- register the handler as a callback for all data sent from the host
 frame.bluetooth.receive_callback(_M.update_app_data_accum)
 
--- Works through app_data_block and if any items are ready, run the corresponding parser
--- Returns the number of new items in app_data{}
+-- Drains the ordered message queue.
+-- Returns an array of {flag, raw_block} pairs in arrival order.
+-- The caller is responsible for parsing and dispatching each item.
 function _M.process_raw_items()
-    local processed = 0
+    local items = {}
+    local items_len = 0
     rc, err = pcall(
         function()
             collectgarbage('collect')
 
-            for flag, block in pairs(_M.app_data_block) do
-                -- parse the app_data_block item into an app_data item
-                if _M.parsers[flag] == nil then
-                    print('Error: No parser for flag: ' .. tostring(flag))
-                else
-                    -- call the parser and pass in the previous value in
-                    -- case it accumulates, like the text_sprite_block can
-                    _M.app_data[flag] = _M.parsers[flag](block, _M.app_data[flag])
-
-                    -- then clear out the raw data
-                    _M.app_data_block[flag] = nil
-
-                    processed = processed + 1
-                end
+            for i = 1, app_data_queue_len do
+                items_len = items_len + 1
+                items[items_len] = app_data_queue[i]
+                app_data_queue[i] = nil
             end
+
+            app_data_queue_len = 0
         end
     )
     if rc == false then
-        -- send the error back on the stdout stream otherwise the data handler thread fails silently
         print('Error processing raw items: ' .. err)
-        -- rethrow the error, especially important to propagate the break signal to stop execution
         error(err)
     end
 
-    return processed
+    return items
 end
 
 return _M

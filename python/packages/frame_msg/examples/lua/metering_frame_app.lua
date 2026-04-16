@@ -6,9 +6,6 @@ local code = require('code')
 -- Phone to Frame flags
 METERING_QUERY_MSG = 0x12
 
--- register the message parser so it's automatically called when matching data comes in
-data.parsers[METERING_QUERY_MSG] = code.parse_code
-
 function clear_display()
     frame.display.text(" ", 1, 1)
     frame.display.show()
@@ -25,16 +22,16 @@ function app_loop()
 	while true do
         rc, err = pcall(
             function()
-				-- process any raw data items, if ready (parse into take_photo, then clear data.app_data_block)
-				local items_ready = data.process_raw_items()
+				-- process any raw data items, if ready
+				local items = data.process_raw_items()
 
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if (data.app_data[METERING_QUERY_MSG] ~= nil) then
+					if flag == METERING_QUERY_MSG then
 						camera.send_metering_data()
-						data.app_data[METERING_QUERY_MSG] = nil
 					end
-
 				end
 
 				frame.sleep(0.1)

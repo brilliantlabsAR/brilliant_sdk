@@ -7,10 +7,6 @@ local camera = require('camera.min')
 AUDIO_SUBS_MSG = 0x30
 CAPTURE_SETTINGS_MSG = 0x0d
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[AUDIO_SUBS_MSG] = code.parse_code
-data.parsers[CAPTURE_SETTINGS_MSG] = camera.parse_capture_settings
-
 function clear_display()
     frame.display.text(" ", 1, 1)
     frame.display.show()
@@ -39,14 +35,15 @@ function app_loop()
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if (data.app_data[AUDIO_SUBS_MSG] ~= nil) then
-
-						if data.app_data[AUDIO_SUBS_MSG].value == 1 then
+					if flag == AUDIO_SUBS_MSG then
+						local msg = code.parse_code(raw)
+						if msg.value == 1 then
 							audio_data = ''
 							streaming = true
 							audio.start()
@@ -57,24 +54,18 @@ function app_loop()
 							audio.stop()
 							frame.display.text(" ", 1, 1)
 						end
-
 						frame.display.show()
-						data.app_data[AUDIO_SUBS_MSG] = nil
-					end
 
-					if (data.app_data[CAPTURE_SETTINGS_MSG] ~= nil) then
+					elseif flag == CAPTURE_SETTINGS_MSG then
 						-- visual indicator of capture and send
 						show_flash()
-						rc, err = pcall(camera.capture_and_send, data.app_data[CAPTURE_SETTINGS_MSG])
+						rc, err = pcall(camera.capture_and_send, camera.parse_capture_settings(raw))
 						clear_display()
 
 						if rc == false then
 							print(err)
 						end
-
-						data.app_data[CAPTURE_SETTINGS_MSG] = nil
 					end
-
 				end
 
 				-- send any pending audio data back

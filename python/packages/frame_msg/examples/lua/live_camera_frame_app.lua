@@ -11,13 +11,6 @@ MANUAL_EXP_SETTINGS_MSG = 0x0f
 TEXT_MSG = 0x0a
 TAP_SUBS_MSG = 0x10
 
--- register the message parser so it's automatically called when matching data comes in
-data.parsers[CAPTURE_SETTINGS_MSG] = camera.parse_capture_settings
-data.parsers[AUTO_EXP_SETTINGS_MSG] = camera.parse_auto_exp_settings
-data.parsers[MANUAL_EXP_SETTINGS_MSG] = camera.parse_manual_exp_settings
-data.parsers[TEXT_MSG] = plain_text.parse_plain_text
-data.parsers[TAP_SUBS_MSG] = code.parse_code
-
 -- Frame to Host flags
 TAP_MSG = 0x09
 AUTO_EXP_MSG = 0x12
@@ -33,9 +26,9 @@ function handle_tap()
 end
 
 -- draw the current text on the display
-function print_text()
+function print_text(parsed)
     local i = 0
-    for line in data.app_data[TEXT_MSG].string:gmatch("([^\n]*)\n?") do
+    for line in parsed.string:gmatch("([^\n]*)\n?") do
         if line ~= "" then
             frame.display.text(line, 1, i * 60 + 1)
             i = i + 1
@@ -67,54 +60,47 @@ function app_loop()
 	while true do
         rc, err = pcall(
             function()
-				-- process any raw data items, if ready (parse into take_photo, then clear data.app_data_block)
-				local items_ready = data.process_raw_items()
+				-- process any raw data items, if ready
+				local items = data.process_raw_items()
 
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if (data.app_data[CAPTURE_SETTINGS_MSG] ~= nil) then
+					if flag == CAPTURE_SETTINGS_MSG then
 						-- visual indicator of capture and send
 						show_flash()
-						rc, err = pcall(camera.capture_and_send, data.app_data[CAPTURE_SETTINGS_MSG])
+						rc, err = pcall(camera.capture_and_send, camera.parse_capture_settings(raw))
 						clear_display()
 
 						if rc == false then
 							print(err)
 						end
 
-						data.app_data[CAPTURE_SETTINGS_MSG] = nil
-					end
-
-					if (data.app_data[AUTO_EXP_SETTINGS_MSG] ~= nil) then
-						rc, err = pcall(camera.set_auto_exp_settings, data.app_data[AUTO_EXP_SETTINGS_MSG])
+					elseif flag == AUTO_EXP_SETTINGS_MSG then
+						rc, err = pcall(camera.set_auto_exp_settings, camera.parse_auto_exp_settings(raw))
 
 						if rc == false then
 							print(err)
 						end
 
-						data.app_data[AUTO_EXP_SETTINGS_MSG] = nil
-					end
-
-					if (data.app_data[MANUAL_EXP_SETTINGS_MSG] ~= nil) then
-						rc, err = pcall(camera.set_manual_exp_settings, data.app_data[MANUAL_EXP_SETTINGS_MSG])
+					elseif flag == MANUAL_EXP_SETTINGS_MSG then
+						rc, err = pcall(camera.set_manual_exp_settings, camera.parse_manual_exp_settings(raw))
 
 						if rc == false then
 							print(err)
 						end
 
-						data.app_data[MANUAL_EXP_SETTINGS_MSG] = nil
-					end
+					elseif flag == TEXT_MSG then
+						local parsed = plain_text.parse_plain_text(raw)
+						if parsed ~= nil and parsed.string ~= nil then
+							print_text(parsed)
+							frame.display.show()
+						end
 
-					if (data.app_data[TEXT_MSG] ~= nil and data.app_data[TEXT_MSG].string ~= nil) then
-						print_text()
-						frame.display.show()
-
-						data.app_data[TEXT_MSG] = nil
-					end
-
-					if (data.app_data[TAP_SUBS_MSG] ~= nil) then
-
-						if data.app_data[TAP_SUBS_MSG].value == 1 then
+					elseif flag == TAP_SUBS_MSG then
+						local msg = code.parse_code(raw)
+						if msg.value == 1 then
 							-- start subscription to tap events
 							print('subscribing for taps')
 							frame.imu.tap_callback(handle_tap)
@@ -123,10 +109,7 @@ function app_loop()
 							print('cancel subscription for taps')
 							frame.imu.tap_callback(nil)
 						end
-
-						data.app_data[TAP_SUBS_MSG] = nil
 					end
-
 				end
 
 				-- periodic battery level updates, 120s for a camera app

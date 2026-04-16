@@ -5,9 +5,6 @@ local audio = require('audio.min')
 -- Phone to Frame flags
 AUDIO_SUBS_MSG = 0x30
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[AUDIO_SUBS_MSG] = code.parse_code
-
 -- Main app loop
 function app_loop()
 	if frame.HARDWARE_VERSION == 'Frame' then
@@ -30,14 +27,15 @@ function app_loop()
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if (data.app_data[AUDIO_SUBS_MSG] ~= nil) then
-
-						if data.app_data[AUDIO_SUBS_MSG].value == 1 then
+					if flag == AUDIO_SUBS_MSG then
+						local msg = code.parse_code(raw)
+						if msg.value == 1 then
 							-- 'start' message
 							audio_data = ''
 							streaming = true
@@ -61,10 +59,7 @@ function app_loop()
 								frame.display.clear()
 							end
 						end
-
-						data.app_data[AUDIO_SUBS_MSG] = nil
 					end
-
 				end
 
 				-- send any pending audio data back

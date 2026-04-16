@@ -4,9 +4,6 @@ local sprite = require('sprite.min')
 -- Phone to Frame flags
 USER_SPRITE = 0x20
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[USER_SPRITE] = sprite.parse_sprite
-
 -- draw the specified text on the display
 function print_text(text)
     local i = 0
@@ -46,13 +43,14 @@ function app_loop()
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if data.app_data[USER_SPRITE] ~= nil then
-						local spr = data.app_data[USER_SPRITE]
+					if flag == USER_SPRITE then
+						local spr = sprite.parse_sprite(raw)
 
 						-- show the sprite
 						clear_display()
@@ -65,11 +63,8 @@ function app_loop()
 							frame.display.show()
 						end
 
-						-- clear the object and run the garbage collector right away
-						data.app_data[USER_SPRITE] = nil
 						collectgarbage('collect')
 					end
-
 				end
 
 				-- can't sleep for long, might be lots of incoming bluetooth data to process

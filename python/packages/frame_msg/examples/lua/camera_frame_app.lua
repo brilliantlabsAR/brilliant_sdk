@@ -4,9 +4,6 @@ local camera = require('camera.min')
 -- Phone to Frame flags
 CAPTURE_SETTINGS_MSG = 0x0d
 
--- register the message parser so it's automatically called when matching data comes in
-data.parsers[CAPTURE_SETTINGS_MSG] = camera.parse_capture_settings
-
 function clear_display()
 	if frame.HARDWARE_VERSION == 'Frame' then
 		frame.display.text(' ', 1, 1)
@@ -39,24 +36,23 @@ function app_loop()
 	while true do
         rc, err = pcall(
             function()
-				-- process any raw data items, if ready (parse into take_photo, then clear data.app_data_block)
-				local items_ready = data.process_raw_items()
+				-- process any raw data items, if ready
+				local items = data.process_raw_items()
 
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if (data.app_data[CAPTURE_SETTINGS_MSG] ~= nil) then
+					if flag == CAPTURE_SETTINGS_MSG then
 						-- visual indicator of capture and send
 						show_flash()
-						rc, err = pcall(camera.capture_and_send, data.app_data[CAPTURE_SETTINGS_MSG])
+						rc, err = pcall(camera.capture_and_send, camera.parse_capture_settings(raw))
 						clear_display()
 
 						if rc == false then
 							print(err)
 						end
-
-						data.app_data[CAPTURE_SETTINGS_MSG] = nil
 					end
-
 				end
 
 				if frame.HARDWARE_VERSION == 'Frame' and camera.is_auto_exp then

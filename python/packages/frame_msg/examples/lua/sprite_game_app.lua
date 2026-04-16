@@ -8,11 +8,6 @@ SPRITE_0 = 0x20
 SPRITE_COORDS = 0x40
 CODE_DRAW = 0x50
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[SPRITE_0] = sprite.parse_sprite
-data.parsers[SPRITE_COORDS] = sprite_coords.parse_sprite_coords
-data.parsers[CODE_DRAW] = code.parse_code
-
 -- draw the specified text on the display
 function print_text(text)
     local i = 0
@@ -45,58 +40,54 @@ function app_loop()
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
 
+	-- retained sprite resources, keyed by flag code
+	local sprites = {}
+
 	while true do
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				if #items > 0 then
 					frame.sleep(0.1)
 
-					-- sprite resource retained for later drawing
-					if data.app_data[SPRITE_0] ~= nil then
-						local spr = data.app_data[SPRITE_0]
+					for i = 1, #items do
+						local flag = items[i][1]
+						local raw = items[i][2]
 
-						-- also updates Frame's palette to match the sprite
-						if frame.HARDWARE_VERSION == 'Frame' then
-							-- set Frame's palette to match the sprite in case it's different to the standard palette
-							sprite.set_palette(spr.num_colors, spr.palette_data)
+						if flag == SPRITE_0 then
+							-- sprite resource retained for later drawing
+							sprites[SPRITE_0] = sprite.parse_sprite(raw)
 
-							collectgarbage('collect')
-						end
-
-						-- don't clear the sprite, we want to draw it later
-					end
-
-					-- place a sprite on the display (backbuffer)
-					if data.app_data[SPRITE_COORDS] ~= nil then
-						local coords = data.app_data[SPRITE_COORDS]
-						local spr = data.app_data[coords.code]
-
-						if spr ~= nil then
+							-- also updates Frame's palette to match the sprite
 							if frame.HARDWARE_VERSION == 'Frame' then
-								frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data)
-							else
-								frame.display.clear()
-								frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data, {palette_data=spr.palette_data})
+								sprite.set_palette(sprites[SPRITE_0].num_colors, sprites[SPRITE_0].palette_data)
+								collectgarbage('collect')
 							end
-						else
-							print('Sprite not found: ' .. tostring(coords.code))
+							-- don't clear, we want to draw it later
+
+						elseif flag == SPRITE_COORDS then
+							-- place a sprite on the display (backbuffer)
+							local coords = sprite_coords.parse_sprite_coords(raw)
+							local spr = sprites[coords.code]
+
+							if spr ~= nil then
+								if frame.HARDWARE_VERSION == 'Frame' then
+									frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data)
+								else
+									frame.display.clear()
+									frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data, {palette_data=spr.palette_data})
+								end
+							else
+								print('Sprite not found: ' .. tostring(coords.code))
+							end
+
+						elseif flag == CODE_DRAW then
+							-- flip the buffers, show what we've drawn
+							frame.display.show()
 						end
-
-						data.app_data[SPRITE_COORDS] = nil
 					end
-
-
-					-- flip the buffers, show what we've drawn
-					if data.app_data[CODE_DRAW] ~= nil then
-						data.app_data[CODE_DRAW] = nil
-
-						frame.display.show()
-					end
-
 				end
 
 				-- can't sleep for long, might be lots of incoming bluetooth data to process

@@ -35,8 +35,6 @@ _FM_EXAMPLES = Path(__file__).parent / "../../frame_msg/examples"
 LUA_APP  = (_FM_EXAMPLES / "lua/sprite_game_app.lua").resolve()
 IMAGE    = (_FM_EXAMPLES / "images/rings_1bit.png").resolve()
 
-# Lua libraries from the Python frame_msg package (old data API — returns count,
-# stores parsed items in data.app_data[flag]).  sprite_game_app.lua expects this.
 LUA_LIBS = ["data", "sprite", "code", "sprite_coords"]
 
 

@@ -8,8 +8,6 @@ local plain_text = require('plain_text.min')
 
 local TEXT_FLAG = 0x0a
 
-data.parsers[TEXT_FLAG] = plain_text.parse_plain_text
-
 local function show_text(text)
     frame.display.clear(0)
     local line_num = 0
@@ -29,13 +27,18 @@ print(0)
 
 while true do
     rc, err = pcall(function()
-        local items_ready = data.process_raw_items()
+        local items = data.process_raw_items()
 
-        if items_ready > 0 then
-            if data.app_data[TEXT_FLAG] ~= nil then
-                show_text(data.app_data[TEXT_FLAG].string)
-                data.app_data[TEXT_FLAG] = nil
-                collectgarbage('collect')
+        for i = 1, #items do
+            local flag = items[i][1]
+            local raw = items[i][2]
+
+            if flag == TEXT_FLAG then
+                local parsed = plain_text.parse_plain_text(raw)
+                if parsed ~= nil and parsed.string ~= nil then
+                    show_text(parsed.string)
+                    collectgarbage('collect')
+                end
             end
         end
 
