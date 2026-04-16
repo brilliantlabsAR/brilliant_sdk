@@ -5,7 +5,8 @@ local _M = {}
 local AUDIO_DATA_FINAL_MSG = 0x06
 local AUDIO_DATA_NON_FINAL_MSG = 0x05
 
-local MTU = frame.bluetooth.max_length()
+-- 1 byte reserved for flag
+local MTU = frame.bluetooth.max_length() - 1
 -- data buffer needs to be even for reading from microphone
 if MTU % 2 == 1 then MTU = MTU - 1 end
 
