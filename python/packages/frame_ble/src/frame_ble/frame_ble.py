@@ -144,7 +144,7 @@ class FrameBle:
             self._AUDIO_TX_CHARACTERISTIC_UUID,
         )
 
-        if self._tx_characteristic is not None:
+        if self._audio_tx_characteristic is not None:
             self._type = BrilliantDeviceType.HALO
         else:
             self._type = BrilliantDeviceType.FRAME
