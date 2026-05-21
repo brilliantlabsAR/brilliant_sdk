@@ -32,3 +32,7 @@ export { RxPhoto } from './rx/photo';
 export type { RxPhotoOptions, JpegQuality } from './rx/photo';
 export { RxTap } from './rx/tap';
 export type { RxTapOptions } from './rx/tap';
+export { RxClick, ClickType } from './rx/click';
+export type { RxClickOptions } from './rx/click';
+export { TxTextPage, RectangularTextLayout, CircularTextLayout, PageData } from './tx/text-page';
+export type { TextLayout, TxTextPageOptions } from './tx/text-page';
