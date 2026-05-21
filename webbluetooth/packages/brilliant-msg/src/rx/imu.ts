@@ -38,9 +38,9 @@ class SensorBuffer {
         const length = this._buffer.length;
 
         return [
-            Math.trunc(sumX / length),
-            Math.trunc(sumY / length),
-            Math.trunc(sumZ / length)
+            sumX / length,
+            sumY / length,
+            sumZ / length
         ];
     }
 }
@@ -137,23 +137,22 @@ export class RxIMU {
             return;
         }
 
-        // Data is expected to be: [msgCode, ?, val1_L, val1_H, val2_L, val2_H, ...]
-        // Python: struct.unpack('<6h', data[2:14])
-        // '<' is little-endian, 'h' is a 2-byte signed short. 6 shorts = 12 bytes.
-        // data[2:14] means starting from index 2, up to (but not including) index 14.
-        if (data.length < 14) {
-            console.warn("RxIMU: Data packet too short for IMU data.");
+        // Data is expected to be: [msgCode, padding, f32, f32, f32, f32, f32, f32]
+        // 6 32-bit little-endian floats starting at byte offset 2
+        if (data.length < 26) {
+            console.warn("RxIMU: Data packet too short for IMU float data.");
             return;
         }
-
         const view = new DataView(data.buffer, data.byteOffset);
-        const values: number[] = [];
-        for (let i = 0; i < 6; i++) {
-            values.push(view.getInt16(2 + i * 2, true)); // true for little-endian
-        }
+        const cX = view.getFloat32(2, true);
+        const cY = view.getFloat32(6, true);
+        const cZ = view.getFloat32(10, true);
+        const aX = view.getFloat32(14, true);
+        const aY = view.getFloat32(18, true);
+        const aZ = view.getFloat32(22, true);
 
-        const rawCompass: [number, number, number] = [values[0], values[1], values[2]]; //
-        const rawAccel: [number, number, number] = [values[3], values[4], values[5]]; //
+        const rawCompass: [number, number, number] = [cX, cY, cZ];
+        const rawAccel: [number, number, number] = [aX, aY, aZ];
 
         this.compassBuffer.add(rawCompass); //
         this.accelBuffer.add(rawAccel); //

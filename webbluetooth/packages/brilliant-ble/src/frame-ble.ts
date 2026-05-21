@@ -661,7 +661,7 @@ export class FrameBle {
      * @returns A promise that resolves when all parts of the message have been sent and acknowledged.
      * @throws Error if msgCode is out of range, payload is too large, or if max payload size is too small for the protocol.
      */
-    public async sendMessage(msgCode: number, payload: Uint8Array, showMe = false): Promise<void> {
+    public async sendMessage(msgCode: number, payload: Uint8Array, showMe = false, awaitBtResponse = true): Promise<void> {
         const HEADER_SIZE = 2; // size_high(1), size_low(1)
         const MAX_TOTAL_PAYLOAD_SIZE = 65535;
 
@@ -689,7 +689,7 @@ export class FrameBle {
         firstPacketDataForSendData[2] = totalPayloadSize & 0xFF;
         firstPacketDataForSendData.set(payload.subarray(0, firstChunkActualDataSize), 1 + HEADER_SIZE);
 
-        await this.sendData(firstPacketDataForSendData, {showMe: showMe, awaitData: true});
+        await this.sendData(firstPacketDataForSendData, {showMe: showMe, awaitData: true, awaitBtResponse: awaitBtResponse});
         sentBytes += firstChunkActualDataSize;
 
         while (sentBytes < totalPayloadSize) {
@@ -699,7 +699,7 @@ export class FrameBle {
             subsequentPacketDataForSendData[0] = msgCode;
             subsequentPacketDataForSendData.set(payload.subarray(sentBytes, sentBytes + currentChunkActualDataSize), 1);
 
-            await this.sendData(subsequentPacketDataForSendData, {showMe: showMe, awaitData: true});
+            await this.sendData(subsequentPacketDataForSendData, {showMe: showMe, awaitData: true, awaitBtResponse: awaitBtResponse});
             sentBytes += currentChunkActualDataSize;
         }
     }
