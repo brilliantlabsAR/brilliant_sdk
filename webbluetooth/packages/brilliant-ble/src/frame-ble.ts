@@ -1,3 +1,9 @@
+export enum BrilliantDeviceType {
+    FRAME = "Frame",
+    HALO = "Halo",
+    UNKNOWN = "Unknown",
+}
+
 /**
  * Class for managing a connection to and transferring data to and from
  * the Brilliant Labs Frame device over Bluetooth LE using WebBluetooth
@@ -7,10 +13,13 @@ export class FrameBle {
     private server?: BluetoothRemoteGATTServer;
     private txCharacteristic?: BluetoothRemoteGATTCharacteristic;
     private rxCharacteristic?: BluetoothRemoteGATTCharacteristic;
+    private audioTxCharacteristic?: BluetoothRemoteGATTCharacteristic;
+    private deviceType: BrilliantDeviceType = BrilliantDeviceType.UNKNOWN;
 
     private readonly SERVICE_UUID = "7a230001-5475-a6a4-654c-8431f6ad49c4";
     private readonly TX_CHARACTERISTIC_UUID = "7a230002-5475-a6a4-654c-8431f6ad49c4";
     private readonly RX_CHARACTERISTIC_UUID = "7a230003-5475-a6a4-654c-8431f6ad49c4";
+    private readonly AUDIO_TX_CHARACTERISTIC_UUID = "7a230005-5475-a6a4-654c-8431f6ad49c4";
 
     private maxPayload = 60; // will be set after connection
     private awaitingPrintResponse = false;
@@ -32,6 +41,13 @@ export class FrameBle {
      * The constructor is currently empty as most setup occurs during the connect method.
      */
     constructor() {}
+
+    /**
+     * Returns the type of the connected Brilliant device.
+     */
+    public get type(): BrilliantDeviceType {
+        return this.deviceType;
+    }
 
     /**
      * Sets or updates the handler for asynchronous data responses from the device.
@@ -66,6 +82,8 @@ export class FrameBle {
         this.server = undefined;
         this.txCharacteristic = undefined;
         this.rxCharacteristic = undefined;
+        this.audioTxCharacteristic = undefined;
+        this.deviceType = BrilliantDeviceType.UNKNOWN;
         if (this.onDisconnectHandler) {
             this.onDisconnectHandler();
         }
@@ -126,6 +144,8 @@ export class FrameBle {
         // Reset characteristics and server from any previous failed attempt within a retry loop.
         this.txCharacteristic = undefined;
         this.rxCharacteristic = undefined;
+        this.audioTxCharacteristic = undefined;
+        this.deviceType = BrilliantDeviceType.UNKNOWN;
         this.server = undefined;
 
         try {
@@ -144,6 +164,16 @@ export class FrameBle {
             console.log("Getting RX characteristic...");
             this.rxCharacteristic = await service.getCharacteristic(this.RX_CHARACTERISTIC_UUID);
             console.log("RX characteristic obtained.");
+
+            // Halo has an additional audio TX characteristic; Frame does not.
+            try {
+                this.audioTxCharacteristic = await service.getCharacteristic(this.AUDIO_TX_CHARACTERISTIC_UUID);
+                this.deviceType = BrilliantDeviceType.HALO;
+                console.log("Audio TX characteristic obtained — device is Halo.");
+            } catch {
+                this.deviceType = BrilliantDeviceType.FRAME;
+                console.log("No audio TX characteristic — device is Frame.");
+            }
 
             console.log("Starting notifications on RX characteristic...");
             await this.rxCharacteristic.startNotifications();
@@ -180,6 +210,8 @@ export class FrameBle {
                 this.rxCharacteristic = undefined;
             }
             this.txCharacteristic = undefined;
+            this.audioTxCharacteristic = undefined;
+            this.deviceType = BrilliantDeviceType.UNKNOWN;
             if (this.device?.gatt?.connected) {
                 this.device.gatt.disconnect(); // Disconnect from GATT for this attempt
             }
@@ -317,6 +349,8 @@ export class FrameBle {
         this.server = undefined;
         this.txCharacteristic = undefined;
         this.rxCharacteristic = undefined; // Listeners on rxCharacteristic are managed by _attemptConnection
+        this.audioTxCharacteristic = undefined;
+        this.deviceType = BrilliantDeviceType.UNKNOWN;
 
         // Crucially, clear this.device so a subsequent call to connect() re-prompts the user for a device.
         // This happens regardless of whether currentDeviceToConnect was the same as this.device at this point
@@ -366,7 +400,7 @@ export class FrameBle {
         return isLua ? this.maxPayload : this.maxPayload - 1;
     }
 
-    private async transmit(data: Uint8Array, showMe = false) {
+    private async transmit(data: Uint8Array, showMe = false, awaitBtResponse = true) {
         if (!this.txCharacteristic) {
             throw new Error("Not connected or TX characteristic not available.");
         }
@@ -376,7 +410,11 @@ export class FrameBle {
         if (showMe) {
             console.log("Transmitting (hex):", Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' '));
         }
-        await this.txCharacteristic.writeValueWithResponse(data);
+        if (awaitBtResponse) {
+            await this.txCharacteristic.writeValueWithResponse(data);
+        } else {
+            await this.txCharacteristic.writeValueWithoutResponse(data);
+        }
     }
 
     /**
@@ -434,6 +472,7 @@ export class FrameBle {
      * @param options.showMe If true, logs the transmitted data (including prefix, hex format) to the console. Defaults to false.
      * @param options.awaitData If true, waits for a data response from the device. Defaults to false.
      * @param options.timeout The timeout in milliseconds to wait for a data response if `awaitData` is true. Defaults to 5000ms.
+     * @param options.awaitBtResponse If true, uses write-with-response at the BLE level. Defaults to true.
      * @returns A promise that resolves with the Uint8Array data response if `awaitData` is true, or void otherwise.
      * @throws Error if not connected, if TX characteristic is not available, or if the data payload is too large.
      */
@@ -443,9 +482,10 @@ export class FrameBle {
             showMe?: boolean;
             awaitData?: boolean;
             timeout?: number;
+            awaitBtResponse?: boolean;
         } = {}
     ): Promise<Uint8Array | void> { // Updated return type
-        const { showMe = false, awaitData = false, timeout = 5000 } = options; // Default values documented
+        const { showMe = false, awaitData = false, timeout = 5000, awaitBtResponse = true } = options; // Default values documented
 
         if (!this.txCharacteristic) {
             throw new Error("Not connected or TX characteristic not available.");
@@ -478,8 +518,29 @@ export class FrameBle {
             });
         }
 
-        await this.transmit(combinedData, showMe);
+        await this.transmit(combinedData, showMe, awaitBtResponse);
         if (awaitData) return this.dataResponsePromise; // Returns Promise<Uint8Array>
+    }
+
+    /**
+     * Sends audio data to the Halo audio characteristic (UUID 7a230005).
+     * Packets exceeding the MTU are silently dropped, matching device firmware behaviour.
+     * @param data The audio payload (LC3 frames or PCM samples) to send.
+     * @param awaitBtResponse If true, uses write-with-response at the BLE level. Defaults to false for throughput.
+     */
+    public async sendAudio(data: Uint8Array, awaitBtResponse = false): Promise<void> {
+        if (!this.audioTxCharacteristic) {
+            throw new Error("Audio TX characteristic not available. Is this a Halo device?");
+        }
+        const mtu = this.maxPayload;
+        if (data.byteLength > mtu) {
+            return;
+        }
+        if (awaitBtResponse) {
+            await this.audioTxCharacteristic.writeValueWithResponse(data);
+        } else {
+            await this.audioTxCharacteristic.writeValueWithoutResponse(data);
+        }
     }
 
     /**
@@ -490,6 +551,18 @@ export class FrameBle {
      */
     public async sendResetSignal(showMe = false): Promise<void> {
         const signal = new Uint8Array([0x04]);
+        await this.transmit(signal, showMe);
+        await new Promise(resolve => setTimeout(resolve, 200)); // Short delay
+    }
+
+    /**
+     * Sends a remove signal (0x05) to the Halo device, which removes main.lua.
+     * This is only applicable to Halo devices.
+     * @param showMe If true, logs the transmitted signal (hex format) to the console. Defaults to false.
+     * @returns A promise that resolves after a short delay post-transmission.
+     */
+    public async sendRemoveSignal(showMe = false): Promise<void> {
+        const signal = new Uint8Array([0x05]);
         await this.transmit(signal, showMe);
         await new Promise(resolve => setTimeout(resolve, 200)); // Short delay
     }

@@ -1,1 +1,1 @@
-export { FrameBle } from './frame-ble';
+export { FrameBle, BrilliantDeviceType } from './frame-ble';
