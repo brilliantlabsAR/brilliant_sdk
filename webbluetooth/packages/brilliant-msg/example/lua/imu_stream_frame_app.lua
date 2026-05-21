@@ -8,13 +8,15 @@ IMU_SUBS_MSG = 0x40
 -- Frame to Phone msg codes
 IMU_DATA_MSG = 0x0A
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[IMU_SUBS_MSG] = code.parse_code
-
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text('Frame App Started', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+		frame.display.text('Frame App Started', 50, 50)
+	end
 
 	local streaming = false
 
@@ -25,32 +27,40 @@ function app_loop()
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-                    if (data.app_data[IMU_SUBS_MSG] ~= nil) then
-
-                        if data.app_data[IMU_SUBS_MSG].value == 1 then
-                            -- start subscription to IMU
-                            streaming = true
-							frame.display.text('Streaming IMU', 1, 1)
-							frame.display.show()
-                        else
-                            -- cancel subscription to IMU
-                            streaming = false
-							frame.display.text('Not streaming IMU', 1, 1)
-							frame.display.show()
-                        end
-
-                        data.app_data[IMU_SUBS_MSG] = nil
-                    end
-
+					if flag == IMU_SUBS_MSG then
+						local msg = code.parse_code(raw)
+						if msg.value == 1 then
+							-- start subscription to IMU
+							streaming = true
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.text('Streaming IMU', 1, 1)
+								frame.display.show()
+							else
+								frame.display.clear()
+								frame.display.text('Streaming IMU', 50, 50)
+							end
+						else
+							-- cancel subscription to IMU
+							streaming = false
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.text('Not streaming IMU', 1, 1)
+								frame.display.show()
+							else
+								frame.display.clear()
+								frame.display.text('Not streaming IMU', 50, 50)
+							end
+						end
+					end
 				end
 
 				-- poll and send the raw IMU data (3-axis magnetometer, 3-axis accelerometer)
-				-- Streams until STOP_IMU_MSG is sent from host
+				-- Streams until IMU_SUBS_MSG is sent from host with a value of 0
 				if streaming then
 					imu.send_imu_data(IMU_DATA_MSG)
 				end
@@ -62,8 +72,12 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			if frame.HARDWARE_VERSION == 'Frame' then
+				frame.display.text(' ', 1, 1)
+				frame.display.show()
+			else
+				frame.display.clear()
+			end
 			break
 		end
 	end

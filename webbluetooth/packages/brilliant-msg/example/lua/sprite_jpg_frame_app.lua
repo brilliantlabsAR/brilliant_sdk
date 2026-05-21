@@ -4,13 +4,37 @@ local sprite = require('sprite.min')
 -- Phone to Frame msg codes
 USER_SPRITE_MSG = 0x20
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[USER_SPRITE_MSG] = sprite.parse_sprite
+-- draw the specified text on the display
+function print_text(text)
+    local i = 0
+    for line in text:gmatch('([^\n]*)\n?') do
+        if line ~= "" then
+            frame.display.text(line, 1, i * 60 + 1)
+            i = i + 1
+        end
+    end
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.show()
+	end
+end
+
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
 
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION ~= 'Frame' then
+		frame.display.power_save(false)
+	end
+
+	clear_display()
+	print_text('Frame App Started')
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
@@ -19,38 +43,39 @@ function app_loop()
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if data.app_data[USER_SPRITE_MSG] ~= nil then
-						local spr = data.app_data[USER_SPRITE_MSG]
+					if flag == USER_SPRITE_MSG then
+						local spr = sprite.parse_sprite(raw)
+
+						-- show the sprite
+						clear_display()
 
 						-- set the palette in case it's different to the standard palette
 						sprite.set_palette(spr.num_colors, spr.palette_data)
-
-						-- show the sprite
 						frame.display.bitmap(1, 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
-						frame.display.show()
 
-						-- clear the object and run the garbage collector right away
-						data.app_data[USER_SPRITE_MSG] = nil
+						if frame.HARDWARE_VERSION == 'Frame' then
+							frame.display.show()
+						end
+
 						collectgarbage('collect')
 					end
-
 				end
 
 				-- can't sleep for long, might be lots of incoming bluetooth data to process
-				frame.sleep(0.001)
+				frame.sleep(0.01)
 			end
 		)
 		-- Catch an error (including the break signal) here
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

@@ -4,9 +4,6 @@ local plain_text = require('plain_text.min')
 -- Phone to Frame msg codes
 TEXT_MSG = 0x0a
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[TEXT_MSG] = plain_text.parse_plain_text
-
 -- draw the specified text on the display
 function print_text(text)
     local i = 0
@@ -16,12 +13,33 @@ function print_text(text)
             i = i + 1
         end
     end
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.show()
+	end
+end
+
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
 end
 
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION ~= 'Frame' then
+		frame.display.power_save(false)
+	end
+
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text('Frame App Started', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+		frame.display.text('Frame App Started', 50, 50)
+	end
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
@@ -30,21 +48,20 @@ function app_loop()
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if data.app_data[TEXT_MSG] ~= nil and data.app_data[TEXT_MSG].string ~= nil then
-						local text = data.app_data[TEXT_MSG]
-						print_text(text)
-						frame.display.show()
-
-						-- clear the object and run the garbage collector right away
-						data.app_data[TEXT_MSG] = nil
-						collectgarbage('collect')
+					if flag == TEXT_MSG then
+						local text = plain_text.parse_plain_text(raw)
+						if text ~= nil and text.string ~= nil then
+							clear_display()
+							print_text(text)
+							collectgarbage('collect')
+						end
 					end
-
 				end
 
 				-- can't sleep for long, might be lots of incoming bluetooth data to process
@@ -55,8 +72,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

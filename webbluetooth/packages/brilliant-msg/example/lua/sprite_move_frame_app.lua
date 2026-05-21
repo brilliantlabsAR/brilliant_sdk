@@ -8,61 +8,86 @@ SPRITE_0_MSG = 0x20
 SPRITE_COORDS_MSG = 0x40
 CODE_DRAW_MSG = 0x50
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[SPRITE_0_MSG] = sprite.parse_sprite
-data.parsers[SPRITE_COORDS_MSG] = sprite_coords.parse_sprite_coords
-data.parsers[CODE_DRAW_MSG] = code.parse_code
+-- draw the specified text on the display
+function print_text(text)
+    local i = 0
+    for line in text:gmatch('([^\n]*)\n?') do
+        if line ~= "" then
+            frame.display.text(line, 1, i * 60 + 1)
+            i = i + 1
+        end
+    end
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.show()
+	end
+end
+
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
 
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION ~= 'Frame' then
+		frame.display.power_save(false)
+	end
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
+
+	-- retained sprite resources, keyed by flag code
+	local sprites = {}
 
 	while true do
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				if #items > 0 then
+					frame.sleep(0.1)
 
-					-- sprite resource saved for later drawing
-					-- also updates Frame's palette to match the sprite
-					if data.app_data[SPRITE_0_MSG] ~= nil then
-						local spr = data.app_data[SPRITE_0_MSG]
+					for i = 1, #items do
+						local flag = items[i][1]
+						local raw = items[i][2]
 
-						-- set Frame's palette to match the sprite in case it's different to the standard palette
-						sprite.set_palette(spr.num_colors, spr.palette_data)
+						if flag == SPRITE_0_MSG then
+							-- sprite resource retained for later drawing
+							sprites[SPRITE_0_MSG] = sprite.parse_sprite(raw)
 
-						collectgarbage('collect')
-					end
+							-- also updates Frame's palette to match the sprite
+							if frame.HARDWARE_VERSION == 'Frame' then
+								sprite.set_palette(sprites[SPRITE_0_MSG].num_colors, sprites[SPRITE_0_MSG].palette_data)
+								collectgarbage('collect')
+							end
+							-- don't clear, we want to draw it later
 
-					-- place a sprite on the display (backbuffer)
-					if data.app_data[SPRITE_COORDS_MSG] ~= nil then
-						local coords = data.app_data[SPRITE_COORDS_MSG]
-						local spr = data.app_data[coords.code]
+						elseif flag == SPRITE_COORDS_MSG then
+							-- place a sprite on the display (backbuffer)
+							local coords = sprite_coords.parse_sprite_coords(raw)
+							local spr = sprites[coords.code]
 
-						if spr ~= nil then
-							frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data)
-						else
-							print('Sprite not found: ' .. tostring(coords.code))
+							if spr ~= nil then
+								if frame.HARDWARE_VERSION == 'Frame' then
+									frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data)
+								else
+									frame.display.clear()
+									frame.display.bitmap(coords.x, coords.y, spr.width, spr.num_colors, coords.offset, spr.pixel_data, {palette_data=spr.palette_data})
+								end
+							else
+								print('Sprite not found: ' .. tostring(coords.code))
+							end
+
+						elseif flag == CODE_DRAW_MSG then
+							-- flip the buffers, show what we've drawn
+							frame.display.show()
 						end
-
-						data.app_data[SPRITE_COORDS_MSG] = nil
 					end
-
-
-					-- flip the buffers, show what we've drawn
-					if data.app_data[CODE_DRAW_MSG] ~= nil then
-						data.app_data[CODE_DRAW_MSG] = nil
-
-						frame.display.show()
-					end
-
 				end
 
 				-- can't sleep for long, might be lots of incoming bluetooth data to process
@@ -73,8 +98,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

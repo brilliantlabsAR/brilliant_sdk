@@ -5,67 +5,83 @@ local audio = require('audio.min')
 -- Phone to Frame msg codes
 AUDIO_SUBS_MSG = 0x30
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[AUDIO_SUBS_MSG] = code.parse_code
-
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text('Frame App Started', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+		frame.display.text('Frame App Started', 50, 50)
+	end
 
 	local streaming = false
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
 
+	-- calculate delay per packet based on max bluetooth length and audio bitrate
+	local delay_per_packet = frame.bluetooth.max_length() / 6000 -- 8kHz/8bit audio with some margin
+
 	while true do
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-					if (data.app_data[AUDIO_SUBS_MSG] ~= nil) then
-
-						if data.app_data[AUDIO_SUBS_MSG].value == 1 then
+					if flag == AUDIO_SUBS_MSG then
+						local msg = code.parse_code(raw)
+						if msg.value == 1 then
+							-- 'start' message
 							audio_data = ''
 							streaming = true
 							audio.start({sample_rate=8000, bit_depth=8})
-							frame.display.text("\u{F0010}", 300, 1)
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.text("\u{F0010}", 300, 1)
+								frame.display.show()
+							else
+								frame.display.clear()
+								frame.display.text("Rec", 50, 50)
+							end
 						else
 							-- 'stop' message
 							-- don't set streaming = false here, it will be set
 							-- when all the audio data is flushed
 							audio.stop()
-							frame.display.text(" ", 1, 1)
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.text(" ", 1, 1)
+								frame.display.show()
+							else
+								frame.display.clear()
+							end
 						end
-
-						frame.display.show()
-						data.app_data[AUDIO_SUBS_MSG] = nil
 					end
-
 				end
 
 				-- send any pending audio data back
 				-- Streams until AUDIO_SUBS_MSG is sent from host with a value of 0
 				if streaming then
 					-- read_and_send_audio() sends one MTU worth of samples
-					-- so loop up to 10 times until we have caught up or the stream has stopped
-					local sent = audio.read_and_send_audio()
+					-- so we want to call it a bit more frequently than the audio bitrate
+					-- to catch up if we fall behind
+					local sent = nil
 					for i = 1, 10 do
-						if sent == nil or sent == 0 then
+						sent = audio.read_and_send_audio()
+						if sent == 0 then
 							break
 						end
-						sent = audio.read_and_send_audio()
 					end
 					if sent == nil then
 						streaming = false
 					end
 
-					-- 8kHz/8 bit is 8000b/s, which is ~33 packets/second, or 1 every 30ms
-					frame.sleep(0.001)
+					-- 8kHz/8 bit is 8000b/s, i.e. 8000/MTU packets per second
+					-- but we send up to 10 packets and sleep for (MTU/6k) between packets
+					frame.sleep(delay_per_packet)
 				else
 					-- not streaming, sleep for longer
 					frame.sleep(0.1)
@@ -76,8 +92,12 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			if frame.HARDWARE_VERSION == 'Frame' then
+				frame.display.text(" ", 1, 1)
+				frame.display.show()
+			else
+				frame.display.clear()
+			end
 			break
 		end
 	end

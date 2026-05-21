@@ -5,13 +5,15 @@ local tap = require('tap.min')
 -- Phone to Frame msg codes
 TAP_SUBS_MSG = 0x10
 
--- register the message parsers so they are automatically called when matching data comes in
-data.parsers[TAP_SUBS_MSG] = code.parse_code
-
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
-	frame.display.show()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text('Frame App Started', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+		frame.display.text('Frame App Started', 50, 50)
+	end
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
 	print('Frame app is running')
@@ -20,28 +22,36 @@ function app_loop()
         rc, err = pcall(
             function()
 				-- process any raw data items, if ready
-				local items_ready = data.process_raw_items()
+				local items = data.process_raw_items()
 
-				-- one or more full messages received
-				if items_ready > 0 then
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
 
-                    if (data.app_data[TAP_SUBS_MSG] ~= nil) then
-
-                        if data.app_data[TAP_SUBS_MSG].value == 1 then
-                            -- start subscription to tap events
-                            frame.imu.tap_callback(tap.send_tap)
-							frame.display.text('Listening for taps', 1, 1)
-							frame.display.show()
-                        else
-                            -- cancel subscription to tap events
-                            frame.imu.tap_callback(nil)
-							frame.display.text('Not listening for taps', 1, 1)
-							frame.display.show()
-                        end
-
-                        data.app_data[TAP_SUBS_MSG] = nil
-                    end
-
+					if flag == TAP_SUBS_MSG then
+						local msg = code.parse_code(raw)
+						if msg.value == 1 then
+							-- start subscription to tap events
+							frame.imu.tap_callback(tap.send_tap)
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.text('Listening for taps', 1, 1)
+								frame.display.show()
+							else
+								frame.display.clear()
+								frame.display.text('Listening for taps', 50, 50)
+							end
+						else
+							-- cancel subscription to tap events
+							frame.imu.tap_callback(nil)
+							if frame.HARDWARE_VERSION == 'Frame' then
+								frame.display.text('Not listening for taps', 1, 1)
+								frame.display.show()
+							else
+								frame.display.clear()
+								frame.display.text('Not listening for taps', 50, 50)
+							end
+						end
+					end
 				end
 
 				frame.sleep(0.01)
@@ -51,8 +61,12 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			if frame.HARDWARE_VERSION == 'Frame' then
+				frame.display.text(' ', 1, 1)
+				frame.display.show()
+			else
+				frame.display.clear()
+			end
 			break
 		end
 	end
