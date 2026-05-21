@@ -1,4 +1,4 @@
-import { FrameBle } from 'frame-ble';
+import { FrameBle, BrilliantDeviceType } from 'frame-ble';
 
 // --- Standard Lua Library Imports ---
 import stdDataMinLua from './lua/data.min.lua?raw';
@@ -151,7 +151,10 @@ export class FrameMsg {
      */
     public async printShortText(text: string = ''): Promise<string | void> {
         const sanitizedText = text.replace(/'/g, "\\'").replace(/\n/g, "");
-        return this.ble.sendLua(`frame.display.text('${sanitizedText}',1,1);frame.display.show();print(0)`, { awaitPrint: true });
+        const luaCommand = this.ble.type === BrilliantDeviceType.FRAME
+            ? `frame.display.text('${sanitizedText}',1,1);frame.display.show();print(0)`
+            : `frame.display.clear();frame.display.text('${sanitizedText}',1,1);print(0)`;
+        return this.ble.sendLua(luaCommand, { awaitPrint: true });
     }
 
     /**

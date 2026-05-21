@@ -40,7 +40,7 @@
   "dependencies": {
     "@pdf-lib/upng": "^1.0.1",
     "@types/lz4js": "^0.2.1",
-    "frame-ble": "^0.3.1",
+    "frame-ble": "file:../brilliant-ble",
     "image-js": "^0.37.0",
     "image-q": "^4.0.0",
     "lz4js": "^0.2.0"
