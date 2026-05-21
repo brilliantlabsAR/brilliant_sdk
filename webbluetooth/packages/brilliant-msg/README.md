@@ -1,6 +1,6 @@
 # frame-msg
 
-A TypeScript package for handling rich application-level messages for the [Brilliant Labs Frame](https://brilliant.xyz/), including sprites, text, audio, IMU data, and photos.
+A TypeScript package for handling rich application-level messages for [Brilliant Labs Frame and Halo](https://brilliant.xyz/) devices, including sprites, text, audio, IMU data, photos, and click events.
 
 [Frame SDK documentation](https://docs.brilliant.xyz/frame/frame-sdk/) | [GitHub Repo](https://github.com/CitizenOneX/frame-msg-webbluetooth) | [API Docs](https://citizenonex.github.io/frame-msg-webbluetooth/api) | [Live Examples](https://citizenonex.github.io/frame-msg-webbluetooth/)
 
@@ -13,7 +13,7 @@ npm install frame-msg
 ## Usage
 
 ```typescript
-import { FrameMsg, StdLua, TxCaptureSettings, RxPhoto } from 'frame-msg';
+import { FrameMsg, StdLua, TxCaptureSettings, RxPhoto, BrilliantDeviceType } from 'frame-msg';
 import frameApp from './lua/camera_frame_app.lua?raw';
 
 // Take a photo using the Frame camera and display it
@@ -73,4 +73,50 @@ export async function run() {
     }
   }
 };
+```
+
+## Halo support
+
+Frame and Halo are detected automatically after `connect()`. The `BrilliantDeviceType` enum is re-exported from `frame-msg` for convenience.
+
+### Circular text layout (Halo)
+
+Halo has a circular display. Use `CircularTextLayout` with `TxTextPage` to fit text within the circle:
+
+```typescript
+import { TxTextPage, CircularTextLayout, RectangularTextLayout } from 'frame-msg';
+
+// For Halo's circular display
+const layout = new CircularTextLayout({ width: 640, height: 400, fontSize: 36 });
+
+// For Frame's rectangular display
+// const layout = new RectangularTextLayout({ width: 640, height: 400, fontSize: 36 });
+
+const page = new TxTextPage({ layout, text: 'Hello from Halo!' });
+const pageData = await page.rasterizeNextPage();
+if (pageData) {
+  // Send header packet, then each sprite
+  await frame.sendMessage(0x0a, pageData.pack());
+  for (const sprite of pageData.rasterizedSprites) {
+    await frame.sendMessage(0x0a, sprite.pack());
+  }
+}
+```
+
+### Click events (Halo)
+
+Halo sends tap/click events with single, double, and long-press types:
+
+```typescript
+import { RxClick, ClickType } from 'frame-msg';
+
+const rxClick = new RxClick();
+const clickQueue = await rxClick.attach(frame);
+
+const click = await clickQueue.get();
+if (click === ClickType.SINGLE) console.log('single click');
+if (click === ClickType.DOUBLE) console.log('double click');
+if (click === ClickType.LONG)   console.log('long press');
+
+rxClick.detach(frame);
 ```

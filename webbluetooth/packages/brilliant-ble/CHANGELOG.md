@@ -1,3 +1,14 @@
+## 0.4.0
+
+* Added Halo device support
+* `BrilliantDeviceType` enum (`FRAME`, `HALO`, `UNKNOWN`) exported from package
+* `FrameBle.type` getter — device type is detected automatically at connection time by probing for the Halo audio TX characteristic
+* `sendAudio(data, awaitBtResponse?)` — writes to the Halo audio characteristic (UUID `7a230005-...`), write-without-response by default, silently drops oversized packets
+* `sendRemoveSignal()` — sends `0x05` signal byte to remove `main.lua` from Halo
+* `sendData()` and `sendMessage()` — new `awaitBtResponse` option to control BLE write-with/without-response
+* `transmit()` internally uses `writeValueWithResponse` or `writeValueWithoutResponse` based on `awaitBtResponse`
+* Disconnect and failed connection attempts now reset `audioTxCharacteristic` and `deviceType`
+
 ## 0.3.1
 
 * Improved TypeDoc comments for API reference
