@@ -38,7 +38,12 @@ class TxSprite:
 
         # Extract palette data (only RGB, discarding alpha if present)
         raw_palette = img.getpalette()
-        num_colors = len(img.getcolors())
+        # Use the PNG bit depth to determine the number of palette entries (2^bits),
+        # NOT len(img.getcolors()) which only counts unique indices *used* in the pixel
+        # data — a shorter count would truncate the palette and corrupt colors for any
+        # pixel whose index falls beyond the truncation point.
+        bits = img.info.get('bits', 4)  # 4-bit (16 colors) is the maximum supported
+        num_colors = 2 ** bits
         palette_data = bytes(raw_palette[:num_colors * 3])  # Keep only RGB values
 
         # Extract pixel data
