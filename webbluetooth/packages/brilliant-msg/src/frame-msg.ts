@@ -153,7 +153,7 @@ export class FrameMsg {
         const sanitizedText = text.replace(/'/g, "\\'").replace(/\n/g, "");
         const luaCommand = this.ble.type === BrilliantDeviceType.FRAME
             ? `frame.display.text('${sanitizedText}',1,1);frame.display.show();print(0)`
-            : `frame.display.clear();frame.display.text('${sanitizedText}',1,1);print(0)`;
+            : `frame.display.clear();frame.display.text('${sanitizedText}',50,50);print(0)`;
         return this.ble.sendLua(luaCommand, { awaitPrint: true });
     }
 

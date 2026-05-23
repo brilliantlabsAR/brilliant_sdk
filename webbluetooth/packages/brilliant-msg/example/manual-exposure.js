@@ -1,4 +1,5 @@
 import { FrameMsg, StdLua, TxCaptureSettings, TxManualExpSettings, RxPhoto } from 'frame-msg';
+import { BrilliantDeviceType } from 'frame-ble';
 import frameApp from './lua/manual_exposure_frame_app.lua?raw';
 
 /**
@@ -23,64 +24,68 @@ export async function run() {
     const battMem = await frame.sendLua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', {awaitPrint: true});
     console.log(`Battery Level/Memory used: ${battMem}`);
 
-    // Let the user know we're starting
-    await frame.printShortText('Loading...');
+    if (frame.ble.type === BrilliantDeviceType.FRAME) {
+      // Let the user know we're starting
+      await frame.printShortText('Loading...');
 
-    // send the std lua files to Frame
-    await frame.uploadStdLuaLibs([StdLua.DataMin, StdLua.CameraMin, StdLua.CodeMin]);
+      // send the std lua files to Frame
+      await frame.uploadStdLuaLibs([StdLua.DataMin, StdLua.CameraMin, StdLua.CodeMin]);
 
-    // Send the main lua application from this project to Frame that will run the app
-    await frame.uploadFrameApp(frameApp);
+      // Send the main lua application from this project to Frame that will run the app
+      await frame.uploadFrameApp(frameApp);
 
-    // attach the print response handler so we can see stdout from Frame Lua print() statements
-    // If we assigned this handler before the frameside app was running,
-    // any await_print=True commands will echo the acknowledgement byte (e.g. "1"), but if we assign
-    // the handler now we'll see any lua exceptions (or stdout print statements)
-    frame.attachPrintResponseHandler(console.log);
+      // attach the print response handler so we can see stdout from Frame Lua print() statements
+      // If we assigned this handler before the frameside app was running,
+      // any await_print=True commands will echo the acknowledgement byte (e.g. "1"), but if we assign
+      // the handler now we'll see any lua exceptions (or stdout print statements)
+      frame.attachPrintResponseHandler(console.log);
 
-    // "require" the main frame_app lua file to run it, and block until it has started.
-    // It signals that it is ready by sending something on the string response channel.
-    await frame.startFrameApp();
+      // "require" the main frame_app lua file to run it, and block until it has started.
+      // It signals that it is ready by sending something on the string response channel.
+      await frame.startFrameApp();
 
-    // hook up the RxPhoto receiver
-    const rxPhoto = new RxPhoto();
-    const photoQueue = await rxPhoto.attach(frame);
+      // hook up the RxPhoto receiver
+      const rxPhoto = new RxPhoto();
+      const photoQueue = await rxPhoto.attach(frame);
 
-    // take the default manual exposure settings
-    // and send them to Frame before taking the photo
-    await frame.sendMessage(0x0c, new TxManualExpSettings({}).pack());
+      // take the default manual exposure settings
+      // and send them to Frame before taking the photo
+      await frame.sendMessage(0x0c, new TxManualExpSettings({}).pack());
 
-    // NOTE: it takes up to 200ms for manual camera settings to take effect!
-    console.log("Waiting 200ms for manual exposure settings to take effect...");
-    await new Promise(resolve => setTimeout(resolve, 200));
+      // NOTE: it takes up to 200ms for manual camera settings to take effect!
+      console.log("Waiting 200ms for manual exposure settings to take effect...");
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Request the photo by sending a TxCaptureSettings message
-    await frame.sendMessage(0x0d, new TxCaptureSettings({}).pack());
+      // Request the photo by sending a TxCaptureSettings message
+      await frame.sendMessage(0x0d, new TxCaptureSettings({}).pack());
 
-    // get the jpeg bytes as soon as they're ready
-    const jpegBytes = await photoQueue.get();
-    console.log("Photo received, length:", jpegBytes.length);
+      // get the jpeg bytes as soon as they're ready
+      const jpegBytes = await photoQueue.get();
+      console.log("Photo received, length:", jpegBytes.length);
 
-    // display the image on the web page
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(new Blob([jpegBytes], { type: 'image/jpeg' }));
-    const imageDiv = document.getElementById('image1');
-    if (imageDiv) {
-      // Clear any existing content in the div
-      while (imageDiv.firstChild) {
-        imageDiv.removeChild(imageDiv.firstChild);
+      // display the image on the web page
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(new Blob([jpegBytes], { type: 'image/jpeg' }));
+      const imageDiv = document.getElementById('image1');
+      if (imageDiv) {
+        // Clear any existing content in the div
+        while (imageDiv.firstChild) {
+          imageDiv.removeChild(imageDiv.firstChild);
+        }
+        imageDiv.appendChild(img);
       }
-      imageDiv.appendChild(img);
+
+      // stop the photo listener and clean up its resources
+      rxPhoto.detach(frame);
+
+      // unhook the print handler
+      frame.detachPrintResponseHandler()
+
+      // break out of the frame app loop and reboot Frame
+      await frame.stopFrameApp()
+    } else {
+      console.log("Manual exposure is only available on Frame devices, not Halo. Disconnecting...");
     }
-
-    // stop the photo listener and clean up its resources
-    rxPhoto.detach(frame);
-
-    // unhook the print handler
-    frame.detachPrintResponseHandler()
-
-    // break out of the frame app loop and reboot Frame
-    await frame.stopFrameApp()
   }
   catch (error) {
     console.error("Error:", error);

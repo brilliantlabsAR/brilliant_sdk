@@ -1,4 +1,5 @@
 import { FrameMsg, StdLua, TxSprite, TxSpriteCoords, TxCode } from 'frame-msg';
+import { BrilliantDeviceType } from 'frame-ble';
 import frameApp from './lua/sprite_move_frame_app.lua?raw';
 
 /**
@@ -54,9 +55,15 @@ export async function run() {
 
     // send the sprite coordinates to Frame 20 times with random positions on msgCode 0x40
     // then send a message of type TxCode on msgCode 0x50 to draw the sprite
+
+    // Determine max coordinates based on device type
+    const isFrame = frame.ble.type === BrilliantDeviceType.FRAME;
+    const maxX = isFrame ? 441 : 57;
+    const maxY = isFrame ? 201 : 57;
+
     for (let i = 0; i < 20; i++) {
-      const x = Math.floor(Math.random() * 441) + 1;
-      const y = Math.floor(Math.random() * 201) + 1;
+      const x = Math.floor(Math.random() * maxX) + 1;
+      const y = Math.floor(Math.random() * maxY) + 1;
       const coords = new TxSpriteCoords({ code: 0x20, x: x, y: y, offset: 0 });
       await frame.sendMessage(0x40, coords.pack());
 

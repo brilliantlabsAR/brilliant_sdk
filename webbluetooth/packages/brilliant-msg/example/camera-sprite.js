@@ -1,4 +1,5 @@
 import { FrameMsg, StdLua, TxCaptureSettings, RxPhoto, TxSprite, TxImageSpriteBlock } from 'frame-msg';
+import { BrilliantDeviceType } from 'frame-ble';
 import frameApp from './lua/camera_sprite_frame_app.lua?raw';
 
 /**
@@ -61,7 +62,8 @@ export async function run() {
     await frame.startFrameApp();
 
     // hook up the RxPhoto receiver
-    const rxPhoto = new RxPhoto();
+    const upright = frame.ble.type === BrilliantDeviceType.FRAME; // rotate images from Frame 90 degrees counterclockwise, not Halo
+    const rxPhoto = new RxPhoto({upright: upright});
     const photoQueue = await rxPhoto.attach(frame);
 
     // give Frame some time for the autoexposure to settle
@@ -70,7 +72,8 @@ export async function run() {
     console.log("Taking photo...");
 
     // Request the photo by sending a TxCaptureSettings message
-    await frame.sendMessage(0x0d, new TxCaptureSettings({}).pack());
+    const resolution = frame.ble.type === BrilliantDeviceType.FRAME ? 512 : 640;
+    await frame.sendMessage(0x0d, new TxCaptureSettings({resolution: resolution}).pack());
 
     // get the jpeg bytes as soon as they're ready
     const jpegBytes = await photoQueue.get();

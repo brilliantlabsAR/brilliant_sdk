@@ -39,6 +39,8 @@ function app_loop()
 		frame.display.text('Frame App Started', 50, 50)
 	end
 
+	frame.camera.power_save(false)
+
 	local streaming = false
 	local last_auto_exp_time = 0
 
@@ -108,8 +110,8 @@ function app_loop()
 					frame.sleep(0.1)
 				end
 
-				-- run the autoexposure loop every 100ms
-				if camera.is_auto_exp then
+				-- run the autoexposure loop every 100ms on Frame
+				if frame.HARDWARE_VERSION == 'Frame' and camera.is_auto_exp then
 					local t = frame.time.utc()
 					if (t - last_auto_exp_time) > 0.1 then
 						camera.run_auto_exposure()

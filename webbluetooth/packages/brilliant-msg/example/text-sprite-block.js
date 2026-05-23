@@ -37,17 +37,21 @@ export async function run() {
     // It signals that it is ready by sending something on the string response channel.
     await frame.startFrameApp();
 
-    const tsb = new TxTextSpriteBlock({width: 600,
+    const tsb = new TxTextSpriteBlock({width: 640,
                                 fontSize: 40,
-                                maxDisplayRows: 7,
-                                text: "Hello, friend!\nこんにちは、友人！\n朋友你好！\nПривет, друг!\n안녕, 친구!\nשלום, חבר!\nمرحبا يا صديق",
+                                lineHeight: 50,
+                                maxDisplayLines: 7,
                                 fontFamily: "Monospace",
                                });
+
+    // get the sprites for the text we want to display
+    const sprites = tsb.createTextSprites("Hello, friend!\nこんにちは、友人！\n朋友你好！\nПривет, друг!\n안녕, 친구!\nשלום, חבר!\nمرحبا يا صديق");
+
     // send the Image Sprite Block header
     await frame.sendMessage(0x20, tsb.pack());
 
     // then send all the slices
-    for (const spr of tsb.sprites) {
+    for (const spr of sprites) {
       await frame.sendMessage(0x20, spr.pack());
     }
 

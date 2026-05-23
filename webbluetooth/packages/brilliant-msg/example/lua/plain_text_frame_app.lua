@@ -9,7 +9,11 @@ function print_text(text)
     local i = 0
     for line in text.string:gmatch('([^\n]*)\n?') do
         if line ~= "" then
-            frame.display.text(line, text.x, i * 60 + text.y, {color=text.color})
+            if frame.HARDWARE_VERSION == 'Frame' then
+                frame.display.text(line, text.x, i * 60 + text.y, {color=text.color})
+            else
+                frame.display.text(line, text.x, i * 60 + text.y, text.color)
+            end
             i = i + 1
         end
     end

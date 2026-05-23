@@ -10,6 +10,7 @@ function app_loop()
 		frame.display.text('Frame App Started', 1, 1)
 		frame.display.show()
 	else
+		frame.display.clear()
 		frame.display.text('Frame App Started', 50, 50, 0xFFFFFF)
 	end
 
@@ -32,6 +33,7 @@ function app_loop()
 							frame.display.text('Code received: ' .. tostring(msg.value), 1, 1)
 							frame.display.show()
 						else
+							frame.display.clear()
 							frame.display.text('Code received: ' .. tostring(msg.value), 50, 50, 0xFFFFFF)
 						end
 						collectgarbage('collect')

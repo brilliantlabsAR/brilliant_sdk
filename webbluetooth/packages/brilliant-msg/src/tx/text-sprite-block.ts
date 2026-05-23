@@ -31,9 +31,6 @@ export class TxTextSpriteBlock {
     /** The font family used for rendering the text. */
     public fontFamily: string;
 
-    /** An array of {@link TxSprite} instances, each representing a line of rendered text. */
-    public sprites: TxSprite[] = [];
-
     /**
      * @param options Configuration options for the text sprite block.
      */

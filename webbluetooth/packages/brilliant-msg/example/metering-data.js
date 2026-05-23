@@ -1,4 +1,5 @@
 import { FrameMsg, StdLua, TxCode, RxMeteringData } from 'frame-msg';
+import { BrilliantDeviceType } from 'frame-ble';
 import frameApp from './lua/metering_data_frame_app.lua?raw';
 
 /**
@@ -23,61 +24,66 @@ export async function run() {
     const battMem = await frame.sendLua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', {awaitPrint: true});
     console.log(`Battery Level/Memory used: ${battMem}`);
 
-    // Let the user know we're starting
-    await frame.printShortText('Loading...');
+    if (frame.ble.type === BrilliantDeviceType.FRAME) {
 
-    // send the std lua files to Frame
-    await frame.uploadStdLuaLibs([StdLua.DataMin, StdLua.CameraMin, StdLua.CodeMin]);
+      // Let the user know we're starting
+      await frame.printShortText('Loading...');
 
-    // Send the main lua application from this project to Frame that will run the app
-    await frame.uploadFrameApp(frameApp);
+      // send the std lua files to Frame
+      await frame.uploadStdLuaLibs([StdLua.DataMin, StdLua.CameraMin, StdLua.CodeMin]);
 
-    // attach the print response handler so we can see stdout from Frame Lua print() statements
-    // If we assigned this handler before the frameside app was running,
-    // any await_print=True commands will echo the acknowledgement byte (e.g. "1"), but if we assign
-    // the handler now we'll see any lua exceptions (or stdout print statements)
-    frame.attachPrintResponseHandler(console.log);
+      // Send the main lua application from this project to Frame that will run the app
+      await frame.uploadFrameApp(frameApp);
 
-    // "require" the main frame_app lua file to run it, and block until it has started.
-    // It signals that it is ready by sending something on the string response channel.
-    await frame.startFrameApp();
+      // attach the print response handler so we can see stdout from Frame Lua print() statements
+      // If we assigned this handler before the frameside app was running,
+      // any await_print=True commands will echo the acknowledgement byte (e.g. "1"), but if we assign
+      // the handler now we'll see any lua exceptions (or stdout print statements)
+      frame.attachPrintResponseHandler(console.log);
 
-    // hook up the RxMeteringData receiver
-    const rxMeteringData = new RxMeteringData();
-    const meteringDataQueue = await rxMeteringData.attach(frame);
+      // "require" the main frame_app lua file to run it, and block until it has started.
+      // It signals that it is ready by sending something on the string response channel.
+      await frame.startFrameApp();
 
-    // find the element to display the metering data
-    const meteringDataDiv = document.getElementById('text1');
-    if (meteringDataDiv) {
-      // Clear any existing content in the div
-      while (meteringDataDiv.firstChild) {
-        meteringDataDiv.removeChild(meteringDataDiv.firstChild);
+      // hook up the RxMeteringData receiver
+      const rxMeteringData = new RxMeteringData();
+      const meteringDataQueue = await rxMeteringData.attach(frame);
+
+      // find the element to display the metering data
+      const meteringDataDiv = document.getElementById('text1');
+      if (meteringDataDiv) {
+        // Clear any existing content in the div
+        while (meteringDataDiv.firstChild) {
+          meteringDataDiv.removeChild(meteringDataDiv.firstChild);
+        }
       }
+
+      // loop 60 times - await for the metering data to be received then print it to the console
+      for (let i = 0; i < 60; i++) {
+        await frame.sendMessage(0x12, new TxCode({ value: 1 }).pack());
+        const data = await meteringDataQueue.get();
+        console.log("Metering Data:", data);
+
+        // Update the display element with the metering data
+        meteringDataDiv.innerHTML = `
+          Spot: R=${data.spot_r}, G=${data.spot_g}, B=${data.spot_b}<br>
+          Matrix: R=${data.matrix_r}, G=${data.matrix_g}, B=${data.matrix_b}
+        `;
+      }
+
+      // stop the listener and clean up its resources
+      rxMeteringData.detach(frame);
+
+      // unhook the print handler
+      frame.detachPrintResponseHandler()
+
+      // break out of the frame app loop and reboot Frame
+      await frame.stopFrameApp()
+
+    } else {
+      console.log("Metering data is only available on Frame devices, not Halo. Disconnecting...");
     }
-
-    // loop 60 times - await for the metering data to be received then print it to the console
-    for (let i = 0; i < 60; i++) {
-      await frame.sendMessage(0x12, new TxCode({ value: 1 }).pack());
-      const data = await meteringDataQueue.get();
-      console.log("Metering Data:", data);
-
-      // Update the display element with the metering data
-      meteringDataDiv.innerHTML = `
-        Spot: R=${data.spot_r}, G=${data.spot_g}, B=${data.spot_b}<br>
-        Matrix: R=${data.matrix_r}, G=${data.matrix_g}, B=${data.matrix_b}
-      `;
-    }
-
-    // stop the listener and clean up its resources
-    rxMeteringData.detach(frame);
-
-    // unhook the print handler
-    frame.detachPrintResponseHandler()
-
-    // break out of the frame app loop and reboot Frame
-    await frame.stopFrameApp()
-  }
-  catch (error) {
+  } catch (error) {
     console.error("Error:", error);
   }
   finally {

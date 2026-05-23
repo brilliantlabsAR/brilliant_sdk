@@ -71,7 +71,7 @@ class FrameMsg:
         if (self.ble.type == BrilliantDeviceType.FRAME):
             lua_command = f"frame.display.text('{sanitized_text}',1,1);frame.display.show();print(0)"
         else:
-            lua_command = f"frame.display.clear();frame.display.text('{sanitized_text}',1,1);print(0)"
+            lua_command = f"frame.display.clear();frame.display.text('{sanitized_text}',50,50);print(0)"
 
         await self.ble.send_lua(lua_command, await_print=True)
 
