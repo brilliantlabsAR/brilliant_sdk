@@ -38,12 +38,21 @@ class TxSprite:
 
         # Extract palette data (only RGB, discarding alpha if present)
         raw_palette = img.getpalette()
-        # Use the PNG bit depth to determine the number of palette entries (2^bits),
-        # NOT len(img.getcolors()) which only counts unique indices *used* in the pixel
-        # data — a shorter count would truncate the palette and corrupt colors for any
-        # pixel whose index falls beyond the truncation point.
-        bits = img.info.get('bits', 4)  # 4-bit (16 colors) is the maximum supported
-        num_colors = 2 ** bits
+        # Determine palette size from the PNG bit depth when it's explicitly encoded
+        # (1–4 bits). Pillow may omit or set bits=8 for programmatically-created palette
+        # PNGs (e.g. via putpalette), so fall back to the minimum valid palette size
+        # that covers all unique pixel indices reported by getcolors().
+        bits = img.info.get('bits')
+        if bits is not None and 1 <= bits <= 4:
+            num_colors = 2 ** bits
+        else:
+            n_used = len(img.getcolors())
+            if n_used <= 2:
+                num_colors = 2
+            elif n_used <= 4:
+                num_colors = 4
+            else:
+                num_colors = 16
         palette_data = bytes(raw_palette[:num_colors * 3])  # Keep only RGB values
 
         # Extract pixel data
