@@ -40,7 +40,7 @@ async def main():
         # From this point we do message-passing with first-class types and send_message() (or send_data())
 
         # hook up the RxPhoto receiver
-        rx_photo = RxPhoto()
+        rx_photo = RxPhoto(upright=frame.ble.type == BrilliantDeviceType.FRAME)
         photo_queue = await rx_photo.attach(frame)
 
         # Request the photo capture
