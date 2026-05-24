@@ -54,7 +54,7 @@ async def main():
 
     print("Clear and set up display")
     await b.send_lua("frame.display.power_save(false);print(0)", await_print=True)
-    await b.send_lua("frame.display.set_brightness(50);print(0)", await_print=True)
+    await b.send_lua("frame.display.brightness(50);print(0)", await_print=True)
     await b.send_lua("frame.display.clear(0xFF00FF);print(0)", await_print=True)  # Purple
     await asyncio.sleep(1)
     await b.send_lua("frame.display.clear();print(0)", await_print=True)  # Black

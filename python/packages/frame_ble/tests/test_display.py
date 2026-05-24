@@ -32,7 +32,7 @@ async def main():
     await b.send_lua("frame.display.text('over the lazy dog.', 50, 200, 0xFFFFFF)")
 
     # Change font and scaling
-    await b.send_lua("frame.display.set_font(1, 12, 2)")
+    await b.send_lua("frame.display.set_font(0, 12, 2)")
     await b.send_lua("frame.display.text('Big Bold!', 30, 100, 0x00FF00)")
 
     # # --- Get font list from Lua (for debugging or dynamic UI) ---
@@ -59,7 +59,7 @@ async def main():
     await b.send_lua("frame.display.char(string.byte('A'), 50, 200, 0xFFFFFF)")
 
     for brightness in [0, 25, 50, 75, 100]:
-        await b.send_lua(f"frame.display.set_brightness({brightness})")
+        await b.send_lua(f"frame.display.brightness({brightness})")
         await asyncio.sleep(0.5)
 
     # --- Power saving test ---
