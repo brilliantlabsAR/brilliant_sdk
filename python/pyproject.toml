@@ -1,3 +1,12 @@
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
 [tool.uv.workspace]
 members = [
     "packages/frame_ble",
