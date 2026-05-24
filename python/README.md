@@ -8,7 +8,7 @@ It contains the following Python packages:
 |---------|-----------|-------------|
 | [`frame_ble`](./packages/frame_ble) | `frame-ble` | Low-level Bluetooth LE interface to Brilliant Labs devices |
 | [`frame_msg`](./packages/frame_msg) | `frame-msg` | Application-level message types (sprites, text, audio, IMU, photos) |
-| [`halo_emulator`](./packages/halo_emulator) | `halo-emulator` | Software emulator for the Halo Lua runtime — no hardware required |
+| [`halo_emulator`](./packages/halo_emulator) | `halo-emulator` | Software emulator for the Halo Lua runtime — no hardware required (experimental) |
 
 ---
 

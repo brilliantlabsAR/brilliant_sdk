@@ -15,6 +15,12 @@ members = [
     "halo-emulator",
 ]
 
+[manifest.dependency-groups]
+dev = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-asyncio", specifier = ">=0.23" },
+]
+
 [[package]]
 name = "aioconsole"
 version = "0.8.2"
