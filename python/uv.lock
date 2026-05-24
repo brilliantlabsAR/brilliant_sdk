@@ -309,6 +309,9 @@ docs = [
 ]
 tests = [
     { name = "aioconsole" },
+    { name = "lc3py" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pytest" },
 ]
 
@@ -316,6 +319,8 @@ tests = [
 requires-dist = [
     { name = "aioconsole", marker = "extra == 'tests'" },
     { name = "bleak", specifier = ">=0.22.3,<1.0.0" },
+    { name = "lc3py", marker = "extra == 'tests'" },
+    { name = "numpy", marker = "extra == 'tests'" },
     { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.0" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
@@ -463,6 +468,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/df/bf/f7da0350254c0ed7c72f3e33cef02e048281fec7ecec5f032d4aac52226b/jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d", size = 245115, upload-time = "2025-03-05T20:05:02.478Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67", size = 134899, upload-time = "2025-03-05T20:05:00.369Z" },
+]
+
+[[package]]
+name = "lc3py"
+version = "1.1.3"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/70/f7/19bb24a4fe198e40b0598831226a1fcdcd04c8001f860f7522d4f5a8dfef/lc3py-1.1.3-py3-none-macosx_14_0_arm64.whl", hash = "sha256:191f1abfba78c2d980504db5db29a26ee3382ee36883df7a745c830397c11f3d", size = 116321, upload-time = "2025-02-12T00:50:28.49Z" },
+    { url = "https://files.pythonhosted.org/packages/59/c9/f77aa6f2ab9121e52f08683dccc04fe89b25465c7a23f0e5eea61faee23e/lc3py-1.1.3-py3-none-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:601a9a2ea3135547f2d22a10475b5fec8f784f716f4b22a61acc3908c827694e", size = 144335, upload-time = "2025-02-12T00:50:30.658Z" },
 ]
 
 [[package]]

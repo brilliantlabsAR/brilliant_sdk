@@ -26,6 +26,8 @@ examples = [
 ]
 tests = [
     "aioconsole",
+    "numpy",
+    "lc3py",
     "pytest>=8.0",
 ]
 docs = [
