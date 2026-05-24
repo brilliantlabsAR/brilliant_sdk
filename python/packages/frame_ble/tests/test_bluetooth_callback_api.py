@@ -7,7 +7,7 @@ async def main():
 
     await bluetooth.connect(
         print_response_handler=lambda string: print(f"Print: {string}"),
-        data_response_handler=lambda data: print(f"Data: {data.decode()}"),
+        data_response_handler=lambda data: print(f"Data: {bytes(data).decode()}"),
     )
 
     await bluetooth.send_reset_signal()
