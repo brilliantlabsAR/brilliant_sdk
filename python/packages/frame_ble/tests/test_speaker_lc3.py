@@ -9,7 +9,7 @@ async def main():
     await b.send_lua("frame.speaker.start{encoder='lc3', sample_rate=8000, bit_depth=16, channels=1, bitrate=32000, volume=50};print('start')", await_print=True)  
 
     # 2. Load LC3 audio frames (each frame is 40 bytes)
-    with open("tests/audio/female_w1_8k_s16.lc3", "rb") as f:
+    with open("audio/female_w1_8k_s16.lc3", "rb") as f:
         data = f.read()
     #bitrate 32000 / 800 = 40 bytes per frame
     frame_size = 400  # LC3 @ 8kHz / 10ms / 32kbps / 10 frames per packet

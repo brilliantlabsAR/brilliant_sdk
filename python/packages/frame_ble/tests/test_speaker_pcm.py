@@ -22,7 +22,7 @@ async def main():
     frame_size = 400
  
     # load the sample s8 pcm audio
-    with open("tests/audio/female_w1_8k_s8.pcm", "rb") as f:
+    with open("audio/female_w1_8k_s8.pcm", "rb") as f:
         data8 = f.read()
 
     b._user_print_response_handler = print
