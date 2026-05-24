@@ -1,6 +1,6 @@
 name: frame_ble
 description: 'Low level BLE communication for the Brilliant Labs Frame using Flutter Blue Plus'
-version: 3.0.0
+version: 4.0.0
 # homepage:
 repository: https://github.com/CitizenOneX/frame_ble
 

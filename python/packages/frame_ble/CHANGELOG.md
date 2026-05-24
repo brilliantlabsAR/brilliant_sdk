@@ -1,3 +1,16 @@
+## 2.0.0
+
+* Added Halo device support
+* New `BrilliantDeviceType` enum (`FRAME`, `HALO`, `UNKNOWN`) — detected automatically at connection time by probing for the Halo audio TX characteristic (UUID `7a230005-5475-a6a4-654c-8431f6ad49c4`)
+* New `FrameBle.type` property returns the detected `BrilliantDeviceType`
+* New `send_audio(data, await_bt_response=False)` — writes LC3 or PCM audio data to the Halo audio characteristic; silently drops packets that exceed a single MTU payload
+* New `send_remove_signal()` — sends `0x05` signal byte to remove `main.lua` from Halo and reset the Lua VM
+* Breaking: `connect()` now returns the device **name** rather than the device **address**
+* Breaking: `send_data(await_data=True)` now resolves when it receives an ACK byte (`\x01\x00\x00` for success, `\x01\x00\x01` for error) from the updated `data.lua` running on the device, rather than waiting for the next data event. Requires the updated `data.lua` from `frame-msg 6.0.0`.
+* `send_data()` — new `await_bt_response` parameter (default `True`) controls BLE write-with/without-response; new `timeout` parameter (default `5` seconds)
+* `send_lua()` — new `timeout` parameter (default `5` seconds) for the `await_print` wait
+* Project migrated from pip to `uv` workspace; use `uv add frame-ble` to install
+
 ## 1.1.1
 
 * Updated docs - added ReadTheDocs, updated README

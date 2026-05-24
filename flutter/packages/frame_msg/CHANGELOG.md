@@ -1,3 +1,28 @@
+## 3.0.0
+
+* Added Halo device support across all message types and Lua libraries
+
+### Breaking changes
+
+* **`TxSprite` wire format**: a `compressed` flag byte (`0x00` = uncompressed) is now inserted at header offset 5, shifting `bpp` to offset 6 and `num_colors` to offset 7. The corresponding `sprite.lua`, `image_sprite_block.lua`, and `text_sprite_block.lua` Lua libraries have been updated to match. This is a wire-format breaking change — host and device Lua must both be updated together.
+* **`TxTextSpriteBlock`**: `text` removed from constructor. Call `createTextSprites(text)` to obtain a `List<TxSprite>` — callers decide how many lines to send and when. `pack()` now emits a 6-byte header (`width` uint16, `lineHeight` uint16, `maxDisplayLines` uint8) — the previous header encoded per-line x/y offsets. `maxDisplayRows` renamed to `maxDisplayLines`.
+* **`RxIMU`**: `IMUData`, `IMURawData`, and `SensorBuffer` all use `double` (was `int`). The Lua library now packs 6 × `float32` (was 6 × `int16`); the Dart decoder reads them via `ByteData.getFloat32` starting at offset 2.
+* **`data.lua` — queue-based message ordering**: `process_raw_items()` now returns an ordered list of `(flag, raw_block)` pairs, guaranteeing messages are processed in arrival order. The `app_data_block`, `app_data`, and `parsers` tables have been removed. ACK bytes (`\x01\x00\x00` success / `\x01\x00\x01` error) are now sent back to the host after each message is enqueued, enabling receiver-paced flow control in `FrameBle.sendData(awaitData: true)`. Existing `frame_app.lua` files that dispatched via `data.app_data` or registered `data.parsers` must be updated.
+* **`imu.lua`**: 6 × `float32` instead of 6 × `int16`; hardware-version-specific axis scaling and mapping for Frame vs Halo.
+
+### New additions
+
+* New `TxTextPage` with `TextLayout` hierarchy:
+  * `RectangularTextLayout` — standard rectangular text area for Frame
+  * `CircularTextLayout` — text constrained within a circle inscribed in the canvas, ideal for Halo's round 256×256 display; chord-width calculation positions each line within the circle boundary
+  * Supports multi-page text, configurable font/size/alignment
+* New `RxClick` class and `ClickType` enum (`single`, `double`, `long`) for Halo button click events (msg code `0x0B`)
+* Fixed: `rx/click.dart` and `tx/text_sprite_block.dart` were accidentally missing from `frame_msg.dart` barrel — both are now exported
+* `sprite.lua` / `image_sprite_block.lua`: palette assignment uses integer indices (0–15) on Halo and color-name strings on Frame, selected via `frame.HARDWARE_VERSION`
+* `text_sprite_block.lua`: `lineHeight` uint16 in header replaces per-sprite x/y offsets; simplified scrolling via `table.remove`
+* `audio.lua`: `MTU` reduced by 1 byte to reserve space for the leading flag byte
+* `RxAudio`: relaxed audio chunk length validation from a hard `assert` to a warning log entry
+
 ## 2.0.0
 
 * Removed redundant `msgCode` from TxMsg types. `msgCode` is a transport detail provided to FrameBle at the time of message sending, and does not need to be coupled to the rich message object.

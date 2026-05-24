@@ -1,3 +1,26 @@
+## 6.0.0
+
+* Added Halo device support across all message types, Lua libraries, and examples
+* New `halo_emulator` sibling package — a Lua 5.3 emulator for testing Halo apps without hardware
+
+### Breaking changes
+
+* **`data.lua` — queue-based message ordering**: the Frameside main loop now uses an ordered queue instead of a keyed block table, guaranteeing messages are processed in arrival order. `process_raw_items()` now returns a list of `(flag, raw_bytes)` pairs instead of updating `app_data` via registered parsers. The `app_data_block`, `app_data`, and `parsers` tables have been removed. ACK bytes (`\x01\x00\x00` for success, `\x01\x00\x01` for error) are now sent back to the host after each message is enqueued, enabling `send_data(await_data=True)` in `frame-ble 2.0.0` to use receiver-paced flow control. Existing Lua `frame_app.lua` files that called `data.process_raw_items()` and dispatched via `data.app_data` or registered `data.parsers` must be updated.
+* **`imu.lua`**: IMU data is now packed as 6 × `float32` (was 6 × `int16`). Frame accelerometer values are divided by 4096 to convert raw 14-bit integers to g-force; Halo uses a different axis mapping and scale factor (÷1000). Any Lua code that reads the packed IMU bytes directly must be updated.
+* **`RxIMU`**: `IMUData`, `IMURawData`, and `SensorBuffer` all use `float` (was `int`). `unpack('<6f', ...)` replaces `unpack('<6h', ...)`.
+* **`TxTextSpriteBlock`**: `text` has been removed from the constructor (it remains as a deprecated no-op field). Call `create_text_sprites(text)` to obtain a `List[TxSprite]` — callers decide how many lines to send and when. `pack()` now emits a 6-byte header `[0xFF, width_hi, width_lo, line_height_hi, line_height_lo, max_display_lines]` — the previous header included per-sprite x/y offset tables. `max_display_rows` renamed to `max_display_lines`.
+* **`TxSprite` wire format**: a `compressed` flag byte (`0x00` = uncompressed) has been inserted at header offset 5, shifting `bpp` to offset 6 and `num_colors` to offset 7. The matching `sprite.lua` and `image_sprite_block.lua` have been updated accordingly.
+
+### Non-breaking changes and additions
+
+* `sprite.lua` / `image_sprite_block.lua`: palette assignment now uses integer indices (0–15) on Halo and color-name strings on Frame, via `frame.HARDWARE_VERSION` detection
+* `text_sprite_block.lua`: simplified scrolling using `table.remove`; `line_height` uint16 in header replaces per-sprite x/y offsets
+* `audio.lua`: `MTU` reduced by 1 byte to reserve space for the leading flag byte
+* `FrameMsg.print_short_text()`: device-aware — uses `frame.display.clear()` + offset text on Halo, `frame.display.text(…,1,1)` on Frame
+* `TxSprite.from_indexed_png_bytes()`: improved palette size detection for programmatically-created PNGs where Pillow does not encode `bits` metadata
+* New examples: `speaker_lc3.py` (send LC3 audio to Halo speaker), `sound_effects.py` (SFXR sound effects), `audio_stream.py` (real-time audio streaming)
+* Project migrated to `uv` workspace; use `uv add frame-msg` to install
+
 ## 5.2.1
 
 * Fixed RxAudio.to_wav_bytes() to correctly handle Frame's signed 8-bit samples

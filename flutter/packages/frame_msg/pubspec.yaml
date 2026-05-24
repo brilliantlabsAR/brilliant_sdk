@@ -1,6 +1,6 @@
 name: frame_msg
 description: "Application-level library for passing rich objects between a host program and Brilliant Labs Frame such as images, streamed audio, IMU data and rasterized text."
-version: 2.0.0
+version: 3.0.0
 homepage:
 repository: https://github.com/CitizenOneX/frame_msg
 

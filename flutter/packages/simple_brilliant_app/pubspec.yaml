@@ -1,6 +1,6 @@
 name: simple_frame_app
 description: "Flutter and Lua quickstart app scaffolding and standard library functions for Brilliant Frame development on Android/iOS"
-version: 7.1.0
+version: 8.0.0
 publish_to: 'none'
 homepage:
 repository: https://github.com/CitizenOneX/simple_frame_app

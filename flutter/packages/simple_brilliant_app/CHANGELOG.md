@@ -1,3 +1,14 @@
+## 8.0.0
+
+* Added Halo device support to `SimpleFrameAppState` and `FrameVisionAppState`
+* `SimpleFrameAppState`: startup display check now uses `frame.display.clear()` on Halo and the bitmap fill approach on Frame, correctly handling each device's display API
+* New `FrameVisionAppState` mixin (replaces the prior file-based `frame_vision_app.dart`):
+  * Halo uses `RxClick` for button input (`onClick(ClickType type)` abstract method) — sends msg code `0x11` to the frame app
+  * Frame uses `RxTap` for tap input (`onTap(int taps)` abstract method) — sends msg code `0x10` to the frame app
+  * Both `onClick` and `onTap` must be implemented when using this mixin
+* Updated `frame_ble` to `4.0.0` for Halo connection support, Android BLE improvements, and spurious-reconnect fix
+* Updated `frame_msg` to `3.0.0` for Halo message types (`RxClick`, `TxTextPage`, `CircularTextLayout`) and updated Lua libraries
+
 ## 7.1.0
 
 * Updated `frame_ble` to `3.0.0`. While v3.0.0 additionally supports OTA device firmware updates, `SimpleFrameApp` and `FrameVisionApp` don't provide any built-in mechanism to do firmware updates, but users of the framework could make use of it.
