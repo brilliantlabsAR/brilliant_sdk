@@ -29,16 +29,18 @@ void main() {
     for (int k = 1; k < sprites.length; k++) {
       final prev = sprites[k - 1];
       final curr = sprites[k];
-      final int w = curr.width;
-      final int lastRowStart = (prev.height - 1) * w;
+      final int prevW = prev.width;
+      final int currW = curr.width;
+      final int lastRowStart = (prev.height - 1) * prevW;
       final int firstRowStart = 0;
 
-      final prevLast = prev.pixelData.sublist(lastRowStart, lastRowStart + w);
-      final currFirst = curr.pixelData.sublist(firstRowStart, firstRowStart + w);
+      final prevLast = prev.pixelData.sublist(lastRowStart, lastRowStart + prevW);
+      final currFirst = curr.pixelData.sublist(firstRowStart, firstRowStart + currW);
 
       // if the previous last row is completely blank we can't make a meaningful
-      // assertion, so only check when there's at least one non-zero pixel.
-      if (prevLast.any((b) => b != 0)) {
+      // assertion, so only check when there's at least one non-zero pixel and
+      // both rows are the same width (different widths can never be equal anyway).
+      if (prevLast.any((b) => b != 0) && prevW == currW) {
         expect(currFirst, isNot(equals(prevLast)),
             reason: 'first row of sprite $k should not equal last row of sprite ${k - 1}');
       }
