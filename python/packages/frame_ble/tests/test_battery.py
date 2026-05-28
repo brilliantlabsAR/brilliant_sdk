@@ -10,14 +10,17 @@ async def main():
     b = FrameBle()
 
     await b.connect(print_response_handler=lambda s: print(s))
-    
-    
-    while True:
-        await b.send_lua("print(frame.battery_level())")
-        await b.send_lua("print(frame.battery_charging())")
-        await asyncio.sleep(10)
 
-    await b.disconnect()
+    try:
+        while True:
+            await b.send_lua("print('Battery Level: ' .. tostring(frame.battery_level()))")
+            await b.send_lua("print('Charging: ' .. tostring(frame.battery_charging()))")
+            await asyncio.sleep(5)
+
+    except asyncio.CancelledError:
+        pass
+    finally:
+        await b.disconnect()
 
 
 asyncio.run(main())

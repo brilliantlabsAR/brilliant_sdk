@@ -1,11 +1,17 @@
 import asyncio
 from frame_ble import FrameBle
+from frame_ble.frame_ble import BrilliantDeviceType
 
 
 async def main():
     b = FrameBle()
 
     await b.connect(print_response_handler=lambda s: print(s))
+
+    if b.type != BrilliantDeviceType.FRAME:
+        print("This test is only for Frame devices.")
+        await b.disconnect()
+        return
 
     await b.send_lua("frame.display.power_save(false)")
 
