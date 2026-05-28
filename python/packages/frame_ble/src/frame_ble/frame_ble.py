@@ -13,7 +13,7 @@ class BrilliantDeviceType(Enum):
 class FrameBle:
     """
     Class for managing a connection and transferring data to and
-    from the Brilliant Labs Frame device over Bluetooth LE using the Bleak library.
+    from the Brilliant Labs Halo/Frame device over Bluetooth LE using the Bleak library.
     """
 
     _SERVICE_UUID = "7a230001-5475-a6a4-654c-8431f6ad49c4"
@@ -85,12 +85,12 @@ class FrameBle:
         disconnect_handler=lambda: None,
     ):
         """
-        Connects to the first Frame device discovered,
-        optionally matching a specified name e.g. "Frame AB",
+        Connects to the first Halo/Frame device discovered,
+        optionally matching a specified name e.g. "Halo AB",
         or throws an Exception if a matching Frame is not found within timeout seconds.
 
         `name` can optionally be provided as the local name containing the
-        2 digit ID shown on Frame, in order to only connect to that specific device.
+        2 digit ID, in order to only connect to that specific device.
         The value should be a string, for example `"Frame 4F"`
 
         `print_response_handler` and `data_response_handler` can be provided and
@@ -112,7 +112,7 @@ class FrameBle:
         )
 
         if not device:
-            raise Exception("No matching Frame device found")
+            raise Exception("No matching device found")
 
         self._client = BleakClient(
             device,
