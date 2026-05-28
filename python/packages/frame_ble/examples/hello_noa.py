@@ -43,11 +43,11 @@ async def main():
             # send the bitmap to the display (240 wide, x=1+8..256-8 to center horizontally, 60+30 high, y=1+45..256-45 to center vertically, )
             for i in range(0, 4):
                 await frame.send_lua(f"frame.display.bitmap(9, {46+40-i*10}, 24, 2, {i}, '{bitmap_str}', {{x_scale=10, y_scale=10, palette_data='{palette_str}'}});print(0)", await_print=True, show_me=True)
-
+            print("'NOA' sent in text and bitmap with a custom palette")
         else:
             await frame.send_lua("frame.display.text('Hello, Frame!', 1, 1);frame.display.show();print(0)", await_print=True)
-
-        print("'Hello, Frame!' sent")
+            print("'Hello, Frame!' sent")
+    
         await asyncio.sleep(5)  # Wait for a few seconds to see the message
 
         if frame._type == BrilliantDeviceType.HALO:
@@ -58,7 +58,7 @@ async def main():
         await frame.disconnect()
 
     except Exception as e:
-        print(f"Not connected to Frame: {e}")
+        print(f"Not connected to Device: {e}")
         return
 
 if __name__ == "__main__":

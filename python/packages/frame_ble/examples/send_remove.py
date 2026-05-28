@@ -17,7 +17,7 @@ async def main():
         await frame.disconnect()
 
     except Exception as e:
-        print(f"Not connected to Frame: {e}")
+        print(f"Not connected to Device: {e}")
         return
 
 if __name__ == "__main__":

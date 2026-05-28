@@ -24,12 +24,12 @@ async def main():
     try:
         await frame.connect()
 
-        await frame.send_lua("frame.display.text('Hello, Frame!', 1, 1);frame.display.show();print(nil)", await_print=True)
+        await frame.send_lua("frame.display.text('Hello, World!', 1, 1);frame.display.show();print(nil)", await_print=True)
 
         await frame.disconnect()
 
     except Exception as e:
-        print(f"Not connected to Frame: {e}")
+        print(f"Not connected to Device: {e}")
         return
 
 if __name__ == "__main__":

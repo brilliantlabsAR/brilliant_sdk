@@ -7,8 +7,8 @@ async def main():
     try:
         await frame.connect()
         # stop any application, if running, so we can send lua commands
+        frame._user_print_response_handler = None
         await frame.send_break_signal()
-        frame._user_print_response_handler = print
 
         if frame.type == BrilliantDeviceType.FRAME:
             # Set the palette back to the firmware default
@@ -28,7 +28,6 @@ async def main():
             await frame.send_lua("frame.display.assign_color_ycbcr('SEABLUE', 4, 5, 2);print(0)", await_print=True) # SEABLUE
             await frame.send_lua("frame.display.assign_color_ycbcr('SKYBLUE', 8, 5, 2);print(0)", await_print=True) # SKYBLUE
             await frame.send_lua("frame.display.assign_color_ycbcr('CLOUDBLUE', 13, 4, 3);print(0)", await_print=True) # CLOUDBLUE
-            print("Default palette set.")
 
         else:
             # Set the palette back to the firmware default
@@ -50,10 +49,11 @@ async def main():
             await frame.send_lua("frame.display.assign_color_ycbcr(14, 8, 5, 2);print(0)", await_print=True) # SKYBLUE
             await frame.send_lua("frame.display.assign_color_ycbcr(15, 13, 4, 3);print(0)", await_print=True) # CLOUDBLUE
 
+        print("Default palette set.")
         await frame.disconnect()
 
     except Exception as e:
-        print(f"Not connected to Frame: {e}")
+        print(f"Not connected to Device: {e}")
         return
 
 if __name__ == "__main__":

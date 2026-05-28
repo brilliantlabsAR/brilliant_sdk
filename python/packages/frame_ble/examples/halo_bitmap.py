@@ -53,11 +53,11 @@ async def main():
         batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)
         print(f"Battery Level/Memory used: {batt_mem}")
 
-        await frame.send_lua("frame.display.text('Hello, Halo!', 1, 1)print(0)", await_print=True)
+        await frame.send_lua("frame.display.text('Hello, Halo!', 50, 50);print(0)", await_print=True)
 
         # some quick bitmaps in break/repl mode
-        await frame.send_lua("frame.display.bitmap(20, 20, 320, 16, 0, string.rep('\\x10', 4800))print(0)", await_print=True)
-        await frame.send_lua("frame.display.bitmap(50, 50, 232, 2, 0, string.rep('\\x77', 1363))print(0)", await_print=True)
+        await frame.send_lua("frame.display.bitmap(20, 20, 240, 16, 0, string.rep('\\x10', 4800))print(0)", await_print=True)
+        await frame.send_lua("frame.display.bitmap(50, 50, 200, 2, 0, string.rep('\\x77', 2000))print(0)", await_print=True)
         await frame.send_lua("frame.display.bitmap(60, 70, 100, 2, 0, string.rep('\\x55', 100))print(0)", await_print=True)
         await frame.send_lua("frame.display.bitmap(70, 90, 100, 2, 0, string.rep('\\xff\\x00\\xff', 100))print(0)", await_print=True)
         await frame.send_lua("frame.display.bitmap(80, 120, 8, 2, 0, string.rep('\\x55\\xAA', 4), {x_scale=20, y_scale=20})print(0)", await_print=True)

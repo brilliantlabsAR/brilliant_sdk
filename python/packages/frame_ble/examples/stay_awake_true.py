@@ -1,5 +1,6 @@
 import asyncio
 from frame_ble import FrameBle
+from frame_ble.frame_ble import BrilliantDeviceType
 
 async def main():
     frame = FrameBle()
@@ -12,12 +13,15 @@ async def main():
 
         # Keep Frame awake even in charging cradle (for development)
         await frame.send_lua("frame.stay_awake(true);print(0)", await_print=True)
-        print("Frame will stay awake - even in the charging cradle - until frame.send_lua('frame.stay_awake(false)')")
+        if frame.type != BrilliantDeviceType.HALO:
+            print("Frame will stay awake - even in the charging cradle - until frame.send_lua('frame.stay_awake(false)')")
+        else:
+            print("Halo will stay awake")
 
         await frame.disconnect()
 
     except Exception as e:
-        print(f"Not connected to Frame: {e}")
+        print(f"Not connected to Device: {e}")
         return
 
 if __name__ == "__main__":
