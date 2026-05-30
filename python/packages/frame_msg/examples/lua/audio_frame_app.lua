@@ -5,15 +5,20 @@ local audio = require('audio.min')
 -- Phone to Frame flags
 AUDIO_SUBS_MSG = 0x30
 
--- Main app loop
-function app_loop()
+function clear_display()
 	if frame.HARDWARE_VERSION == 'Frame' then
-		frame.display.text('Frame App Started', 1, 1)
+		frame.display.text(' ', 1, 1)
 		frame.display.show()
 	else
 		frame.display.clear()
-		frame.display.text('Frame App Started', 50, 50)
 	end
+end
+
+-- Main app loop
+function app_loop()
+	clear_display()
+	frame.display.text('Frame App Started', 50, 50)
+	frame.display.show()
 
 	local streaming = false
 
@@ -92,12 +97,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			if frame.HARDWARE_VERSION == 'Frame' then
-				frame.display.text(" ", 1, 1)
-				frame.display.show() 
-			else
-				frame.display.clear()
-			end
+			clear_display()
 			break
 		end
 	end

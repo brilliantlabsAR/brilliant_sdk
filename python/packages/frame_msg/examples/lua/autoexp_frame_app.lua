@@ -8,9 +8,12 @@ AUTOEXP_SETTINGS_MSG = 0x0e
 AUTOEXP_STEP_MSG = 0x0f
 
 function clear_display()
-    frame.display.text(" ", 1, 1)
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
 end
 
 function show_flash()

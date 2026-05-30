@@ -4,6 +4,15 @@ local image_sprite_block = require('image_sprite_block.min')
 -- Phone to Frame flags
 IMAGE_SPRITE_BLOCK = 0x20
 
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
 -- Main app loop
 function app_loop()
 	frame.display.text('Frame App Started', 1, 1)
@@ -72,8 +81,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

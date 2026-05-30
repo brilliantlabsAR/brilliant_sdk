@@ -5,9 +5,19 @@ local tap = require('tap.min')
 -- Phone to Frame flags
 TAP_SUBS_MSG = 0x10
 
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
+	clear_display()
+	frame.display.text('Frame App Started', 50, 50)
 	frame.display.show()
 
 	-- tell the host program that the frameside app is ready (waiting on await_print)
@@ -28,11 +38,13 @@ function app_loop()
 						if msg.value == 1 then
 							-- start subscription to tap events
 							frame.imu.tap_callback(tap.send_tap)
+							clear_display()
 							frame.display.text('Listening for taps', 1, 1)
 							frame.display.show()
 						else
 							-- cancel subscription to tap events
 							frame.imu.tap_callback(nil)
+							clear_display()
 							frame.display.text('Not listening for taps', 1, 1)
 							frame.display.show()
 						end
@@ -46,8 +58,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

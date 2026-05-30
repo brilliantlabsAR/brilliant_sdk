@@ -7,9 +7,12 @@ CAPTURE_SETTINGS_MSG = 0x0d
 MANUALEXP_SETTINGS_MSG = 0x0c
 
 function clear_display()
-    frame.display.text(" ", 1, 1)
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
 end
 
 function show_flash()

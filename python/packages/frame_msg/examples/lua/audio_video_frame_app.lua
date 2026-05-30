@@ -8,9 +8,12 @@ AUDIO_SUBS_MSG = 0x30
 CAPTURE_SETTINGS_MSG = 0x0d
 
 function clear_display()
-    frame.display.text(" ", 1, 1)
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
 end
 
 function show_flash()
@@ -53,7 +56,7 @@ function app_loop()
 							-- don't set streaming = false here, it will be set
 							-- when all the audio data is flushed
 							audio.stop()
-							frame.display.text(" ", 1, 1)
+							clear_display()
 						end
 						frame.display.show()
 
@@ -100,8 +103,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

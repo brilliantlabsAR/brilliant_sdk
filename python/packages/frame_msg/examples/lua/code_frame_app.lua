@@ -4,8 +4,18 @@ local code = require('code.min')
 -- Phone to Frame flags
 USER_CODE_FLAG = 0x42
 
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
 -- Main app loop
 function app_loop()
+	clear_display()
 	if frame.HARDWARE_VERSION == 'Frame' then
 		frame.display.text('Frame App Started', 1, 1)
 		frame.display.show()
@@ -46,12 +56,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			if frame.HARDWARE_VERSION == 'Frame' then
-				frame.display.text(' ', 1, 1)
-				frame.display.show()
-			else
-				frame.display.clear(0x000000)
-			end
+			clear_display()
 			break
 		end
 	end

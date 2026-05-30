@@ -8,9 +8,20 @@ IMU_SUBS_MSG = 0x40
 -- Frame to Phone flags
 IMU_DATA_MSG = 0x0A
 
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
 -- Main app loop
 function app_loop()
-	frame.display.text('Frame App Started', 1, 1)
+	frame.display.power_save(false)
+	clear_display()
+	frame.display.text('Frame App Started', 50, 50)
 	frame.display.show()
 
 	local streaming = false
@@ -33,12 +44,18 @@ function app_loop()
 						if msg.value == 1 then
 							-- start subscription to IMU
 							streaming = true
-							frame.display.text('Streaming IMU', 1, 1)
+							if (frame.HARDWARE_VERSION ~= 'Frame') then
+								frame.display.clear()
+							end
+							frame.display.text('Streaming IMU', 50, 50)
 							frame.display.show()
 						else
 							-- cancel subscription to IMU
 							streaming = false
-							frame.display.text('Not streaming IMU', 1, 1)
+							if (frame.HARDWARE_VERSION ~= 'Frame') then
+								frame.display.clear()
+							end
+							frame.display.text('Not streaming IMU', 50, 50)
 							frame.display.show()
 						end
 					end
@@ -57,8 +74,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream and clear the display
 			print(err)
-			frame.display.text(' ', 1, 1)
-			frame.display.show()
+			clear_display()
 			break
 		end
 	end

@@ -7,10 +7,14 @@ local code = require('code')
 METERING_QUERY_MSG = 0x12
 
 function clear_display()
-    frame.display.text(" ", 1, 1)
-    frame.display.show()
-    frame.sleep(0.04)
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
 end
+
 
 -- Main app loop
 function app_loop()

@@ -48,7 +48,7 @@ async def main():
         audio_samples = await asyncio.wait_for(audio_queue.get(), timeout=10.0)
 
         # write the audio samples out to a WAV file
-        wav_bytes = RxAudio.to_wav_bytes(audio_samples)
+        wav_bytes = RxAudio.to_wav_bytes(audio_samples, sample_rate=16000, bits_per_sample=16)
 
         with tempfile.NamedTemporaryFile(delete=False, prefix="frame_audio_", suffix=".wav") as temp_wav_file:
             temp_wav_file.write(wav_bytes)

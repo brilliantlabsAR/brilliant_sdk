@@ -105,13 +105,6 @@ function capture()
    auto_white_balance(stats)
 end
 
--- Helper to print the data as hexadecimal
-function tohex(data)
-    local hex = ""
-    for i = 1, #data do hex = hex .. string.format('%02x', data:byte(i)) end
-    return hex
-end
-
 
 -- Main program
 print('App Started')
@@ -131,7 +124,7 @@ frame.camera.mpix.op.correct_black_level(pipeline)
 frame.camera.mpix.op.correct_white_balance(pipeline)
 
 -- denoising
---frame.camera.mpix.op.kernel_denoise_3x3(pipeline) -- +24 seconds?
+frame.camera.mpix.op.kernel_denoise_3x3(pipeline)
 
 -- palettization
 --frame.camera.mpix.op.palette_encode(pipeline, frame.camera.mpix.fmt.PALETTE4)
