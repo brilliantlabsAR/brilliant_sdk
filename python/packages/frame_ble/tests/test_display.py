@@ -1,15 +1,16 @@
 import asyncio
-from frame_ble import FrameBle
+from frame_ble import FrameBle, BrilliantDeviceType
 
 async def main():
     b = FrameBle()
     await b.connect(print_response_handler=lambda s: print(s))
     
-    
-    # --- Brightness test ---
-    await b.send_lua("frame.display.show(true)")
-    await asyncio.sleep(1.0)
+    if b.type != BrilliantDeviceType.HALO:
+        print("Display example is Halo-only")
+        await b.disconnect()
+        return
 
+    
     # --- Basic clear operations ---
     await b.send_lua("frame.display.clear(0x000000)")  # Black
     await asyncio.sleep(0.5)
@@ -27,17 +28,13 @@ async def main():
 
     # --- Text rendering ---
     await b.send_lua("frame.display.set_font(0)")  # Default font ID 0
-    await b.send_lua("frame.display.text('Hello Frame!', 50, 50, 0xFFFFFF)")
+    await b.send_lua("frame.display.text('Hello Halo!', 50, 50, 0xFFFFFF)")
     await b.send_lua("frame.display.text('The quick brown fox jumped', 50, 150, 0xFFFFFF)")
     await b.send_lua("frame.display.text('over the lazy dog.', 50, 200, 0xFFFFFF)")
 
     # Change font and scaling
     await b.send_lua("frame.display.set_font(0, 12, 2)")
     await b.send_lua("frame.display.text('Big Bold!', 30, 100, 0x00FF00)")
-
-    # # --- Get font list from Lua (for debugging or dynamic UI) ---
-    # font_list = await b.send_lua("return frame.display.get_font_list()")
-    # print("Font List:", font_list)
 
     # --- Drawing primitives ---
     await b.send_lua("frame.display.set_pixel(10, 10, 0x00FFFF)")  # Cyan pixel
@@ -67,7 +64,6 @@ async def main():
     await asyncio.sleep(5.0)
 
     await b.send_lua("frame.display.power_save(false)")
-    await b.send_lua("frame.display.show(true)")
     await asyncio.sleep(1.0)
 
     # Disconnect Bluetooth

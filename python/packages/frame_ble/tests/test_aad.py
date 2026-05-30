@@ -1,11 +1,16 @@
 import asyncio
-from frame_ble import FrameBle
+from frame_ble import FrameBle, BrilliantDeviceType
 
 async def main():
     b = FrameBle()
 
     # Connect to the device
     await b.connect(print_response_handler=lambda s: print(s))
+
+    if b.type != BrilliantDeviceType.HALO:
+        print("AAD example is Halo-only")
+        await b.disconnect()
+        return
 
     # Register the add callback to print a message when triggered
     # From the aad_callback documentation:
@@ -31,14 +36,16 @@ async def main():
         "frame.microphone.aad_callback(function() print('Acoustic Activity Detected!') end, 60, 2000)"
     )
 
-    print("Waiting for acoustic activity detection...")
+    print("Waiting for acoustic activity detection... Ctrl+C to stop.")
 
     # Keep the connection alive to monitor callback triggers
     try:
         while True:
             await asyncio.sleep(1)  # Wait indefinitely for callback events
-    except KeyboardInterrupt:
-        print("\nStopping test...")
+    except asyncio.CancelledError:
+        pass
+    finally:
+        await b.disconnect()
 
     # Disconnect from the device
     await b.disconnect()

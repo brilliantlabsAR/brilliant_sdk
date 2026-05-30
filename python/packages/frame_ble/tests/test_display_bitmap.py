@@ -1,5 +1,5 @@
 import asyncio
-from frame_ble import FrameBle
+from frame_ble import FrameBle, BrilliantDeviceType
 
 async def set_standard_palette(b: FrameBle):
     
@@ -51,6 +51,11 @@ async def full_display_palette(b: FrameBle):
 async def main():
     b = FrameBle()
     await b.connect(print_response_handler=lambda s: print(s))
+
+    if b.type != BrilliantDeviceType.HALO:
+        print("Display bitmap example is Halo-only")
+        await b.disconnect()
+        return
 
     print("Clear and set up display")
     await b.send_lua("frame.display.power_save(false);print(0)", await_print=True)
