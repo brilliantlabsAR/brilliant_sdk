@@ -53,13 +53,16 @@ async def main():
         with open("audio/female_w1_8k_s16.lc3", "rb") as f:
             data = f.read()
         # bitrate 32000 / 800 = 40 bytes per frame
-        frame_size = 200  # LC3 @ 8kHz / 10ms / 32kbps / 5 frames per packet
+        frame_size = 400  # LC3 @ 8kHz / 10ms / 32kbps / 10 frames per packet
 
         # Send and play 5 frames at a time
         for i in range(0, len(data), frame_size):
             audio_frame = data[i:i + frame_size]
-            await frame.send_audio(audio_frame)
-            await asyncio.sleep(0.05)  # 10ms frames, 5 frames per packet
+            await frame.send_audio(audio_frame, await_bt_response=False)
+            await asyncio.sleep(0.09)  # 10ms frames, 10 frames per packet
+
+        # let the playback finish before we stop the stream and exit
+        await asyncio.sleep(1.0)
 
         # send the command that will call frame.speaker.stop()
         await frame.send_message(0x42, TxCode(0).pack())
@@ -68,7 +71,7 @@ async def main():
         # unhook the print handler
         frame.detach_print_response_handler()
 
-        # break out of the frame app loop and reboot Frame
+        # break out of the frame app loop and reboot Halo
         await frame.stop_frame_app()
 
     except Exception as e:

@@ -37,7 +37,7 @@ function app_loop()
 						if frame.HARDWARE_VERSION ~= 'Frame' then
 							if msg.value == 1 then
 								print("Starting speaker")
-								frame.speaker.start{encoder='lc3', sample_rate=8000, bit_depth=16, channels=1, bitrate=32000}
+								frame.speaker.start{encoder='lc3', sample_rate=8000, duration=1000, channels=1, bitrate=32000, volume=50}
 							else
 								print("Stopping speaker")
 								frame.speaker.stop()

@@ -27,8 +27,9 @@ function randomize_sound(sound)
 		sound:randomLaser()
 		print("Laser!")
 	elseif random_choice == 3 then
-		sound:randomExplosion()
-		print("Explosion!")
+        -- Was: Explosion, but can cause issues with bone conduction speakers
+		sound:randomPickup()
+		print("Pickup!")
 	elseif random_choice == 4 then
 		sound:randomPowerup()
 		print("Powerup!")
@@ -42,7 +43,7 @@ function randomize_sound(sound)
 		sound:randomBlip()
 		print("Blip!")
 	else
-		sound:randomExplosion()
+		sound:randomPickup()
 	end
 end
 
