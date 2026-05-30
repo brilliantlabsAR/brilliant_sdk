@@ -103,7 +103,7 @@ async def record_and_save(b: FrameBle, sample_rate, bit_depth, channels=2):
 async def main():
     b = FrameBle()
     await b.connect(data_response_handler=receive_data)
-    await record_and_save(b, sample_rate=8000, bit_depth=8, channels=2)  # Change to 8-bit mono
+    await record_and_save(b, sample_rate=16000, bit_depth=16, channels=1)
     await b.disconnect()
 
 

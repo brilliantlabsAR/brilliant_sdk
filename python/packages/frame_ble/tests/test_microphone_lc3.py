@@ -1,5 +1,5 @@
 """
-Tests the Frame-specific Lua libraries over Bluetooth.
+Tests the Halo-specific Lua libraries over Bluetooth.
 Records LC3-encoded audio via Bluetooth and saves it as both .lc3 and .wav files.
 """
 
@@ -123,7 +123,7 @@ async def record_and_save(b: FrameBle, sample_rate, bitrate, frame_duration_ms, 
 async def main():
     b = FrameBle()
     await b.connect(data_response_handler=receive_data)
-    await record_and_save(b, sample_rate=8000, bitrate=16000, frame_duration_ms=10, channels=1)
+    await record_and_save(b, sample_rate=16000, bitrate=32000, frame_duration_ms=10, channels=1)
     await b.disconnect()
 
 1
