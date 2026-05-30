@@ -24,6 +24,7 @@ end
 function app_loop()
 	frame.display.text('Frame App Started', 1, 1)
 	frame.display.show()
+	frame.camera.power_save(false)
 
 	local streaming = false
 	local last_auto_exp_time = 0
@@ -46,7 +47,7 @@ function app_loop()
 						if msg.value == 1 then
 							audio_data = ''
 							streaming = true
-							audio.start()
+							audio.start{sample_rate=8000, bit_depth=16}
 							frame.display.text("\u{F0010}", 300, 1)
 						else
 							-- don't set streaming = false here, it will be set
@@ -85,7 +86,7 @@ function app_loop()
 				end
 
 				-- run the autoexposure loop every 100ms
-				if camera.is_auto_exp then
+				if frame.HARDWARE_VERSION == 'Frame' and camera.is_auto_exp then
 					local t = frame.time.utc()
 					if (t - last_auto_exp_time) > 0.1 then
 						camera.run_auto_exposure()

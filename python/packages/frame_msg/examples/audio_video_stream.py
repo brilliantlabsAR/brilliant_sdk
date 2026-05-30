@@ -1,9 +1,11 @@
 import asyncio
 import io
+import numpy as np
 from PIL import Image
 from pvspeaker import PvSpeaker
 
 from frame_msg import FrameMsg, RxAudio, RxPhoto, TxCode, TxCaptureSettings
+from frame_ble import BrilliantDeviceType
 import time
 
 async def main():
@@ -45,7 +47,7 @@ async def main():
         await frame.start_frame_app()
 
         # hook up the RxPhoto receiver
-        rx_photo = RxPhoto()
+        rx_photo = RxPhoto(upright=frame.ble.type == BrilliantDeviceType.FRAME)
         photo_queue = await rx_photo.attach(frame)
 
         # hook up the RxAudio receiver
@@ -53,9 +55,10 @@ async def main():
         audio_queue = await rx_audio.attach(frame)
 
         # set up and start the audio output player
+        BIT_DEPTH = 16
         speaker = PvSpeaker(
             sample_rate=8000,
-            bits_per_sample=8,
+            bits_per_sample=16,
             buffer_size_secs=5,
             device_index=-1)
 
@@ -67,7 +70,7 @@ async def main():
         print('Starting streaming: Ctrl-C to cancel')
 
         # compute the capture msg once
-        capture_msg_bytes = TxCaptureSettings(resolution=512, quality_index=0, pan=-40).pack()
+        capture_msg_bytes = TxCaptureSettings(resolution=640, quality_index=0, pan=-40).pack()
 
         start_time = time.time()
 
@@ -80,12 +83,15 @@ async def main():
                 if audio_samples is None:
                     break
 
-                # since bits_per_sample == 8:
-                # reinterpret the bytes as signed 8-bit integers then shift to the uint8 range 0-255
-                pcm_data = bytearray(audio_samples)
-                for i in range(len(pcm_data)):
-                    # Convert signed 8-bit (-128 to 127) to unsigned 8-bit (0 to 255)
-                    pcm_data[i] = (pcm_data[i] if pcm_data[i] < 128 else pcm_data[i] - 256) + 128
+                if BIT_DEPTH == 16:
+                    pcm_data = np.frombuffer(audio_samples, dtype=np.int16).tolist()
+                else:
+                    # since bits_per_sample == 8:
+                    # reinterpret the bytes as signed 8-bit integers then shift to the uint8 range 0-255
+                    pcm_data = bytearray(audio_samples)
+                    for i in range(len(pcm_data)):
+                        # Convert signed 8-bit (-128 to 127) to unsigned 8-bit (0 to 255)
+                        pcm_data[i] = (pcm_data[i] if pcm_data[i] < 128 else pcm_data[i] - 256) + 128
 
                 # Pass the audio samples to PvSpeaker
                 samples_remaining = pcm_data
@@ -116,11 +122,11 @@ async def main():
                 # No samples available, yield control to other tasks
                 try:
                     await asyncio.sleep(0.001)
-                except asyncio.exceptions.CancelledError:
+                except asyncio.CancelledError:
                     # ctrl-c came while in the sleep
                     await stop_streaming()
                 continue
-            except KeyboardInterrupt:
+            except asyncio.CancelledError:
                 # ctrl-c came at another time
                 await stop_streaming()
                 continue
