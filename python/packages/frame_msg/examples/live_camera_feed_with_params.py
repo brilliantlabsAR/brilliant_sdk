@@ -7,6 +7,7 @@ import threading
 import queue
 
 from frame_msg import FrameMsg, RxPhoto, RxAutoExpResult, TxCaptureSettings, TxAutoExpSettings, TxManualExpSettings
+from frame_ble import BrilliantDeviceType
 
 class CameraDisplay:
     def __init__(self, window_name="Live Camera Feed"):
@@ -14,19 +15,11 @@ class CameraDisplay:
         self.image_queue = queue.Queue(maxsize=1)
         self.autoexp_queue = queue.Queue(maxsize=1)
         self.running = True
-        self.thread = threading.Thread(target=self.run)
-        self.thread.daemon = True
         self.latest_autoexp = None
         self.last_image = None
 
-    def start(self):
-        self.thread.start()
-
     def stop(self):
         self.running = False
-        if self.thread.is_alive():
-            self.thread.join(timeout=1.0)
-        cv2.destroyAllWindows()
 
     def update_image(self, jpeg_bytes):
         try:
@@ -158,22 +151,23 @@ class CameraDisplay:
                 print(f"Error in display thread: {e}")
                 break
 
-async def main():
+        cv2.destroyAllWindows()
+
+async def main(display):
     """
     Take photos continuously using the Frame camera and display them with auto-exposure parameters
     """
     frame = None
-    display = None
     rx_photo = None
     rx_autoexp = None
 
     try:
-        # Initialize display
-        display = CameraDisplay()
-        display.start()
-
         frame = FrameMsg()
         await frame.connect()
+
+        if frame.type != BrilliantDeviceType.FRAME:
+            print("Live camera feed with parameters is a Frame-only feature")
+            return
 
         # debug only: check our current battery level and memory usage
         batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)
@@ -252,8 +246,7 @@ async def main():
             frame.detach_print_response_handler()
             await frame.stop_frame_app()
             await frame.disconnect()
-        if display:
-            display.stop()
+        display.stop()
 
 async def handle_photos(frame, photo_queue, display):
     """Handle photo capture in a separate task"""
@@ -302,7 +295,21 @@ async def handle_autoexp(autoexp_queue, display):
         raise
 
 if __name__ == "__main__":
+    display = CameraDisplay()
+
+    def run_async():
+        try:
+            asyncio.run(main(display))
+        except KeyboardInterrupt:
+            display.stop()
+
+    async_thread = threading.Thread(target=run_async, daemon=True)
+    async_thread.start()
+
+    # OpenCV GUI must run on the main thread on macOS
     try:
-        asyncio.run(main())
+        display.run()
     except KeyboardInterrupt:
-        print("\nProgram interrupted by user")
+        display.stop()
+
+    async_thread.join(timeout=5.0)

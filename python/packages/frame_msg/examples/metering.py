@@ -1,6 +1,7 @@
 import asyncio
 
 from frame_msg import FrameMsg, TxCode, RxMeteringData
+from frame_ble import BrilliantDeviceType
 
 async def main():
     """
@@ -9,6 +10,10 @@ async def main():
     frame = FrameMsg()
     try:
         await frame.connect()
+
+        if frame.type != BrilliantDeviceType.FRAME:
+            print("Metering data is a Frame-only feature")
+            return
 
         # debug only: check our current battery level and memory usage (which varies between 16kb and 31kb or so even after the VM init)
         batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)

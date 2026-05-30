@@ -41,16 +41,17 @@ async def main():
         await frame.start_frame_app()
 
         # hook up the RxPhoto receiver
-        rx_photo = RxPhoto()
+        rx_photo = RxPhoto(upright=frame.ble.type == BrilliantDeviceType.FRAME)
         photo_queue = await rx_photo.attach(frame)
 
-        # give the frame some time for the autoexposure loop to run
-        print("Letting autoexposure loop run for 5 seconds to settle")
-        
-        # We process the UI loop during the sleep to prevent "spinning wheel"
-        for _ in range(50):
-            await asyncio.sleep(0.1)
-            cv2.waitKey(1)
+        if frame.ble.type == BrilliantDeviceType.FRAME:
+            # give the frame some time for the autoexposure loop to run
+            print("Letting autoexposure loop run for 5 seconds to settle")
+            
+            # We process the UI loop during the sleep to prevent "spinning wheel"
+            for _ in range(50):
+                await asyncio.sleep(0.1)
+                cv2.waitKey(1)
 
         print("Starting continuous capture - Ctrl+C to stop")
 

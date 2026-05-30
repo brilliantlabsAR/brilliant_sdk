@@ -12,6 +12,10 @@ async def main():
     try:
         await frame.connect()
 
+        if frame.type != BrilliantDeviceType.FRAME:
+            print("Manual exposure is a Frame-only feature")
+            return
+
         # debug only: check our current battery level and memory usage (which varies between 16kb and 31kb or so even after the VM init)
         batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)
         print(f"Battery Level/Memory used: {batt_mem}")
