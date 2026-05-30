@@ -353,6 +353,7 @@ docs = [
     { name = "sphinx-rtd-theme" },
 ]
 tests = [
+    { name = "pvspeaker" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
 ]
@@ -363,6 +364,7 @@ requires-dist = [
     { name = "lz4", specifier = ">=4.4.3,<5.0.0" },
     { name = "numpy", specifier = ">=2.2.3,<3.0.0" },
     { name = "pillow", specifier = ">=11.1.0,<12.0.0" },
+    { name = "pvspeaker", marker = "extra == 'tests'", specifier = ">=1.0.0" },
     { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'tests'", specifier = ">=0.23" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0" },
@@ -954,6 +956,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
+name = "pvspeaker"
+version = "1.0.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/e0/9ee158ccb45f089daeabe63f3ba819eab0ea64fa70613746582837b102a8/pvspeaker-1.0.5.tar.gz", hash = "sha256:65b27e074967dd9833baa38dedb0967d756eefbad0a8cb263941cc97fb20b02f", size = 3784949, upload-time = "2025-02-12T22:11:38.352Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cf/ae/9984eb73075ec0cf10e191dae2fb49a979c15b0b8501dfbdd736f76c3e14/pvspeaker-1.0.5-py3-none-any.whl", hash = "sha256:27d53e119befe3875db8bffad1250cf700389bc5c155334fed112b8f5e4582ee", size = 3788286, upload-time = "2025-02-12T22:11:35.159Z" },
 ]
 
 [[package]]

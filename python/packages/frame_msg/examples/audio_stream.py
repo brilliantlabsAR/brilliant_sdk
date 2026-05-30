@@ -1,4 +1,5 @@
 import asyncio
+import numpy as np
 
 from frame_msg import FrameMsg, RxAudio, TxCode
 from pvspeaker import PvSpeaker
@@ -43,9 +44,10 @@ async def main():
         await frame.start_frame_app()
 
         # set up and start the audio output player
+        BIT_DEPTH = 16
         speaker = PvSpeaker(
-            sample_rate=8000,
-            bits_per_sample=8,
+            sample_rate=16000,
+            bits_per_sample=BIT_DEPTH,
             buffer_size_secs=5,
             device_index=-1)
 
@@ -69,12 +71,18 @@ async def main():
                 if audio_samples is None:
                     break
 
-                # since bits_per_sample == 8:
-                # reinterpret the bytes as signed 8-bit integers then shift to the uint8 range 0-255
                 pcm_data = bytearray(audio_samples)
-                for i in range(len(pcm_data)):
-                    # Convert signed 8-bit (-128 to 127) to unsigned 8-bit (0 to 255)
-                    pcm_data[i] = (pcm_data[i] if pcm_data[i] < 128 else pcm_data[i] - 256) + 128
+
+                # if bits_per_sample == 8:
+                # reinterpret the bytes as signed 8-bit integers then shift to the uint8 range 0-255
+                if BIT_DEPTH == 8:
+                    for i in range(len(pcm_data)):
+                        # Convert signed 8-bit (-128 to 127) to unsigned 8-bit (0 to 255)
+                        pcm_data[i] = (pcm_data[i] if pcm_data[i] < 128 else pcm_data[i] - 256) + 128
+                else:
+                    # if bits_per_sample == 16:
+                    # bytes are signed 16-bit integers
+                    pcm_data = np.frombuffer(pcm_data, dtype=np.int16).tolist()
 
                 # Pass the audio samples to PvSpeaker
                 samples_remaining = pcm_data
@@ -83,7 +91,7 @@ async def main():
                     if bytes_written == 0: # buffer is full
                         try:
                             await asyncio.sleep(0.001) # short sleep to prevent CPU spinning
-                        except KeyboardInterrupt:
+                        except asyncio.CancelledError:
                             await stop_audio()
                             continue
                         continue
@@ -92,11 +100,11 @@ async def main():
                 # No samples available, yield control to other tasks
                 try:
                     await asyncio.sleep(0.001)
-                except asyncio.exceptions.CancelledError:
+                except asyncio.CancelledError:
                     # ctrl-c came while in the sleep
                     await stop_audio()
                 continue
-            except KeyboardInterrupt:
+            except asyncio.CancelledError:
                 # ctrl-c came at another time
                 await stop_audio()
                 continue

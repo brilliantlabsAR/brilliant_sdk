@@ -27,6 +27,7 @@ classifiers = [
 tests = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pvspeaker>=1.0.0",
 ]
 docs = [
     "sphinx>=7.0.0",
