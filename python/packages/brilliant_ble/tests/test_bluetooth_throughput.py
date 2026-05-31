@@ -1,0 +1,55 @@
+import asyncio
+import time
+from aioconsole import ainput
+from brilliant_ble import FrameBle
+
+total_data_received = 0
+last_data_time = time.time()
+
+
+def receive_data(data):
+    global total_data_received
+    global last_data_time
+    total_data_received += len(data)
+
+    if len(data) == 1:
+        throughput = total_data_received / (time.time() - last_data_time)
+        last_data_time = time.time()
+        total_data_received = 0
+        print(f"Throughput: {throughput/1000:.2f} KB/s")
+
+
+async def main():
+
+    lua_script = """
+    data = string.rep('a',frame.bluetooth.max_length())
+    
+    while true do
+        for i = 1, 100 do frame.bluetooth.send(data) end
+        frame.bluetooth.send('X')
+    end
+    """
+
+    b = FrameBle()
+
+    await b.connect(data_response_handler=receive_data)
+
+    await b.send_break_signal()
+    await b.upload_file_from_string(lua_script, "test.lua")
+    # why do we need to sleep to make sure the upload gets its reply?
+    # Maybe the future from the send_lua() await_print misses getting completed
+    # if some other data is moving?
+    await asyncio.sleep(5.0)
+
+    print("Testing throughput: Press Enter to quit")
+    await b.send_lua("require('test')")
+
+    # Wait until a keypress
+    await ainput("")
+
+    await b.send_break_signal()
+    await b.send_lua("frame.file.remove('test.lua');print(0)", await_print=True)
+    await b.disconnect()
+
+if __name__ == "__main__":
+    asyncio.run(main())

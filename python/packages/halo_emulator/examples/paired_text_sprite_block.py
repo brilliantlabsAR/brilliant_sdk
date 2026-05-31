@@ -1,5 +1,5 @@
 """
-paired_text_sprite_block.py — emulator port of frame_msg/examples/text_sprite_block.py.
+paired_text_sprite_block.py — emulator port of brilliant_msg/examples/text_sprite_block.py.
 
 Rasterizes text on the host using TrueType/OpenType fonts and sends the resulting
 bitmap sprites to the Lua app for display. Demonstrates multi-script text rendering
@@ -15,7 +15,7 @@ Usage:
     python paired_text_sprite_block.py              # real Halo hardware
 
 Requirements:
-    pip install halo-emulator frame-msg
+    pip install halo-emulator brilliant-msg
 """
 
 import asyncio
@@ -24,12 +24,12 @@ import os
 import threading
 from pathlib import Path
 
-from frame_msg import TxTextSpriteBlock, TxCode  # type: ignore[import]
+from brilliant_msg import TxTextSpriteBlock, TxCode  # type: ignore[import]
 
 TEXT_SPRITE_BLOCK_MSG = 0x20
 RESET_MSG             = 0x21
 
-_FM_EXAMPLES = Path(__file__).parent / "../../frame_msg/examples"
+_FM_EXAMPLES = Path(__file__).parent / "../../brilliant_msg/examples"
 LUA_APP  = (_FM_EXAMPLES / "lua/text_sprite_block_frame_app.lua").resolve()
 FONTS    = (_FM_EXAMPLES / "fonts").resolve()
 
@@ -78,7 +78,7 @@ async def main() -> None:
         emu = HaloEmulator()
         frame = EmulatorFrameMsg(emu)
     else:
-        from frame_msg import FrameMsg  # type: ignore[import]
+        from brilliant_msg import FrameMsg  # type: ignore[import]
         frame = FrameMsg()
 
     try:

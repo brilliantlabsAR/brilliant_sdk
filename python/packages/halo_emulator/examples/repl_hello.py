@@ -6,7 +6,7 @@ at a Halo REPL prompt.  This is useful for quick one-off display tests or
 scripted setup before uploading a full app.
 
 Usage:
-    python repl_hello.py                # real Halo hardware (requires frame-ble)
+    python repl_hello.py                # real Halo hardware (requires brilliant-ble)
     python repl_hello.py --emulator     # emulator, saves output.png
 """
 
@@ -26,7 +26,7 @@ async def main() -> None:
         emu = HaloEmulator()
         frame = EmulatorFrameMsg(emu)
     else:
-        from frame_msg import FrameMsg          # type: ignore[import]
+        from brilliant_msg import FrameMsg          # type: ignore[import]
         frame = FrameMsg()
 
     try:

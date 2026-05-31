@@ -25,15 +25,15 @@ uv add halo-emulator
 
 When working inside the full `brilliant_sdk` repo checkout, install all three
 sibling packages as editable installs so the examples always use the local
-`frame_msg` and `frame_ble` rather than whatever version is on PyPI:
+`brilliant_msg` and `brilliant_ble` rather than whatever version is on PyPI:
 
 ```bash
 cd python
 uv sync --all-packages
 ```
 
-The workspace configuration in `python/pyproject.toml` ensures `frame-ble` and
-`frame-msg` resolve to the local packages rather than PyPI.
+The workspace configuration in `python/pyproject.toml` ensures `brilliant-ble` and
+`brilliant-msg` resolve to the local packages rather than PyPI.
 
 Dependencies: `lupa`, `numpy`, `pillow`, `lz4`, `pygame`
 
@@ -199,7 +199,7 @@ def test_button_press_fires_callback(emulator, tmp_path):
 
 ## Running Tests
 
-Both `halo_emulator` and `frame_msg` have automated tests that run without hardware.
+Both `halo_emulator` and `brilliant_msg` have automated tests that run without hardware.
 
 ```bash
 cd python
@@ -207,24 +207,24 @@ cd python
 # Install all test dependencies
 uv sync --all-packages --all-extras
 
-# Run frame_msg tests (message packing/parsing, WAV conversion, handler dispatch)
-uv run pytest packages/frame_msg/tests/
+# Run brilliant_msg tests (message packing/parsing, WAV conversion, handler dispatch)
+uv run pytest packages/brilliant_msg/tests/
 
 # Run halo_emulator tests (Lua VM, display, events)
 uv run pytest packages/halo_emulator/tests/
 
 # Run both together
-uv run pytest packages/frame_msg/tests/ packages/halo_emulator/tests/
+uv run pytest packages/brilliant_msg/tests/ packages/halo_emulator/tests/
 ```
 
-The `frame_ble` package has hardware integration tests that require a connected Frame device:
+The `brilliant_ble` package has hardware integration tests that require a connected Frame device:
 
 ```bash
 # Requires a connected Frame device over BLE
-uv run pytest packages/frame_ble/tests/test_ble.py
+uv run pytest packages/brilliant_ble/tests/test_ble.py
 
 # Standalone hardware scripts (not pytest):
-uv run python packages/frame_ble/tests/test_display.py
+uv run python packages/brilliant_ble/tests/test_display.py
 ```
 
 ## Supported `frame.*` API

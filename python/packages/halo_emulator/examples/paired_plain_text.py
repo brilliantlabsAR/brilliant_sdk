@@ -1,12 +1,12 @@
 """
 paired_plain_text.py — host-side client for lua/plain_text_app.lua.
 
-Demonstrates the full frame_msg message-passing pattern:
+Demonstrates the full brilliant_msg message-passing pattern:
   - Upload standard Lua libraries (data.min.lua, plain_text.min.lua)
   - Upload and start a Lua app
   - Send TxPlainText messages; the app renders them on the display
 
-This example uses frame_msg message types (TxPlainText) unchanged on both
+This example uses brilliant_msg message types (TxPlainText) unchanged on both
 the emulator and real hardware.
 
 Usage:
@@ -14,13 +14,13 @@ Usage:
     python paired_plain_text.py --emulator     # emulator, saves PNGs for each message
 
 Requirements:
-    pip install frame-msg halo-emulator
+    pip install brilliant-msg halo-emulator
 """
 
 import asyncio
 import argparse
 
-from frame_msg import TxPlainText            # type: ignore[import]
+from brilliant_msg import TxPlainText            # type: ignore[import]
 
 
 MESSAGES = [
@@ -45,7 +45,7 @@ async def main() -> None:
         emu = HaloEmulator(sandbox_dir="./lua")
         frame = EmulatorFrameMsg(emu)
     else:
-        from frame_msg import FrameMsg          # type: ignore[import]
+        from brilliant_msg import FrameMsg          # type: ignore[import]
         frame = FrameMsg()
 
     try:
@@ -57,7 +57,7 @@ async def main() -> None:
 
         # ---- upload Lua libraries and app ----
         # upload_stdlua_libs copies data.min.lua and plain_text.min.lua from
-        # the installed frame_msg package into the sandbox (or onto the device).
+        # the installed brilliant_msg package into the sandbox (or onto the device).
         await frame.upload_stdlua_libs(lib_names=["data", "plain_text"])
         await frame.upload_frame_app(
             local_filename="lua/plain_text_app.lua",

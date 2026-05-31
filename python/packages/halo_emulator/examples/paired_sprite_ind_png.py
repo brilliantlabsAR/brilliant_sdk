@@ -1,5 +1,5 @@
 """
-paired_sprite_ind_png.py — emulator port of frame_msg/examples/sprite_ind_png.py.
+paired_sprite_ind_png.py — emulator port of brilliant_msg/examples/sprite_ind_png.py.
 
 Displays three indexed-palette PNG images sequentially on the emulated display,
 one at a time, to exercise 1-, 2-, and 4-bit-per-pixel sprite rendering:
@@ -16,7 +16,7 @@ Usage:
     python paired_sprite_ind_png.py              # real Halo hardware
 
 Requirements:
-    pip install halo-emulator frame-msg
+    pip install halo-emulator brilliant-msg
 """
 
 import asyncio
@@ -25,11 +25,11 @@ import os
 import threading
 from pathlib import Path
 
-from frame_msg import TxSprite  # type: ignore[import]
+from brilliant_msg import TxSprite  # type: ignore[import]
 
 SPRITE_MSG = 0x20
 
-_FM_EXAMPLES = Path(__file__).parent / "../../frame_msg/examples"
+_FM_EXAMPLES = Path(__file__).parent / "../../brilliant_msg/examples"
 LUA_APP = (_FM_EXAMPLES / "lua/sprite_frame_app.lua").resolve()
 IMAGES = [
     (_FM_EXAMPLES / "images/logo_1bit.png").resolve(),
@@ -73,7 +73,7 @@ async def main() -> None:
         emu = HaloEmulator()
         frame = EmulatorFrameMsg(emu)
     else:
-        from frame_msg import FrameMsg  # type: ignore[import]
+        from brilliant_msg import FrameMsg  # type: ignore[import]
         frame = FrameMsg()
 
     try:

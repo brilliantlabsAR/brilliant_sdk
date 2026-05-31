@@ -1,5 +1,5 @@
 """
-paired_sprite_move.py — emulator port of frame_msg/examples/sprite_move.py.
+paired_sprite_move.py — emulator port of brilliant_msg/examples/sprite_move.py.
 
 Sends a 1-bit indexed PNG sprite to the Lua app once, then moves it to 10
 random positions on the 256×256 display, pausing 1 second at each position.
@@ -15,7 +15,7 @@ Usage:
     python paired_sprite_move.py              # real Halo hardware
 
 Requirements:
-    pip install halo-emulator frame-msg
+    pip install halo-emulator brilliant-msg
 """
 
 import asyncio
@@ -25,13 +25,13 @@ import threading
 from pathlib import Path
 from random import randint
 
-from frame_msg import TxSprite, TxSpriteCoords, TxCode  # type: ignore[import]
+from brilliant_msg import TxSprite, TxSpriteCoords, TxCode  # type: ignore[import]
 
 SPRITE_MSG  = 0x20
 COORDS_MSG  = 0x40
 DRAW_MSG    = 0x50
 
-_FM_EXAMPLES = Path(__file__).parent / "../../frame_msg/examples"
+_FM_EXAMPLES = Path(__file__).parent / "../../brilliant_msg/examples"
 LUA_APP  = (_FM_EXAMPLES / "lua/sprite_game_app.lua").resolve()
 IMAGE    = (_FM_EXAMPLES / "images/rings_1bit.png").resolve()
 
@@ -74,7 +74,7 @@ async def main() -> None:
         emu = HaloEmulator()
         frame = EmulatorFrameMsg(emu)
     else:
-        from frame_msg import FrameMsg  # type: ignore[import]
+        from brilliant_msg import FrameMsg  # type: ignore[import]
         frame = FrameMsg()
 
     try:

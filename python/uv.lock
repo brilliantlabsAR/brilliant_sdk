@@ -10,8 +10,9 @@ resolution-markers = [
 
 [manifest]
 members = [
-    "frame-ble",
-    "frame-msg",
+    "brilliant-ble",
+    "brilliant-msg",
+    "brilliant-sdk",
     "halo-emulator",
 ]
 
@@ -102,6 +103,99 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/97/ea/bc9865b910b94c9d3f064f6adcb59acaadf88e81f650998248a79beb24db/bleak_winrt-1.2.0-cp310-cp310-win_amd64.whl", hash = "sha256:677df51dc825c6657b3ae94f00bd09b8ab88422b40d6a7bdbf7972a63bc44e9a", size = 525255, upload-time = "2022-09-09T23:05:15.745Z" },
     { url = "https://files.pythonhosted.org/packages/59/d8/a9d15da86bfac0426beda775f4ea7a3bfc862e12e7b6735c458ffcb20c3d/bleak_winrt-1.2.0-cp311-cp311-win32.whl", hash = "sha256:9449cdb942f22c9892bc1ada99e2ccce9bea8a8af1493e81fefb6de2cb3a7b80", size = 446383, upload-time = "2022-09-09T23:05:16.923Z" },
     { url = "https://files.pythonhosted.org/packages/e4/ff/80fb7efa320059a096d6cde1fd869785000dde061e569c043273b69f89ba/bleak_winrt-1.2.0-cp311-cp311-win_amd64.whl", hash = "sha256:98c1b5a6a6c431ac7f76aa4285b752fe14a1c626bd8a1dfa56f66173ff120bee", size = 524891, upload-time = "2022-09-09T23:05:18.111Z" },
+]
+
+[[package]]
+name = "brilliant-ble"
+version = "3.0.0"
+source = { editable = "packages/brilliant_ble" }
+dependencies = [
+    { name = "bleak" },
+]
+
+[package.optional-dependencies]
+docs = [
+    { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "sphinx", version = "9.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "sphinx-rtd-theme" },
+]
+tests = [
+    { name = "aioconsole" },
+    { name = "lc3py" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aioconsole", marker = "extra == 'tests'" },
+    { name = "bleak", specifier = ">=0.22.3,<1.0.0" },
+    { name = "lc3py", marker = "extra == 'tests'" },
+    { name = "numpy", marker = "extra == 'tests'" },
+    { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.0" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
+]
+provides-extras = ["examples", "tests", "docs"]
+
+[[package]]
+name = "brilliant-msg"
+version = "7.0.0"
+source = { editable = "packages/brilliant_msg" }
+dependencies = [
+    { name = "brilliant-ble" },
+    { name = "lz4" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pillow" },
+]
+
+[package.optional-dependencies]
+docs = [
+    { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
+    { name = "sphinx", version = "9.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "sphinx-rtd-theme" },
+]
+tests = [
+    { name = "opencv-python" },
+    { name = "pvspeaker" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "qoi" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "brilliant-ble", editable = "packages/brilliant_ble" },
+    { name = "lz4", specifier = ">=4.4.3,<5.0.0" },
+    { name = "numpy", specifier = ">=2.2.3,<3.0.0" },
+    { name = "opencv-python", marker = "extra == 'tests'", specifier = ">=4.0.0" },
+    { name = "pillow", specifier = ">=11.1.0,<12.0.0" },
+    { name = "pvspeaker", marker = "extra == 'tests'", specifier = ">=1.0.0" },
+    { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.0" },
+    { name = "pytest-asyncio", marker = "extra == 'tests'", specifier = ">=0.23" },
+    { name = "qoi", marker = "extra == 'tests'", specifier = ">=0.7.0" },
+    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
+]
+provides-extras = ["tests", "docs"]
+
+[[package]]
+name = "brilliant-sdk"
+version = "1.0.0"
+source = { editable = "packages/brilliant_sdk" }
+dependencies = [
+    { name = "brilliant-ble" },
+    { name = "brilliant-msg" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "brilliant-ble", editable = "packages/brilliant_ble" },
+    { name = "brilliant-msg", editable = "packages/brilliant_msg" },
 ]
 
 [[package]]
@@ -299,84 +393,6 @@ wheels = [
 ]
 
 [[package]]
-name = "frame-ble"
-version = "2.0.0"
-source = { editable = "packages/frame_ble" }
-dependencies = [
-    { name = "bleak" },
-]
-
-[package.optional-dependencies]
-docs = [
-    { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
-    { name = "sphinx", version = "9.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "sphinx-rtd-theme" },
-]
-tests = [
-    { name = "aioconsole" },
-    { name = "lc3py" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aioconsole", marker = "extra == 'tests'" },
-    { name = "bleak", specifier = ">=0.22.3,<1.0.0" },
-    { name = "lc3py", marker = "extra == 'tests'" },
-    { name = "numpy", marker = "extra == 'tests'" },
-    { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.0" },
-    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
-]
-provides-extras = ["examples", "tests", "docs"]
-
-[[package]]
-name = "frame-msg"
-version = "6.0.0"
-source = { editable = "packages/frame_msg" }
-dependencies = [
-    { name = "frame-ble" },
-    { name = "lz4" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pillow" },
-]
-
-[package.optional-dependencies]
-docs = [
-    { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "sphinx", version = "9.0.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
-    { name = "sphinx", version = "9.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "sphinx-rtd-theme" },
-]
-tests = [
-    { name = "opencv-python" },
-    { name = "pvspeaker" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "qoi" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "frame-ble", editable = "packages/frame_ble" },
-    { name = "lz4", specifier = ">=4.4.3,<5.0.0" },
-    { name = "numpy", specifier = ">=2.2.3,<3.0.0" },
-    { name = "opencv-python", marker = "extra == 'tests'", specifier = ">=4.0.0" },
-    { name = "pillow", specifier = ">=11.1.0,<12.0.0" },
-    { name = "pvspeaker", marker = "extra == 'tests'", specifier = ">=1.0.0" },
-    { name = "pytest", marker = "extra == 'tests'", specifier = ">=8.0" },
-    { name = "pytest-asyncio", marker = "extra == 'tests'", specifier = ">=0.23" },
-    { name = "qoi", marker = "extra == 'tests'", specifier = ">=0.7.0" },
-    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7.0.0" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=2.0.0" },
-]
-provides-extras = ["tests", "docs"]
-
-[[package]]
 name = "halo-emulator"
 version = "1.0.0"
 source = { editable = "packages/halo_emulator" }
@@ -391,7 +407,7 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "frame-msg" },
+    { name = "brilliant-msg" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
 ]
@@ -402,7 +418,7 @@ video = [
 
 [package.metadata]
 requires-dist = [
-    { name = "frame-msg", marker = "extra == 'dev'", editable = "packages/frame_msg" },
+    { name = "brilliant-msg", marker = "extra == 'dev'", editable = "packages/brilliant_msg" },
     { name = "imageio", marker = "extra == 'video'", specifier = ">=2.34.0" },
     { name = "imageio-ffmpeg", marker = "extra == 'video'", specifier = ">=0.5.0" },
     { name = "lupa", specifier = ">=2.0,<3.0" },

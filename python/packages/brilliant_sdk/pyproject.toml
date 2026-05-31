@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "brilliant-sdk"
+version = "1.0.0"
+dependencies = [
+    "brilliant-ble>=3.0.0",
+    "brilliant-msg>=7.0.0",
+]
+authors = [
+    { name = "luke-brilliant" },
+]
+description = "Python SDK for Brilliant Labs Frame and Halo devices"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/brilliant_sdk"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/brilliantlabsAR/brilliant_sdk/tree/main/python"
+"Bug Tracker" = "https://github.com/brilliantlabsAR/brilliant_sdk/issues"
+"Changelog" = "https://github.com/brilliantlabsAR/brilliant_sdk/blob/main/python/packages/brilliant_sdk/CHANGELOG.md"

@@ -13,7 +13,7 @@ Usage:
     python paired_layout_demo.py              # real Halo hardware
 
 Requirements:
-    pip install halo-emulator frame-msg
+    pip install halo-emulator brilliant-msg
 """
 
 import asyncio
@@ -86,7 +86,7 @@ async def main() -> None:
 
         frame = EmulatorFrameMsg(emu)
     else:
-        from frame_msg import FrameMsg          # type: ignore[import]
+        from brilliant_msg import FrameMsg          # type: ignore[import]
         frame = FrameMsg()
 
     try:

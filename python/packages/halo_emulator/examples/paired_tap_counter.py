@@ -30,7 +30,7 @@ async def main() -> None:
         emu = HaloEmulator(sandbox_dir="./lua")
         frame = EmulatorFrameMsg(emu)
     else:
-        from frame_msg import FrameMsg          # type: ignore[import]
+        from brilliant_msg import FrameMsg          # type: ignore[import]
         frame = FrameMsg()
 
     try:

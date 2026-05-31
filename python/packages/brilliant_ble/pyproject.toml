@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "brilliant-ble"
+version = "3.0.0"
+dependencies = [
+    "bleak >= 0.22.3, < 1.0.0",
+]
+
+authors = [
+    { name = "luke-brilliant" },
+]
+description = "Low-level library for Bluetooth LE connection to Brilliant Labs Frame and Halo devices"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+examples = [
+]
+tests = [
+    "aioconsole",
+    "numpy",
+    "lc3py",
+    "pytest>=8.0",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/brilliant_ble"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/brilliantlabsAR/brilliant_sdk/tree/main/python/packages/brilliant_ble"
+"Bug Tracker" = "https://github.com/brilliantlabsAR/brilliant_sdk/issues"
+"Changelog" = "https://github.com/brilliantlabsAR/brilliant_sdk/blob/main/python/packages/brilliant_ble/CHANGELOG.md"

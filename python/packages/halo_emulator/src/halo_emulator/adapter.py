@@ -1,12 +1,12 @@
 """
 EmulatorFrameMsg — a FrameMsg-compatible async adapter for HaloEmulator.
 
-Provides the same interface as ``frame_msg.FrameMsg`` so that host-side Python
+Provides the same interface as ``brilliant_msg.FrameMsg`` so that host-side Python
 scripts can switch between real Halo hardware and the emulator by changing a
 single line:
 
     # Real hardware
-    from frame_msg import FrameMsg
+    from brilliant_msg import FrameMsg
     frame = FrameMsg()
 
     # Emulator
@@ -119,20 +119,20 @@ class EmulatorFrameMsg:
         minified: bool = True,
     ) -> None:
         """
-        Copy frame_msg standard Lua libraries into the emulator sandbox.
+        Copy brilliant_msg standard Lua libraries into the emulator sandbox.
 
         These are the same files uploaded to real hardware (``data.min.lua``,
-        ``plain_text.min.lua``, etc.).  Requires ``frame-msg`` to be installed.
+        ``plain_text.min.lua``, etc.).  Requires ``brilliant-msg`` to be installed.
         """
         if lib_names is None:
             lib_names = ["data"]
         try:
             from importlib.resources import files
-            pkg = files("frame_msg")
+            pkg = files("brilliant_msg")
         except ImportError as exc:
             raise ImportError(
-                "upload_stdlua_libs() requires frame-msg to be installed: "
-                "pip install frame-msg"
+                "upload_stdlua_libs() requires brilliant-msg to be installed: "
+                "pip install brilliant-msg"
             ) from exc
 
         for lib in lib_names:

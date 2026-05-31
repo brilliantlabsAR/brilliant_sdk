@@ -14,7 +14,7 @@ dependencies = [
     "pygame>=2.5.0,<3.0.0",
 ]
 authors = [
-    { name = "CitizenOne" },
+    { name = "luke-brilliant" },
 ]
 description = "Emulator for the Brilliant Labs Halo smart glasses Lua runtime"
 classifiers = [
@@ -27,7 +27,7 @@ classifiers = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
-    "frame-msg>=5.2.1",
+    "brilliant-msg>=7.0.0",
 ]
 video = [
     "imageio>=2.34.0",
