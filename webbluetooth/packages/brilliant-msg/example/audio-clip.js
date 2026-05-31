@@ -40,7 +40,7 @@ export async function run() {
     // sample rate and bit depth should match the microphone.start call in the Lua app
     // see ./lua/audio_clip_frame_app.lua for the parameters
     const sampleRate = RxAudioSampleRate.SAMPLE_RATE_8KHZ;
-    const bitDepth = RxAudioBitDepth.BIT_DEPTH_8;
+    const bitDepth = RxAudioBitDepth.BIT_DEPTH_16;
     const rxAudio = new RxAudio({ streaming: false, sampleRate: sampleRate, bitDepth: bitDepth });
     const audioQueue = await rxAudio.attach(frame);
 

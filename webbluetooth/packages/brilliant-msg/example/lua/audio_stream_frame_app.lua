@@ -45,7 +45,7 @@ function app_loop()
 								frame.display.show()
 							else
 								frame.display.clear()
-								frame.display.text("Rec", 50, 50)
+								frame.display.text("Rec", 100, 100)
 							end
 						else
 							-- 'stop' message

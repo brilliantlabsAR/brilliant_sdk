@@ -15,8 +15,8 @@ export async function run() {
   // Send a break signal to Frame in case it is in a loop/main.lua
   await ble.sendBreakSignal({showMe: true});
 
-  // Clear the Frame display
-  var luaCommand = "frame.display.text('', 1, 1);frame.display.show();print(0)";
+  // Clear the Frame/Halo display
+  var luaCommand = "if frame.HARDWARE_VERSION=='Frame' then frame.display.text('', 1, 1);frame.display.show();else frame.display.clear();end;print(0)";
   await ble.sendLua(luaCommand, {showMe: true, awaitPrint: true});
 
   // Wait for a couple of seconds

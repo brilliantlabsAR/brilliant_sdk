@@ -21,7 +21,7 @@ function app_loop()
 	print('Frame app is running')
 
 	-- calculate delay per packet based on max bluetooth length and audio bitrate
-	local delay_per_packet = frame.bluetooth.max_length() / 6000 -- 8kHz/8bit audio with some margin
+	local delay_per_packet = frame.bluetooth.max_length() / 12000 -- 8kHz/16bit audio with some margin
 
 	while true do
         rc, err = pcall(
@@ -39,13 +39,13 @@ function app_loop()
 							-- 'start' message
 							audio_data = ''
 							streaming = true
-							audio.start({sample_rate=8000, bit_depth=8})
+							audio.start({sample_rate=8000, bit_depth=16})
 							if frame.HARDWARE_VERSION == 'Frame' then
 								frame.display.text("\u{F0010}", 300, 1)
 								frame.display.show()
 							else
 								frame.display.clear()
-								frame.display.text("Rec", 50, 50)
+								frame.display.text("Rec", 100, 100)
 							end
 						else
 							-- 'stop' message

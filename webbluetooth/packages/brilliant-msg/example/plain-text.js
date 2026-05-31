@@ -46,7 +46,7 @@ export async function run() {
     // Note that the frameside app is expecting a message of type TxPlainText on msgCode 0x0a
     const displayStrings = ["white", "gray", "red", "pink", "dark\nbrown", "brown", "orange", "yellow", "dark\ngreen", "green", "light\ngreen", "night\nblue", "sea\nblue", "sky\nblue", "cloud\nblue"];
     for (let i = 0; i < displayStrings.length; i++) {
-      await frame.sendMessage(0x0a, new TxPlainText({ text: displayStrings[i], x: 50, y: 50, paletteOffset: i+1 }).pack());
+      await frame.sendMessage(0x0a, new TxPlainText({ text: displayStrings[i], x: 150, y: 50, paletteOffset: i+1 }).pack());
       await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
     }
     // clear the display
