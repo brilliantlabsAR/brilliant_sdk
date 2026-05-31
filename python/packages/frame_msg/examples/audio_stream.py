@@ -46,7 +46,7 @@ async def main():
         # set up and start the audio output player
         BIT_DEPTH = 16
         speaker = PvSpeaker(
-            sample_rate=16000,
+            sample_rate=8000,
             bits_per_sample=BIT_DEPTH,
             buffer_size_secs=5,
             device_index=-1)

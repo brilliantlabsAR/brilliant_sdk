@@ -9,7 +9,7 @@ function print_text(text)
     local i = 0
     for line in text:gmatch('([^\n]*)\n?') do
         if line ~= "" then
-            frame.display.text(line, 1, i * 60 + 10)
+            frame.display.text(line, 100, i * 60 + 40)
             i = i + 1
         end
     end
