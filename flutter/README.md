@@ -7,21 +7,22 @@ It contains the following Flutter packages:
 | Package | Description |
 |--------|-------------|
 | [`brilliant_sdk`](./packages/brilliant_sdk) | Meta-package for consuming the SDK in apps |
-| [`frame_ble`](./packages/frame_ble) | Bluetooth Low Energy interface to Brilliant Labs devices |
-| [`frame_msg`](./packages/frame_msg) | Message format and protocol definitions for Frame devices |
+| [`brilliant_ble`](./packages/brilliant_ble) | Bluetooth Low Energy interface to Brilliant Labs devices |
+| [`brilliant_msg`](./packages/brilliant_msg) | Message format and protocol definitions for Frame devices |
 
 ---
 
 ## 📦 Repository Structure
 
 ```text
-brilliant_sdk_flutter/
+flutter/
 ├── packages/
-│   ├── brilliant_sdk/ # Meta-package
-│   ├── frame_ble/     # BLE communication logic
-│   └── frame_msg/     # Message and protocol formats
-├── melos.yaml         # Melos workspace configuration
-└── pubspec.yaml       # Root pubspec (for tooling only)
+│   ├── brilliant_sdk/    # Meta-package
+│   ├── brilliant_ble/    # BLE communication logic
+│   ├── brilliant_msg/    # Message and protocol formats
+│   └── simple_brilliant_app/ # High-level app framework
+├── melos.yaml            # Melos workspace configuration
+└── pubspec.yaml          # Root pubspec (for tooling only)
 ```
 
 ---
@@ -31,8 +32,8 @@ brilliant_sdk_flutter/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/brilliantlabsAR/brilliant_sdk_flutter.git
-cd brilliant_sdk_flutter
+git clone https://github.com/brilliantlabsAR/brilliant_sdk.git
+cd brilliant_sdk/flutter
 ```
 
 ### 2. Install Melos
@@ -84,16 +85,12 @@ melos test
 
 Or run tests for a specific package:
 ```bash
-cd packages/frame_ble
+cd packages/brilliant_ble
 flutter test
 ```
 
 ## 📝 Contributing
 Contributions are welcome! If you're building features or fixing bugs, please open a pull request targeting the `main` branch.
-
-## 🧠 Future Plans
-* Rename `frame_ble` → `brilliant_ble`
-* Rename `frame_msg` → `brilliant_msg`
 
 ## 📄 License
 * [BSD 3-Clause "New" or "Revised"](/LICENSE)
