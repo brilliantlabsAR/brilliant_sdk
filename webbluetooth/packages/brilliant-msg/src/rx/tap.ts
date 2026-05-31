@@ -1,4 +1,4 @@
-import { FrameMsg } from '../frame-msg';
+import { BrilliantMsg } from '../brilliant-msg';
 import { AsyncQueue } from '../async-queue';
 
 /**
@@ -20,7 +20,7 @@ export interface RxTapOptions {
 /**
  * RxTap class handles tap events from the device.
  * It counts the number of taps within a specified threshold time.
- * It uses a queue to manage tap events and provides methods to attach and detach from a FrameMsg instance.
+ * It uses a queue to manage tap events and provides methods to attach and detach from a BrilliantMsg instance.
  * It also debounces taps that occur too close together (40ms).
  * The tap count is reset if no taps are detected within the threshold time.
  */
@@ -68,7 +68,7 @@ export class RxTap {
 
     /**
      * Handles incoming tap event data packets.
-     * This method is typically called by a `FrameMsg` instance when a tap event is received.
+     * This method is typically called by a `BrilliantMsg` instance when a tap event is received.
      * It debounces rapid taps and counts taps within a defined threshold.
      * The accumulated tap count is placed onto the `queue` when the threshold timer expires.
      * @param data A Uint8Array containing the tap event data (usually just the msgCode byte).
@@ -95,12 +95,12 @@ export class RxTap {
     }
 
     /**
-     * Attaches this RxTap instance to a FrameMsg object to receive tap event data.
+     * Attaches this RxTap instance to a BrilliantMsg object to receive tap event data.
      * It initializes the tap event queue and registers a handler for incoming data.
-     * @param frame The FrameMsg instance to attach to.
+     * @param frame The BrilliantMsg instance to attach to.
      * @returns A Promise that resolves to the `AsyncQueue` where tap counts (number) will be placed.
      */
-    public async attach(frame: FrameMsg): Promise<AsyncQueue<number>> {
+    public async attach(frame: BrilliantMsg): Promise<AsyncQueue<number>> {
         this.queue = new AsyncQueue<number>();
         this.lastTapTime = 0;
         this.tapCount = 0;
@@ -112,11 +112,11 @@ export class RxTap {
     }
 
     /**
-     * Detaches this RxTap instance from a FrameMsg object.
+     * Detaches this RxTap instance from a BrilliantMsg object.
      * It unregisters the data handler, clears any active timers, and clears the event queue.
-     * @param frame The FrameMsg instance to detach from.
+     * @param frame The BrilliantMsg instance to detach from.
      */
-    public detach(frame: FrameMsg): void {
+    public detach(frame: BrilliantMsg): void {
         frame.unregisterDataResponseHandler(this);
         if (this.thresholdTimeoutId) {
             clearTimeout(this.thresholdTimeoutId);

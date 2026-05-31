@@ -1,4 +1,4 @@
-import { FrameMsg, StdLua, TxCode, RxTap } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode, RxTap } from 'brilliant-msg';
 import frameApp from './lua/multi_tap_frame_app.lua?raw';
 
 /**
@@ -9,7 +9,7 @@ import frameApp from './lua/multi_tap_frame_app.lua?raw';
  * - Logging the detected tap counts to the console (e.g., "2-tap received", "3-tap received").
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

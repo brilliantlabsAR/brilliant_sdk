@@ -1,14 +1,14 @@
-import { FrameBle } from 'frame-ble';
+import { BrilliantBle } from 'brilliant-ble';
 
 export async function run() {
-  const frameBle = new FrameBle();
+  const ble = new BrilliantBle();
 
   // Connect to Frame
-  const deviceId = await frameBle.connect();
+  const deviceId = await ble.connect();
 
   // Send a reset signal to Frame to reboot it
-  await frameBle.sendResetSignal();
+  await ble.sendResetSignal();
 
   // Disconnect from Frame
-  await frameBle.disconnect();
+  await ble.disconnect();
 };

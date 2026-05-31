@@ -1,4 +1,4 @@
-import { FrameMsg, StdLua, TxCode } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode } from 'brilliant-msg';
 import frameApp from './lua/code_value_frame_app.lua?raw';
 
 /**
@@ -9,7 +9,7 @@ import frameApp from './lua/code_value_frame_app.lua?raw';
  * This example showcases a basic control message pattern.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

@@ -1,4 +1,4 @@
-# Examples of `frame-msg` npm package usage
+# Examples of `brilliant-msg` npm package usage
 ## Background
 Frame is a pair of smart glasses that communicates via Bluetooth Low Energy with a host device, and runs Lua code on its VM. Lua code is sent to Frame in the application startup sequence.
 Each example contains a Javascript file and a corresponding Lua file that is copied to Frame on startup using uploadFrameApp() after the required standard Lua libs are uploaded.
@@ -9,7 +9,7 @@ See: https://docs.brilliant.xyz/frame/frame-sdk/
 ## audio clip
 // JavaScript file: audio-clip.js
 ```javascript
-import { FrameMsg, StdLua, RxAudio, TxCode, RxAudioSampleRate, RxAudioBitDepth } from 'frame-msg';
+import { BrilliantMsg, StdLua, RxAudio, TxCode, RxAudioSampleRate, RxAudioBitDepth } from 'brilliant-msg';
 import frameApp from './lua/audio_clip_frame_app.lua?raw';
 
 /**
@@ -19,7 +19,7 @@ import frameApp from './lua/audio_clip_frame_app.lua?raw';
  * using the Web Audio API.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -235,7 +235,7 @@ app_loop()
 ## audio stream
 // JavaScript file: audio-stream.js
 ```javascript
-import { FrameMsg, StdLua, TxCode, RxAudio, RxAudioSampleRate, RxAudioBitDepth } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode, RxAudio, RxAudioSampleRate, RxAudioBitDepth } from 'brilliant-msg';
 import frameApp from './lua/audio_stream_frame_app.lua?raw';
 
 // Define the AudioWorkletProcessor code as a string
@@ -302,7 +302,7 @@ registerProcessor('pcm-player-processor', PCMPlayerProcessor);
  * The stream runs for a fixed duration before automatically stopping and cleaning up.
  */
 export async function run() {
-    const frame = new FrameMsg();
+    const frame = new BrilliantMsg();
     let audioContext;
     let pcmPlayerNode;
     let audioQueue; // To store the RxAudio queue
@@ -546,7 +546,7 @@ app_loop()
 ## audio video stream
 // JavaScript file: audio-video-stream.js
 ```javascript
-import { FrameMsg, StdLua, TxCode, TxCaptureSettings, RxAudio, RxPhoto, RxAudioSampleRate } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode, TxCaptureSettings, RxAudio, RxPhoto, RxAudioSampleRate } from 'brilliant-msg';
 import frameApp from './lua/audio_video_stream_frame_app.lua?raw';
 
 // --- AudioWorkletProcessor code as a string ---
@@ -770,7 +770,7 @@ let imageDisplayElement = null; // Single image element for display
  * for both audio and photo streams, including device connection and application lifecycle.
  */
 export async function run() {
-    const frame = new FrameMsg();
+    const frame = new BrilliantMsg();
     let audioContext;
     let pcmPlayerNode;
     let audioQueue;
@@ -1082,7 +1082,7 @@ app_loop()
 ## auto exposure
 // JavaScript file: auto-exposure.js
 ```javascript
-import { FrameMsg, StdLua, TxCaptureSettings, TxAutoExpSettings, RxPhoto, RxAutoExpResult, TxCode } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCaptureSettings, TxAutoExpSettings, RxPhoto, RxAutoExpResult, TxCode } from 'brilliant-msg';
 import frameApp from './lua/auto_exposure_frame_app.lua?raw';
 
 /**
@@ -1095,7 +1095,7 @@ import frameApp from './lua/auto_exposure_frame_app.lua?raw';
  * - Displaying the captured photos on a web page.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -1304,7 +1304,7 @@ app_loop()
 ## camera
 // JavaScript file: camera.js
 ```javascript
-import { FrameMsg, StdLua, TxCaptureSettings, RxPhoto } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCaptureSettings, RxPhoto } from 'brilliant-msg';
 import frameApp from './lua/camera_frame_app.lua?raw';
 
 /**
@@ -1315,7 +1315,7 @@ import frameApp from './lua/camera_frame_app.lua?raw';
  * - Displaying the captured photo within an HTML image element on the webpage.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -1482,7 +1482,7 @@ app_loop()
 ## camera sprite
 // JavaScript file: camera-sprite.js
 ```javascript
-import { FrameMsg, StdLua, TxCaptureSettings, RxPhoto, TxSprite, TxImageSpriteBlock } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCaptureSettings, RxPhoto, TxSprite, TxImageSpriteBlock } from 'brilliant-msg';
 import frameApp from './lua/camera_sprite_frame_app.lua?raw';
 
 /**
@@ -1512,7 +1512,7 @@ function displayImage(imageBytes, mimeType, divId) {
  * 6. Sending this `TxImageSpriteBlock` (header first, then each sprite line) back to the Frame device for display on its screen.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -1718,7 +1718,7 @@ app_loop()
 ## code value
 // JavaScript file: code-value.js
 ```javascript
-import { FrameMsg, StdLua, TxCode } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode } from 'brilliant-msg';
 import frameApp from './lua/code_value_frame_app.lua?raw';
 
 /**
@@ -1729,7 +1729,7 @@ import frameApp from './lua/code_value_frame_app.lua?raw';
  * This example showcases a basic control message pattern.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -1853,7 +1853,7 @@ app_loop()
 ## imu stream
 // JavaScript file: imu-stream.js
 ```javascript
-import { FrameMsg, StdLua, TxCode, RxIMU } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode, RxIMU } from 'brilliant-msg';
 import frameApp from './lua/imu_stream_frame_app.lua?raw';
 
 /**
@@ -1866,7 +1866,7 @@ import frameApp from './lua/imu_stream_frame_app.lua?raw';
  * - Printing the received IMU data objects to the console.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -2042,7 +2042,7 @@ app_loop()
 ## live camera feed
 // JavaScript file: live-camera-feed.js
 ```javascript
-import { FrameMsg, StdLua, TxCaptureSettings, RxPhoto } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCaptureSettings, RxPhoto } from 'brilliant-msg';
 import frameApp from './lua/live_camera_feed_frame_app.lua?raw';
 
 /**
@@ -2054,7 +2054,7 @@ import frameApp from './lua/live_camera_feed_frame_app.lua?raw';
  * - Displaying each newly captured photo in an HTML image element, replacing the previous one.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -2222,7 +2222,7 @@ app_loop()
 ## manual exposure
 // JavaScript file: manual-exposure.js
 ```javascript
-import { FrameMsg, StdLua, TxCaptureSettings, TxManualExpSettings, RxPhoto } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCaptureSettings, TxManualExpSettings, RxPhoto } from 'brilliant-msg';
 import frameApp from './lua/manual_exposure_frame_app.lua?raw';
 
 /**
@@ -2234,7 +2234,7 @@ import frameApp from './lua/manual_exposure_frame_app.lua?raw';
  * - Displaying the captured photo within an HTML image element on the webpage.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -2408,7 +2408,7 @@ app_loop()
 ## metering data
 // JavaScript file: metering-data.js
 ```javascript
-import { FrameMsg, StdLua, TxCode, RxMeteringData } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode, RxMeteringData } from 'brilliant-msg';
 import frameApp from './lua/metering_data_frame_app.lua?raw';
 
 /**
@@ -2420,7 +2420,7 @@ import frameApp from './lua/metering_data_frame_app.lua?raw';
  * - Printing the raw metering data objects to the console.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -2567,7 +2567,7 @@ app_loop()
 ## multi tap
 // JavaScript file: multi-tap.js
 ```javascript
-import { FrameMsg, StdLua, TxCode, RxTap } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode, RxTap } from 'brilliant-msg';
 import frameApp from './lua/multi_tap_frame_app.lua?raw';
 
 /**
@@ -2578,7 +2578,7 @@ import frameApp from './lua/multi_tap_frame_app.lua?raw';
  * - Logging the detected tap counts to the console (e.g., "2-tap received", "3-tap received").
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -2723,7 +2723,7 @@ app_loop()
 ## plain text
 // JavaScript file: plain-text.js
 ```javascript
-import { FrameMsg, StdLua, TxPlainText } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxPlainText } from 'brilliant-msg';
 import frameApp from './lua/plain_text_frame_app.lua?raw';
 
 /**
@@ -2735,7 +2735,7 @@ import frameApp from './lua/plain_text_frame_app.lua?raw';
  * - Includes a delay between messages to allow each text to be visible.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -2874,7 +2874,7 @@ app_loop()
 ## prog sprite jpg
 // JavaScript file: prog-sprite-jpg.js
 ```javascript
-import { FrameMsg, StdLua, TxSprite, TxImageSpriteBlock } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxSprite, TxImageSpriteBlock } from 'brilliant-msg';
 import frameApp from './lua/prog_sprite_jpg_frame_app.lua?raw';
 
 /**
@@ -2908,7 +2908,7 @@ function displayImage(imageBytes, mimeType, divId) {
  *   allowing the image to be rendered progressively on its screen.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -3068,7 +3068,7 @@ app_loop()
 ## sprite indexed png
 // JavaScript file: sprite-indexed-png.js
 ```javascript
-import { FrameMsg, StdLua, TxSprite } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxSprite } from 'brilliant-msg';
 import frameApp from './lua/sprite_indexed_png_frame_app.lua?raw';
 
 /**
@@ -3082,7 +3082,7 @@ import frameApp from './lua/sprite_indexed_png_frame_app.lua?raw';
  * - Pausing between sending each sprite to allow time for viewing on the Frame device.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -3233,7 +3233,7 @@ app_loop()
 ## sprite jpg
 // JavaScript file: sprite-jpg.js
 ```javascript
-import { FrameMsg, StdLua, TxSprite } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxSprite } from 'brilliant-msg';
 import frameApp from './lua/sprite_jpg_frame_app.lua?raw';
 
 /**
@@ -3265,7 +3265,7 @@ function displayImage(imageBytes, mimeType, divId) {
  * - The Frame device is expected to display the received sprite.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -3405,7 +3405,7 @@ app_loop()
 ## sprite move
 // JavaScript file: sprite-move.js
 ```javascript
-import { FrameMsg, StdLua, TxSprite, TxSpriteCoords, TxCode } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxSprite, TxSpriteCoords, TxCode } from 'brilliant-msg';
 import frameApp from './lua/sprite_move_frame_app.lua?raw';
 
 /**
@@ -3420,7 +3420,7 @@ import frameApp from './lua/sprite_move_frame_app.lua?raw';
  * - A short pause is included in each iteration to make the movement visible.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection
@@ -3589,14 +3589,14 @@ app_loop()
 ## text sprite block
 // JavaScript file: text-sprite-block.js
 ```javascript
-import { FrameMsg, StdLua, TxTextSpriteBlock } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxTextSpriteBlock } from 'brilliant-msg';
 import frameApp from './lua/text_sprite_block_frame_app.lua?raw';
 
 /**
  * Uses TxTextSpriteBlock to send rows of rasterized text as sprite images to the Frame display.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

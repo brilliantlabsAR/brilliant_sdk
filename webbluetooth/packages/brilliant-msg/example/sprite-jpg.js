@@ -1,4 +1,4 @@
-import { FrameMsg, StdLua, TxSprite } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxSprite } from 'brilliant-msg';
 import frameApp from './lua/sprite_jpg_frame_app.lua?raw';
 
 /**
@@ -30,7 +30,7 @@ function displayImage(imageBytes, mimeType, divId) {
  * - The Frame device is expected to display the received sprite.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

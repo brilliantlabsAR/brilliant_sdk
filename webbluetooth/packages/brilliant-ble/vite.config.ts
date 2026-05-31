@@ -5,8 +5,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: 'src/index.ts',
-      name: 'frame-ble',
-      fileName: (format) => `frame-ble.${format}.js`,
+      name: 'brilliant-ble',
+      fileName: (format) => `brilliant-ble.${format}.js`,
       formats: ['umd', 'es'],
     },
     outDir: 'dist',

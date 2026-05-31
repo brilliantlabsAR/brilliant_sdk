@@ -5,8 +5,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: 'src/index.ts',
-      name: 'frame-msg',
-      fileName: (format) => `frame-msg.${format}.js`,
+      name: 'brilliant-msg',
+      fileName: (format) => `brilliant-msg.${format}.js`,
       formats: ['umd', 'es'],
     },
     outDir: 'dist',

@@ -1,4 +1,4 @@
-import { FrameMsg, StdLua, TxCode, RxIMU } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode, RxIMU } from 'brilliant-msg';
 import frameApp from './lua/imu_stream_frame_app.lua?raw';
 
 /**
@@ -11,7 +11,7 @@ import frameApp from './lua/imu_stream_frame_app.lua?raw';
  * - Printing the received IMU data objects to the console.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

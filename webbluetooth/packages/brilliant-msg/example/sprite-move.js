@@ -1,5 +1,5 @@
-import { FrameMsg, StdLua, TxSprite, TxSpriteCoords, TxCode } from 'frame-msg';
-import { BrilliantDeviceType } from 'frame-ble';
+import { BrilliantMsg, StdLua, TxSprite, TxSpriteCoords, TxCode } from 'brilliant-msg';
+import { BrilliantDeviceType } from 'brilliant-ble';
 import frameApp from './lua/sprite_move_frame_app.lua?raw';
 
 /**
@@ -14,7 +14,7 @@ import frameApp from './lua/sprite_move_frame_app.lua?raw';
  * - A short pause is included in each iteration to make the movement visible.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

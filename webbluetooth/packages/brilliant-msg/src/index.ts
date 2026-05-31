@@ -1,4 +1,4 @@
-export { FrameMsg, StdLua } from './frame-msg';
+export { BrilliantMsg, StdLua } from './brilliant-msg';
 export { AsyncQueue } from './async-queue';
 
 export { TxPlainText } from './tx/plain-text';

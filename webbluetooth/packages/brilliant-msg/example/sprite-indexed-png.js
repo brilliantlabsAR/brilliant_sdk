@@ -1,4 +1,4 @@
-import { FrameMsg, StdLua, TxSprite } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxSprite } from 'brilliant-msg';
 import frameApp from './lua/sprite_indexed_png_frame_app.lua?raw';
 
 /**
@@ -12,7 +12,7 @@ import frameApp from './lua/sprite_indexed_png_frame_app.lua?raw';
  * - Pausing between sending each sprite to allow time for viewing on the Frame device.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

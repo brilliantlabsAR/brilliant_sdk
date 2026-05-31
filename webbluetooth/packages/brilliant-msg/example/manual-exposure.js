@@ -1,5 +1,5 @@
-import { FrameMsg, StdLua, TxCaptureSettings, TxManualExpSettings, RxPhoto } from 'frame-msg';
-import { BrilliantDeviceType } from 'frame-ble';
+import { BrilliantMsg, StdLua, TxCaptureSettings, TxManualExpSettings, RxPhoto } from 'brilliant-msg';
+import { BrilliantDeviceType } from 'brilliant-ble';
 import frameApp from './lua/manual_exposure_frame_app.lua?raw';
 
 /**
@@ -11,7 +11,7 @@ import frameApp from './lua/manual_exposure_frame_app.lua?raw';
  * - Displaying the captured photo within an HTML image element on the webpage.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

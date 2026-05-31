@@ -1,5 +1,5 @@
-import { FrameMsg, StdLua, TxCode, RxMeteringData } from 'frame-msg';
-import { BrilliantDeviceType } from 'frame-ble';
+import { BrilliantMsg, StdLua, TxCode, RxMeteringData } from 'brilliant-msg';
+import { BrilliantDeviceType } from 'brilliant-ble';
 import frameApp from './lua/metering_data_frame_app.lua?raw';
 
 /**
@@ -11,7 +11,7 @@ import frameApp from './lua/metering_data_frame_app.lua?raw';
  * - Printing the raw metering data objects to the console.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

@@ -1,15 +1,15 @@
 {
-  "name": "frame-msg",
-  "version": "1.1.0",
+  "name": "brilliant-msg",
+  "version": "2.0.0",
   "type": "module",
-  "main": "dist/frame-msg.umd.js",
-  "module": "dist/frame-msg.es.js",
+  "main": "dist/brilliant-msg.umd.js",
+  "module": "dist/brilliant-msg.es.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/frame-msg.es.js",
-      "require": "./dist/frame-msg.umd.js"
+      "import": "./dist/brilliant-msg.es.js",
+      "require": "./dist/brilliant-msg.umd.js"
     }
   },
   "files": [
@@ -27,7 +27,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "CitizenOne",
+  "author": "luke-brilliant",
   "license": "BSD-3-Clause",
   "description": "A high-level library for interacting with Brilliant Labs Frame by passing structured messages between a Frameside app and a hostside app",
   "devDependencies": {
@@ -40,7 +40,7 @@
   "dependencies": {
     "@pdf-lib/upng": "^1.0.1",
     "@types/lz4js": "^0.2.1",
-    "frame-ble": "file:../brilliant-ble",
+    "brilliant-ble": "^1.0.0",
     "image-js": "^0.37.0",
     "image-q": "^4.0.0",
     "lz4js": "^0.2.0"

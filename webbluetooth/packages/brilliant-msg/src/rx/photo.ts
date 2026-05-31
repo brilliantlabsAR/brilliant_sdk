@@ -1,4 +1,4 @@
-import { FrameMsg } from '../frame-msg';
+import { BrilliantMsg } from '../brilliant-msg';
 import { AsyncQueue } from '../async-queue';
 
 import jpeg from 'jpeg-js';
@@ -87,7 +87,7 @@ export class RxPhoto {
 
     /**
      * Handles incoming raw photo data chunks.
-     * This method is typically called by a `FrameMsg` instance when new photo data is received.
+     * This method is typically called by a `BrilliantMsg` instance when new photo data is received.
      * It accumulates chunks and, upon receiving the final chunk, processes the complete image.
      * The processed image (as a Uint8Array) is then placed onto the `queue`.
      * @param data A Uint8Array containing the raw photo data chunk, prefixed with a msgCode byte.
@@ -159,12 +159,12 @@ export class RxPhoto {
     }
 
     /**
-     * Attaches this RxPhoto instance to a FrameMsg object to receive photo data.
+     * Attaches this RxPhoto instance to a BrilliantMsg object to receive photo data.
      * It initializes the photo data queue and registers a handler for incoming data chunks.
-     * @param frame The FrameMsg instance to attach to.
+     * @param frame The BrilliantMsg instance to attach to.
      * @returns A Promise that resolves to the `AsyncQueue` where complete photo data (Uint8Array) will be placed.
      */
-    public async attach(frame: FrameMsg): Promise<AsyncQueue<Uint8Array>> {
+    public async attach(frame: BrilliantMsg): Promise<AsyncQueue<Uint8Array>> {
         if (this.isRaw && (!this.quality || !this.resolution)) {
             // Check if a header is already cached for this configuration. If not, it's an issue.
             // However, the Python code allows proceeding and relies on an error during _processCompleteImage.
@@ -189,11 +189,11 @@ export class RxPhoto {
     }
 
     /**
-     * Detaches this RxPhoto instance from a FrameMsg object.
+     * Detaches this RxPhoto instance from a BrilliantMsg object.
      * It unregisters the data handler and clears the photo data queue and any pending chunks.
-     * @param frame The FrameMsg instance to detach from.
+     * @param frame The BrilliantMsg instance to detach from.
      */
-    public detach(frame: FrameMsg): void {
+    public detach(frame: BrilliantMsg): void {
         frame.unregisterDataResponseHandler(this);
         if (this.queue) {
             this.queue.clear(); // Clear any pending items/waiters in the queue

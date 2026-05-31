@@ -1,14 +1,14 @@
-import { FrameBle } from 'frame-ble';
+import { BrilliantBle } from 'brilliant-ble';
 
 export async function run() {
-  const frameBle = new FrameBle();
+  const ble = new BrilliantBle();
 
   // Connect to Frame
-  const deviceId = await frameBle.connect();
+  const deviceId = await ble.connect();
 
   // Send a break signal to Frame in case it is in a loop/main.lua
-  await frameBle.sendBreakSignal();
+  await ble.sendBreakSignal();
 
   // Disconnect from Frame
-  await frameBle.disconnect();
+  await ble.disconnect();
 };

@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig({
-  base: '/frame-ble-webbluetooth/',
+  base: '/brilliant_sdk/brilliant-ble/',
   root: __dirname,
   server: {
     open: true,
@@ -18,7 +18,7 @@ export default defineConfig({
       //'frame-ble': path.resolve(__dirname, '../dist/frame-ble.es.js'),
 
       // Option B Use source code instead of built bundle
-      'frame-ble': path.resolve(__dirname, '../src/index.ts'),
+      'brilliant-ble': path.resolve(__dirname, '../src/index.ts'),
     },
   },
 });

@@ -1,4 +1,4 @@
-import { FrameMsg, StdLua, TxCode, RxAudio, RxAudioSampleRate, RxAudioBitDepth } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxCode, RxAudio, RxAudioSampleRate, RxAudioBitDepth } from 'brilliant-msg';
 import frameApp from './lua/audio_stream_frame_app.lua?raw';
 
 // Define the AudioWorkletProcessor code as a string
@@ -65,7 +65,7 @@ registerProcessor('pcm-player-processor', PCMPlayerProcessor);
  * The stream runs for a fixed duration before automatically stopping and cleaning up.
  */
 export async function run() {
-    const frame = new FrameMsg();
+    const frame = new BrilliantMsg();
     let audioContext;
     let pcmPlayerNode;
     let audioQueue; // To store the RxAudio queue

@@ -1,4 +1,4 @@
-import { FrameMsg, StdLua, TxPlainText } from 'frame-msg';
+import { BrilliantMsg, StdLua, TxPlainText } from 'brilliant-msg';
 import frameApp from './lua/plain_text_frame_app.lua?raw';
 
 /**
@@ -10,7 +10,7 @@ import frameApp from './lua/plain_text_frame_app.lua?raw';
  * - Includes a delay between messages to allow each text to be visible.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

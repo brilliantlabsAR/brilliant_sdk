@@ -1,4 +1,4 @@
-import { FrameMsg, StdLua, RxAudio, TxCode, RxAudioSampleRate, RxAudioBitDepth } from 'frame-msg';
+import { BrilliantMsg, StdLua, RxAudio, TxCode, RxAudioSampleRate, RxAudioBitDepth } from 'brilliant-msg';
 import frameApp from './lua/audio_clip_frame_app.lua?raw';
 
 /**
@@ -8,7 +8,7 @@ import frameApp from './lua/audio_clip_frame_app.lua?raw';
  * using the Web Audio API.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

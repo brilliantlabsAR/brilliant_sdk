@@ -1,5 +1,5 @@
-import { FrameMsg, StdLua, TxCaptureSettings, RxPhoto } from 'frame-msg';
-import { BrilliantDeviceType } from 'frame-ble';
+import { BrilliantMsg, StdLua, TxCaptureSettings, RxPhoto } from 'brilliant-msg';
+import { BrilliantDeviceType } from 'brilliant-ble';
 import frameApp from './lua/live_camera_feed_frame_app.lua?raw';
 
 /**
@@ -11,7 +11,7 @@ import frameApp from './lua/live_camera_feed_frame_app.lua?raw';
  * - Displaying each newly captured photo in an HTML image element, replacing the previous one.
  */
 export async function run() {
-  const frame = new FrameMsg();
+  const frame = new BrilliantMsg();
 
   try {
     // Web Bluetooth API requires a user gesture to initiate the connection

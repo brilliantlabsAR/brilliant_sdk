@@ -1,5 +1,5 @@
-import { FrameMsg, StdLua, TxCode, TxCaptureSettings, RxAudio, RxPhoto, RxAudioSampleRate } from 'frame-msg';
-import { BrilliantDeviceType } from 'frame-ble';
+import { BrilliantMsg, StdLua, TxCode, TxCaptureSettings, RxAudio, RxPhoto, RxAudioSampleRate } from 'brilliant-msg';
+import { BrilliantDeviceType } from 'brilliant-ble';
 import frameApp from './lua/audio_video_stream_frame_app.lua?raw';
 
 // --- AudioWorkletProcessor code as a string ---
@@ -224,7 +224,7 @@ let imageDisplayElement = null; // Single image element for display
  * for both audio and photo streams, including device connection and application lifecycle.
  */
 export async function run() {
-    const frame = new FrameMsg();
+    const frame = new BrilliantMsg();
     let audioContext;
     let pcmPlayerNode;
     let audioQueue;

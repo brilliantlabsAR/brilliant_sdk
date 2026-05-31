@@ -1,14 +1,14 @@
 {
-  "name": "frame-ble",
-  "version": "0.4.0",
-  "main": "dist/frame-ble.umd.js",
-  "module": "dist/frame-ble.es.js",
+  "name": "brilliant-ble",
+  "version": "1.0.0",
+  "main": "dist/brilliant-ble.umd.js",
+  "module": "dist/brilliant-ble.es.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/frame-ble.es.js",
-      "require": "./dist/frame-ble.umd.js"
+      "import": "./dist/brilliant-ble.es.js",
+      "require": "./dist/brilliant-ble.umd.js"
     }
   },
   "files": [
@@ -26,7 +26,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "CitizenOne",
+  "author": "luke-brilliant",
   "license": "BSD-3-Clause",
   "description": "Package for managing a connection to and transferring data to and from the Brilliant Labs Frame device over Bluetooth LE using WebBluetooth",
   "devDependencies": {

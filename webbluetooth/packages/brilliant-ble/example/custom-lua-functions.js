@@ -1,30 +1,30 @@
-import { FrameBle } from 'frame-ble';
+import { BrilliantBle } from 'brilliant-ble';
 import fibonacciLua from './lua/fibonacci.lua?raw';
 
 export async function run() {
-  const frameBle = new FrameBle();
+  const ble = new BrilliantBle();
 
   // Connect to Frame
-  const deviceId = await frameBle.connect();
+  const deviceId = await ble.connect();
 
   // Configure print response handler to show Frame output
   const printHandler = (data) => {
     console.log("Frame response:", data);
   };
-  frameBle.setPrintResponseHandler(printHandler);
+  ble.setPrintResponseHandler(printHandler);
 
   // Send a break signal to Frame in case it is in a loop/main.lua
-  await frameBle.sendBreakSignal();
+  await ble.sendBreakSignal();
 
   // Send a lua script to Frame and "require" it to run it
-  await frameBle.uploadFileFromString(fibonacciLua, "fibonacci.lua");
-  await frameBle.sendLua("require('fibonacci');print(0)", {awaitPrint: true})
+  await ble.uploadFileFromString(fibonacciLua, "fibonacci.lua");
+  await ble.sendLua("require('fibonacci');print(0)", {awaitPrint: true})
 
   // we can call the function(s) loaded from the file
   const myFibNum = 20
-  const response = await frameBle.sendLua(`print(fibonacci(${myFibNum}))`, {awaitPrint: true})
+  const response = await ble.sendLua(`print(fibonacci(${myFibNum}))`, {awaitPrint: true})
   console.log(`Answer was: ${response}`)
 
   // Disconnect from Frame
-  await frameBle.disconnect();
+  await ble.disconnect();
 };

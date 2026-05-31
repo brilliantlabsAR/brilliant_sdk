@@ -1,4 +1,4 @@
-import { FrameMsg } from '../frame-msg';
+import { BrilliantMsg } from '../brilliant-msg';
 import { AsyncQueue } from '../async-queue';
 
 /**
@@ -42,7 +42,7 @@ export interface RxAudioOptions {
  * It can operate in two modes: streaming and single-clip mode.
  * In streaming mode, it processes audio data in real-time.
  * In single-clip mode, it accumulates audio data until a final chunk is received.
- * The class provides methods to attach and detach from a FrameMsg instance,
+ * The class provides methods to attach and detach from a BrilliantMsg instance,
  * and to convert PCM data to WAV format.
  * Depending on how it is constructed, it will return samples as either
  * signed 8 or signed 16 bit integers, and the source bit depth in Lua should match.
@@ -98,7 +98,7 @@ export class RxAudio {
 
     /**
      * Handles incoming raw audio data chunks.
-     * This method is typically called by a `FrameMsg` instance when new audio data is received.
+     * This method is typically called by a `BrilliantMsg` instance when new audio data is received.
      * It processes the data based on the configured mode (streaming or clip) and bit depth,
      * then places the processed audio chunk (Int8Array or Int16Array) onto the `queue`.
      * A null is placed on the queue to signal the end of a stream or clip.
@@ -135,12 +135,12 @@ export class RxAudio {
     }
 
     /**
-     * Attaches this RxAudio instance to a FrameMsg object to receive audio data.
+     * Attaches this RxAudio instance to a BrilliantMsg object to receive audio data.
      * It initializes the audio queue and registers a handler for incoming data.
-     * @param frame The FrameMsg instance to attach to.
+     * @param frame The BrilliantMsg instance to attach to.
      * @returns A Promise that resolves to the `AsyncQueue` where audio chunks will be placed.
      */
-    public async attach(frame: FrameMsg): Promise<AsyncQueue<Int8Array | Int16Array | null>> {
+    public async attach(frame: BrilliantMsg): Promise<AsyncQueue<Int8Array | Int16Array | null>> {
         this.queue = new AsyncQueue<Int8Array | Int16Array | null>();
         this._audioBuffer = []; // Reset audio buffer
 
@@ -155,11 +155,11 @@ export class RxAudio {
     }
 
     /**
-     * Detaches this RxAudio instance from a FrameMsg object.
+     * Detaches this RxAudio instance from a BrilliantMsg object.
      * It unregisters the data handler and clears the audio queue.
-     * @param frame The FrameMsg instance to detach from.
+     * @param frame The BrilliantMsg instance to detach from.
      */
-    public detach(frame: FrameMsg): void {
+    public detach(frame: BrilliantMsg): void {
         // Unsubscribe from the data response feed
         frame.unregisterDataResponseHandler(this);
         if (this.queue) {

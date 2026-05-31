@@ -1,4 +1,4 @@
-import { FrameMsg } from '../frame-msg';
+import { BrilliantMsg } from '../brilliant-msg';
 import { AsyncQueue } from '../async-queue';
 
 /**
@@ -73,10 +73,10 @@ export class RxClick {
 
     /**
      * Attach the click handler to the Frame data response.
-     * @param frame The FrameMsg instance.
+     * @param frame The BrilliantMsg instance.
      * @returns A promise that resolves to an AsyncQueue that will receive ClickType values.
      */
-    public async attach(frame: FrameMsg): Promise<AsyncQueue<ClickType | null>> {
+    public async attach(frame: BrilliantMsg): Promise<AsyncQueue<ClickType | null>> {
         this.queue = new AsyncQueue<ClickType | null>();
 
         frame.registerDataResponseHandler(
@@ -90,9 +90,9 @@ export class RxClick {
 
     /**
      * Detach the click handler from the Frame data response and clean up resources.
-     * @param frame The FrameMsg instance.
+     * @param frame The BrilliantMsg instance.
      */
-    public detach(frame: FrameMsg): void {
+    public detach(frame: BrilliantMsg): void {
         frame.unregisterDataResponseHandler(this);
         if (this.queue) {
             this.queue.clear();

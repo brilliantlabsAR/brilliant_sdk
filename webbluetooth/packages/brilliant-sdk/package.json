@@ -1,0 +1,46 @@
+{
+  "name": "brilliant-sdk",
+  "version": "1.0.0",
+  "main": "dist/brilliant-sdk.umd.js",
+  "module": "dist/brilliant-sdk.es.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/brilliant-sdk.es.js",
+      "require": "./dist/brilliant-sdk.umd.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "luke-brilliant",
+  "license": "BSD-3-Clause",
+  "description": "Brilliant Labs WebBluetooth SDK — meta-package for brilliant-ble and brilliant-msg",
+  "dependencies": {
+    "brilliant-ble": "^1.0.0",
+    "brilliant-msg": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "@types/web-bluetooth": "^0.0.21",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.41.1"
+  },
+  "overrides": {
+    "vite": {
+      "rollup": "npm:@rollup/wasm-node"
+    }
+  }
+}

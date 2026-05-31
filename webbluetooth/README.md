@@ -6,8 +6,9 @@ It contains the following npm packages:
 
 | Package | npm name | Description |
 |---------|----------|-------------|
-| [`brilliant-ble`](./packages/brilliant-ble) | `frame-ble` | Low-level WebBluetooth interface to Brilliant Labs devices |
-| [`brilliant-msg`](./packages/brilliant-msg) | `frame-msg` | Application-level message types (sprites, text, audio, IMU, photos, clicks) |
+| [`brilliant-sdk`](./packages/brilliant-sdk) | `brilliant-sdk` | Meta-package — installs both `brilliant-ble` and `brilliant-msg` |
+| [`brilliant-ble`](./packages/brilliant-ble) | `brilliant-ble` | Low-level WebBluetooth interface to Brilliant Labs devices |
+| [`brilliant-msg`](./packages/brilliant-msg) | `brilliant-msg` | Application-level message types (sprites, text, audio, IMU, photos, clicks) |
 
 ---
 
@@ -16,6 +17,7 @@ It contains the following npm packages:
 ```text
 webbluetooth/
 └── packages/
+    ├── brilliant-sdk/    # Meta-package (installs brilliant-ble + brilliant-msg)
     ├── brilliant-ble/    # WebBluetooth transport layer
     │   ├── src/
     │   ├── vite.config.ts
@@ -52,7 +54,7 @@ cd ../brilliant-msg && npm install
 ### 3. Build the packages
 
 ```bash
-# Build the BLE transport first (frame-msg depends on it)
+# Build the BLE transport first (brilliant-msg depends on it)
 cd packages/brilliant-ble && npm run build
 
 # Then build the message layer

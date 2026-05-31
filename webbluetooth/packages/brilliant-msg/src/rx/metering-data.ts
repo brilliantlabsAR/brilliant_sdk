@@ -1,4 +1,4 @@
-import { FrameMsg } from '../frame-msg';
+import { BrilliantMsg } from '../brilliant-msg';
 import { AsyncQueue } from '../async-queue';
 
 /**
@@ -77,10 +77,10 @@ export class RxMeteringData {
 
     /**
      * Attach the receive handler to the Frame data response.
-     * @param frame The FrameMsg instance.
+     * @param frame The BrilliantMsg instance.
      * @returns A promise that resolves to an AsyncQueue that will receive MeteringData objects.
      */
-    public async attach(frame: FrameMsg): Promise<AsyncQueue<MeteringData | null>> {
+    public async attach(frame: BrilliantMsg): Promise<AsyncQueue<MeteringData | null>> {
         this.queue = new AsyncQueue<MeteringData | null>();
 
         // Subscribe for notifications
@@ -95,9 +95,9 @@ export class RxMeteringData {
 
     /**
      * Detach the receive handler from the Frame data response and clean up resources.
-     * @param frame The FrameMsg instance.
+     * @param frame The BrilliantMsg instance.
      */
-    public detach(frame: FrameMsg): void {
+    public detach(frame: BrilliantMsg): void {
         frame.unregisterDataResponseHandler(this);
         if (this.queue) {
             this.queue.clear(); // Clear any pending items

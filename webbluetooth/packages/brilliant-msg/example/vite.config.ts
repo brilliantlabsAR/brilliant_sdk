@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig({
-  base: '/frame-msg-webbluetooth/',
+  base: '/brilliant_sdk/brilliant-msg/',
   root: __dirname,
   server: {
     open: true,
@@ -18,7 +18,7 @@ export default defineConfig({
       //'frame-msg': path.resolve(__dirname, '../dist/frame-msg.es.js'),
 
       // Option B Use source code instead of built bundle
-      'frame-msg': path.resolve(__dirname, '../src/index.ts'),
+      'brilliant-msg': path.resolve(__dirname, '../src/index.ts'),
     },
   },
 });
