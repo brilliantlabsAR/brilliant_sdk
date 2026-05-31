@@ -5,7 +5,7 @@ import struct
 from typing import Optional, Tuple
 from dataclasses import dataclass
 
-from brilliant_msg import FrameMsg
+from brilliant_msg import BrilliantMsg
 
 logging.basicConfig()
 _log = logging.getLogger("RxIMU")
@@ -111,7 +111,7 @@ class RxIMU:
         # Queue the data
         asyncio.create_task(self.queue.put(imu_data))
 
-    async def attach(self, frame: FrameMsg) -> asyncio.Queue:
+    async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
         Attach the IMU handler to the Frame data response and return a queue that will receive IMU data.
 
@@ -125,7 +125,7 @@ class RxIMU:
 
         return self.queue
 
-    def detach(self, frame: FrameMsg) -> None:
+    def detach(self, frame: BrilliantMsg) -> None:
         """Detach the IMU handler from the Frame data response and clean up resources"""
         frame.unregister_data_response_handler(self)
         self.queue = None

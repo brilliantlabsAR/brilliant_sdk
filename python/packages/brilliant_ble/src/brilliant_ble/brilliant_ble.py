@@ -10,7 +10,7 @@ class BrilliantDeviceType(Enum):
     HALO = "Halo"
     UNKNOWN = "Unknown"
 
-class FrameBle:
+class BrilliantBle:
     """
     Class for managing a connection and transferring data to and
     from the Brilliant Labs Halo/Frame device over Bluetooth LE using the Bleak library.

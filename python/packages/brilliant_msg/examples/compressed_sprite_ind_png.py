@@ -1,9 +1,9 @@
 import asyncio
 from pathlib import Path
 
-from brilliant_msg import FrameMsg, TxSprite, TxImageSpriteBlock
+from brilliant_msg import BrilliantMsg, TxSprite, TxImageSpriteBlock
 
-async def send_compressed_image_sprite_block(frame: FrameMsg, image_path: str):
+async def send_compressed_image_sprite_block(frame: BrilliantMsg, image_path: str):
     """
     For the specified image, create a compressed TxSprite, split that sprite into strips and send them
     progressively to Frame as an Image Sprite Block
@@ -27,7 +27,7 @@ async def main():
     palettes of other colors, the frameside app must call `sprite.set_palette()` (which lua/sprite_frame_app.lua does)
     or call the underlying `frame.display.assign_color()` before the `frame.display.bitmap()` call.
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

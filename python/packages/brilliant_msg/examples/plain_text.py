@@ -1,12 +1,12 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, TxPlainText
+from brilliant_msg import BrilliantMsg, TxPlainText
 
 async def main():
     """
     Print Plain Text on Frame's display using TxPlainText message
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

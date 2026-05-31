@@ -1,13 +1,13 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, TxCode, RxMeteringData
+from brilliant_msg import BrilliantMsg, TxCode, RxMeteringData
 from brilliant_ble import BrilliantDeviceType
 
 async def main():
     """
     Query the metering data on Frame repeatedly and print the changing values to the console
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

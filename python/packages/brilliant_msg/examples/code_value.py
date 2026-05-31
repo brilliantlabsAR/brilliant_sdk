@@ -1,12 +1,12 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, TxCode
+from brilliant_msg import BrilliantMsg, TxCode
 
 async def main():
     """
     Send a tiny TxCode message to Frame with a single-byte value as a control message
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

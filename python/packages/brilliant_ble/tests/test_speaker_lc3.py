@@ -1,8 +1,8 @@
 import asyncio
-from brilliant_ble import FrameBle, BrilliantDeviceType
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
 
 async def main():
-    b = FrameBle()
+    b = BrilliantBle()
     await b.connect()
 
     if b.type != BrilliantDeviceType.HALO:

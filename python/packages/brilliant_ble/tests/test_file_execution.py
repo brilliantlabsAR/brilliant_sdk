@@ -3,10 +3,10 @@ Tests the Frame specific Lua libraries over Bluetooth.
 """
 
 import asyncio, sys
-from brilliant_ble import FrameBle
+from brilliant_ble import BrilliantBle
 
 
-class TestBluetooth(FrameBle):
+class TestBluetooth(BrilliantBle):
     def __init__(self):
         super().__init__()
         self._passed_tests = 0

@@ -1,18 +1,18 @@
 from typing import List
 from importlib.resources import files
 
-from brilliant_ble import FrameBle, BrilliantDeviceType
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
 from typing import Callable
 
-class FrameMsg:
+class BrilliantMsg:
     """
     A high-level library for interacting with Brilliant Labs Frame by passing structured messages
     between a Frameside app and a hostside app.
 
     """
     def __init__(self):
-        """Initialize the FrameMsg class with a new FrameBle instance and a dictionary for registered data response handlers."""
-        self.ble = FrameBle()
+        """Initialize the BrilliantMsg class with a new BrilliantBle instance and a dictionary for registered data response handlers."""
+        self.ble = BrilliantBle()
         self.data_response_handlers = {}
 
     async def connect(self, initialize:bool=True):
@@ -27,7 +27,7 @@ class FrameMsg:
             bool: True if connection and initialization were successful
 
         Raises:
-            Any exceptions from the underlying FrameBle connection
+            Any exceptions from the underlying BrilliantBle connection
         """
         try:
             await self.ble.connect(data_response_handler=self._handle_data_response)
@@ -177,8 +177,8 @@ class FrameMsg:
 
     def __getattr__(self, name):
         """
-        Delegate any unknown attributes to the underlying FrameBle instance.
-        This allows direct access to all FrameBle methods while keeping the
+        Delegate any unknown attributes to the underlying BrilliantBle instance.
+        This allows direct access to all BrilliantBle methods while keeping the
         wrapper transparent.
         """
         return getattr(self.ble, name)

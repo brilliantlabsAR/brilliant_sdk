@@ -4,10 +4,10 @@ import traceback
 from PIL import Image
 import qoi
 from brilliant_ble import BrilliantDeviceType
-from brilliant_msg import FrameMsg, RxPhoto
+from brilliant_msg import BrilliantMsg, RxPhoto
 
 async def main():
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

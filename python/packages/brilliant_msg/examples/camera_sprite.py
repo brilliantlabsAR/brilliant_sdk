@@ -1,13 +1,13 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, RxPhoto, TxCaptureSettings, TxSprite, TxImageSpriteBlock
+from brilliant_msg import BrilliantMsg, RxPhoto, TxCaptureSettings, TxSprite, TxImageSpriteBlock
 from brilliant_ble import BrilliantDeviceType
 
 async def main():
     """
     Take a photo using the Frame camera and display it on the Frame display
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

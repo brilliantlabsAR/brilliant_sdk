@@ -1,13 +1,13 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, RxAudio, TxCode
+from brilliant_msg import BrilliantMsg, RxAudio, TxCode
 import tempfile
 
 async def main():
     """
     Subscribe to an Audio stream from Frame and save a short clip as a WAV file
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     speaker = None
 
     try:

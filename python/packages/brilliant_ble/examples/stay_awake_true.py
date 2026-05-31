@@ -1,9 +1,9 @@
 import asyncio
-from brilliant_ble import FrameBle
-from brilliant_ble.frame_ble import BrilliantDeviceType
+from brilliant_ble import BrilliantBle
+from brilliant_ble import BrilliantDeviceType
 
 async def main():
-    frame = FrameBle()
+    frame = BrilliantBle()
 
     try:
         await frame.connect()

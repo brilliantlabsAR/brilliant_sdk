@@ -2,10 +2,10 @@
 brilliant_sdk - Python SDK for Brilliant Labs Frame and Halo devices (https://brilliant.xyz/)
 """
 
-from brilliant_ble import FrameBle, BrilliantDeviceType
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
 
 from brilliant_msg import (
-    FrameMsg,
+    BrilliantMsg,
     TxAutoExpSettings,
     TxCaptureSettings,
     TxCode,

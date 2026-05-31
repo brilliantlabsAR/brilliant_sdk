@@ -1,7 +1,7 @@
 import asyncio
 from pathlib import Path
 
-from brilliant_msg import FrameMsg, TxSprite
+from brilliant_msg import BrilliantMsg, TxSprite
 
 async def main():
     """
@@ -13,7 +13,7 @@ async def main():
     This will not be the standard palette from the Frame firmware so the frameside app
     (lua/sprite_frame_app.lua) calls `sprite.set_palette()` before the `frame.display.bitmap()` call.
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

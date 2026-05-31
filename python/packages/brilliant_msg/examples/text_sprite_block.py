@@ -1,12 +1,12 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, TxCode, TxTextSpriteBlock
+from brilliant_msg import BrilliantMsg, TxCode, TxTextSpriteBlock
 
 async def main():
     """
     Print rasterized text with a user-specified font on Frame's display using TxTextSpriteBlock
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

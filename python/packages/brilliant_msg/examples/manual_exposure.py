@@ -2,13 +2,13 @@ import asyncio
 from PIL import Image
 import io
 
-from brilliant_msg import FrameMsg, RxPhoto, TxManualExpSettings, TxCaptureSettings
+from brilliant_msg import BrilliantMsg, RxPhoto, TxManualExpSettings, TxCaptureSettings
 
 async def main():
     """
     Set camera exposure settings manually and take a single photo
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

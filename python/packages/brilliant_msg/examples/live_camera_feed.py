@@ -4,7 +4,7 @@ import io
 import cv2
 import numpy as np
 
-from brilliant_msg import FrameMsg, RxPhoto, TxCaptureSettings
+from brilliant_msg import BrilliantMsg, RxPhoto, TxCaptureSettings
 from brilliant_ble import BrilliantDeviceType
 
 async def main():
@@ -19,7 +19,7 @@ async def main():
         # Initialize OpenCV Window on Main Thread
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
         
-        frame = FrameMsg()
+        frame = BrilliantMsg()
         await frame.connect()
 
         # debug only: check our current battery level and memory usage

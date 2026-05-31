@@ -11,14 +11,14 @@ pip install brilliant-sdk
 ## Usage
 
 ```python
-from brilliant_ble import FrameBle, BrilliantDeviceType
-from brilliant_msg import FrameMsg, TxPlainText, TxSprite
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
+from brilliant_msg import BrilliantMsg, TxPlainText, TxSprite
 ```
 
 Or import directly from the meta-package:
 
 ```python
-from brilliant_sdk import FrameBle, FrameMsg, TxPlainText
+from brilliant_sdk import BrilliantBle, BrilliantMsg, TxPlainText
 ```
 
 ## Packages

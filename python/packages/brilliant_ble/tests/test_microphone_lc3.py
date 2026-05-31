@@ -4,7 +4,7 @@ Records LC3-encoded audio via Bluetooth and saves it as both .lc3 and .wav files
 """
 
 import asyncio
-from brilliant_ble import FrameBle, BrilliantDeviceType
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
 import numpy as np
 import lc3
 import wave
@@ -23,7 +23,7 @@ def receive_data(data):
     print(f"Received {len(audio_buffer)} bytes", end="\r")
 
 
-async def record_and_save(b: FrameBle, sample_rate, bitrate, frame_duration_ms, channels=1):
+async def record_and_save(b: BrilliantBle, sample_rate, bitrate, frame_duration_ms, channels=1):
     """
     Starts microphone recording using LC3 encoder on the device,
     receives LC3 audio data via Bluetooth,
@@ -121,7 +121,7 @@ async def record_and_save(b: FrameBle, sample_rate, bitrate, frame_duration_ms, 
 
 
 async def main():
-    b = FrameBle()
+    b = BrilliantBle()
     await b.connect(data_response_handler=receive_data)
 
     if b.type != BrilliantDeviceType.HALO:

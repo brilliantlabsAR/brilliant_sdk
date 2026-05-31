@@ -4,7 +4,7 @@ brilliant_msg - Message Package defines Transmit- and Receive-related message cl
 
 __version__ = "7.0.0"
 
-from .frame_msg import FrameMsg
+from .brilliant_msg import BrilliantMsg
 
 from .tx_auto_exp_settings import TxAutoExpSettings
 from .tx_capture_settings import TxCaptureSettings

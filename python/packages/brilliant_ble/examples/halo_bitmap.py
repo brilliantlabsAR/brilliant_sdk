@@ -1,8 +1,8 @@
 import asyncio
 
-from brilliant_ble import FrameBle, BrilliantDeviceType
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
 
-async def set_palette(f: FrameBle, palette_data: bytes):
+async def set_palette(f: BrilliantBle, palette_data: bytes):
     """
     Sets the current palette for future bitmap() calls.
     palette_data: string of RGB triplets, e.g. "\x00\x00\x00\xFF\x00\x00\x00\xFF\x00" for black, red, green
@@ -15,7 +15,7 @@ async def set_palette(f: FrameBle, palette_data: bytes):
             await f.send_lua(f"frame.display.assign_color({i//3},{r},{g},{b})print(0)", await_print=True)
     return 
 
-async def restore_default_palette(frame: FrameBle):
+async def restore_default_palette(frame: BrilliantBle):
     # Set the palette back to the firmware default
     await frame.send_lua(f"frame.display.assign_color_ycbcr(0, 0, 4, 4);print(0)", await_print=True) # VOID
     await frame.send_lua(f"frame.display.assign_color_ycbcr(1, 15, 4, 4);print(0)", await_print=True) # WHITE
@@ -39,7 +39,7 @@ async def main():
     """
     Displays images on Halo using the bitmap() function.
     """
-    frame = FrameBle()
+    frame = BrilliantBle()
     try:
         await frame.connect()
 

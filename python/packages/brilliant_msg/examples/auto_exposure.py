@@ -2,7 +2,7 @@ import asyncio
 from PIL import Image
 import io
 
-from brilliant_msg import FrameMsg, RxPhoto, TxAutoExpSettings, TxCaptureSettings, TxCode, RxAutoExpResult
+from brilliant_msg import BrilliantMsg, RxPhoto, TxAutoExpSettings, TxCaptureSettings, TxCode, RxAutoExpResult
 from brilliant_ble import BrilliantDeviceType
 
 async def main():
@@ -10,7 +10,7 @@ async def main():
     Run the autoexposure algorithm on Frame repeatedly and print the changing values to the console
     along with a photo taken at each step.
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

@@ -1,26 +1,26 @@
 """
-EmulatorFrameMsg — a FrameMsg-compatible async adapter for HaloEmulator.
+EmulatorBrilliantMsg — a BrilliantMsg-compatible async adapter for HaloEmulator.
 
-Provides the same interface as ``brilliant_msg.FrameMsg`` so that host-side Python
+Provides the same interface as ``brilliant_msg.BrilliantMsg`` so that host-side Python
 scripts can switch between real Halo hardware and the emulator by changing a
 single line:
 
     # Real hardware
-    from brilliant_msg import FrameMsg
-    frame = FrameMsg()
+    from brilliant_msg import BrilliantMsg
+    frame = BrilliantMsg()
 
     # Emulator
-    from halo_emulator import HaloEmulator, EmulatorFrameMsg
-    frame = EmulatorFrameMsg(HaloEmulator())
+    from halo_emulator import HaloEmulator, EmulatorBrilliantMsg
+    frame = EmulatorBrilliantMsg(HaloEmulator())
 
-The adapter bridges the async FrameMsg API to HaloEmulator's synchronous,
+The adapter bridges the async BrilliantMsg API to HaloEmulator's synchronous,
 thread-based model:
 
 - ``send_lua()`` calls ``execute_lua()`` directly (REPL mode, no running loop).
 - ``send_message()`` frames the payload and calls ``inject_bluetooth_data()``.
 - ``register_data_response_handler()`` installs a listener on the Bluetooth
   stub; when Lua calls ``frame.bluetooth.send()``, the listener dispatches the
-  data to the matching handler (same msg_code routing as FrameMsg).
+  data to the matching handler (same msg_code routing as BrilliantMsg).
 """
 from __future__ import annotations
 
@@ -32,9 +32,9 @@ from typing import Callable
 from halo_emulator.emulator import HaloEmulator
 
 
-class EmulatorFrameMsg:
+class EmulatorBrilliantMsg:
     """
-    FrameMsg-compatible adapter for HaloEmulator.
+    BrilliantMsg-compatible adapter for HaloEmulator.
 
     Parameters
     ----------
@@ -97,7 +97,7 @@ class EmulatorFrameMsg:
         Execute a Lua snippet directly.
 
         Only valid in REPL mode (after :meth:`connect`, before
-        :meth:`start_frame_app`). Mirrors ``FrameMsg.send_lua()``.
+        :meth:`start_frame_app`). Mirrors ``BrilliantMsg.send_lua()``.
 
         Note: ``await_print`` is accepted for API compatibility but has no
         effect — Lua ``print()`` output goes to the emulator's print_handler.
@@ -180,7 +180,7 @@ class EmulatorFrameMsg:
         """
         Send a structured message to the running Lua app.
 
-        Frames the payload exactly as ``FrameBle.send_message()`` does, then
+        Frames the payload exactly as ``BrilliantBle.send_message()`` does, then
         injects it via ``inject_bluetooth_data()``.  The entire payload is sent
         as one packet (no MTU chunking) since the emulator has no BLE MTU limit.
 
@@ -200,7 +200,7 @@ class EmulatorFrameMsg:
         """
         Register a handler for Lua→host messages on specific msg codes.
 
-        Mirrors ``FrameMsg.register_data_response_handler()``.  The handler
+        Mirrors ``BrilliantMsg.register_data_response_handler()``.  The handler
         receives the full raw bytes (first byte is the msg_code, same as on
         real hardware).
 

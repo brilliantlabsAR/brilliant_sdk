@@ -1,5 +1,5 @@
 import asyncio
-from brilliant_ble import FrameBle, BrilliantDeviceType
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
 
 # convert s8 to s16 le
 def s8_to_s16_le(data: bytes) -> bytes:
@@ -16,7 +16,7 @@ def s8_to_s16_le(data: bytes) -> bytes:
 
 
 async def main():
-    b = FrameBle()
+    b = BrilliantBle()
     await b.connect()
 
     if b.type != BrilliantDeviceType.HALO:

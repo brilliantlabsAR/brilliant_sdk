@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 from random import randint
 
-from brilliant_msg import FrameMsg, TxSprite, TxSpriteCoords, TxCode
+from brilliant_msg import BrilliantMsg, TxSprite, TxSpriteCoords, TxCode
 
 async def main():
     """
@@ -10,7 +10,7 @@ async def main():
 
     The sprite is a 1-bit indexed PNG image.
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

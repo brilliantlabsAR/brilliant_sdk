@@ -3,13 +3,13 @@ from PIL import Image
 import io
 
 from brilliant_ble import BrilliantDeviceType
-from brilliant_msg import FrameMsg, RxPhoto, TxCaptureSettings
+from brilliant_msg import BrilliantMsg, RxPhoto, TxCaptureSettings
 
 async def main():
     """
     Take a photo using the Frame camera and display it in the system viewer
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

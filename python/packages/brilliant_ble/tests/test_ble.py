@@ -2,12 +2,12 @@ import unittest
 import asyncio
 import sys
 
-from brilliant_ble import FrameBle
+from brilliant_ble import BrilliantBle
 
 
 class TestBluetooth(unittest.IsolatedAsyncioTestCase):
     async def test_connect_disconnect(self):
-        b = FrameBle()
+        b = BrilliantBle()
 
         self.assertFalse(b.is_connected())
 
@@ -24,7 +24,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         await b.disconnect()
 
     async def test_send_lua(self):
-        b = FrameBle()
+        b = BrilliantBle()
         await b.connect()
 
         self.assertEqual(await b.send_lua("print('hi')", await_print=True), "hi")
@@ -38,7 +38,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         await b.disconnect()
 
     async def test_send_data(self):
-        b = FrameBle()
+        b = BrilliantBle()
         await b.connect()
         self.assertIsNone(await b.send_break_signal())
 
@@ -59,7 +59,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         await b.disconnect()
 
     async def test_mtu(self):
-        b = FrameBle()
+        b = BrilliantBle()
         await b.connect()
         self.assertIsNone(await b.send_break_signal())
 
@@ -77,7 +77,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         await b.disconnect()
 
     async def test_upload_from_file(self):
-        b = FrameBle()
+        b = BrilliantBle()
         await b.connect()
         self.assertIsNone(await b.send_break_signal())
 
@@ -91,7 +91,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         await b.disconnect()
 
     async def test_upload_from_string(self):
-        b = FrameBle()
+        b = BrilliantBle()
         await b.connect()
         self.assertIsNone(await b.send_break_signal())
 

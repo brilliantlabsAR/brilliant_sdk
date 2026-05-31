@@ -1,7 +1,7 @@
 """
 Tests for Rx message parsing and supporting classes: RxAudio.to_wav_bytes,
 RxMeteringData, RxAutoExpResult, RxIMU (including IMUData and SensorBuffer),
-RxTap, and FrameMsg handler dispatch.
+RxTap, and BrilliantMsg handler dispatch.
 
 Tests that call handle_data() are async because those methods use
 asyncio.create_task() internally to write to their queues.
@@ -13,7 +13,7 @@ import struct
 import pytest
 
 from brilliant_msg import (
-    FrameMsg,
+    BrilliantMsg,
     RxAudio,
     RxAutoExpResult,
     RxIMU,
@@ -334,12 +334,12 @@ class TestRxTap:
 
 
 # ---------------------------------------------------------------------------
-# FrameMsg handler dispatch  (async)
+# BrilliantMsg handler dispatch  (async)
 # ---------------------------------------------------------------------------
 
-class TestFrameMsgHandlerDispatch:
+class TestBrilliantMsgHandlerDispatch:
     async def test_registered_handler_called_for_matching_code(self):
-        frame = FrameMsg()
+        frame = BrilliantMsg()
         received = []
 
         class Sub:
@@ -352,7 +352,7 @@ class TestFrameMsgHandlerDispatch:
         assert received == [b'\x01\xde\xad']
 
     async def test_unregistered_code_not_dispatched(self):
-        frame = FrameMsg()
+        frame = BrilliantMsg()
         received = []
 
         class Sub:
@@ -365,7 +365,7 @@ class TestFrameMsgHandlerDispatch:
         assert received == []
 
     async def test_handler_removed_after_unregister(self):
-        frame = FrameMsg()
+        frame = BrilliantMsg()
         received = []
 
         class Sub:
@@ -379,7 +379,7 @@ class TestFrameMsgHandlerDispatch:
         assert received == []
 
     async def test_multiple_subscribers_for_same_code(self):
-        frame = FrameMsg()
+        frame = BrilliantMsg()
         log_a, log_b = [], []
 
         class SubA:
@@ -395,7 +395,7 @@ class TestFrameMsgHandlerDispatch:
         assert len(log_b) == 1
 
     async def test_handler_registered_for_multiple_codes(self):
-        frame = FrameMsg()
+        frame = BrilliantMsg()
         received = []
 
         class Sub:
@@ -409,5 +409,5 @@ class TestFrameMsgHandlerDispatch:
         assert received == [0x07, 0x08]
 
     async def test_empty_data_does_not_raise(self):
-        frame = FrameMsg()
+        frame = BrilliantMsg()
         await frame._handle_data_response(b'')   # empty → no dispatch

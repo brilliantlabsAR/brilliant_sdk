@@ -1,8 +1,8 @@
 import asyncio
-from brilliant_ble import FrameBle, BrilliantDeviceType
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
 
 async def main():
-    b = FrameBle()
+    b = BrilliantBle()
 
     # Connect to the device
     await b.connect(print_response_handler=lambda s: print(s))

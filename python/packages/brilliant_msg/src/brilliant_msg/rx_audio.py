@@ -4,7 +4,7 @@ import struct
 from typing import Optional
 from io import BytesIO
 
-from brilliant_msg import FrameMsg
+from brilliant_msg import BrilliantMsg
 
 logging.basicConfig()
 _log = logging.getLogger("RxAudio")
@@ -71,7 +71,7 @@ class RxAudio:
                 # Signal end with None
                 asyncio.create_task(self.queue.put(None))
 
-    async def attach(self, frame: FrameMsg) -> asyncio.Queue:
+    async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
         Attach the audio handler to the Frame data response and return a queue that will receive audio data.
 
@@ -90,7 +90,7 @@ class RxAudio:
 
         return self.queue
 
-    def detach(self, frame: FrameMsg) -> None:
+    def detach(self, frame: BrilliantMsg) -> None:
         """Detach the audio handler from the Frame data response and clean up resources"""
         # unsubscribe from the data response feed
         frame.unregister_data_response_handler(self)

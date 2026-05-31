@@ -1,6 +1,6 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, TxCode
+from brilliant_msg import BrilliantMsg, TxCode
 from brilliant_ble import BrilliantDeviceType
 from tx_sfxr import TxSfxr
 
@@ -8,7 +8,7 @@ async def main():
     """
     Play sound effects through the Halo speakers
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

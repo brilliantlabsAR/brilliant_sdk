@@ -1,5 +1,5 @@
 from aioconsole import ainput
-from brilliant_ble import FrameBle
+from brilliant_ble import BrilliantBle
 import asyncio
 import time
 
@@ -60,7 +60,7 @@ async def main():
     """
 
     # Connect to bluetooth and upload file
-    b = FrameBle()
+    b = BrilliantBle()
     await b.connect(
         print_response_handler=lambda s: print(s),
         data_response_handler=receive_data,

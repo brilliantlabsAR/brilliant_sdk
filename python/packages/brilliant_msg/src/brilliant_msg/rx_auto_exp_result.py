@@ -3,7 +3,7 @@ import logging
 import struct
 from typing import Optional
 
-from brilliant_msg import FrameMsg
+from brilliant_msg import BrilliantMsg
 
 logging.basicConfig()
 _log = logging.getLogger("RxAutoExpResult")
@@ -65,7 +65,7 @@ class RxAutoExpResult:
         # Queue the data
         asyncio.create_task(self.queue.put(result))
 
-    async def attach(self, frame: FrameMsg) -> asyncio.Queue:
+    async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
         Attach the receive handler to the Frame data response and return a queue that will receive autoexposure result data.
 
@@ -79,7 +79,7 @@ class RxAutoExpResult:
 
         return self.queue
 
-    def detach(self, frame: FrameMsg) -> None:
+    def detach(self, frame: BrilliantMsg) -> None:
         """Detach the receive handler from the Frame data response and clean up resources"""
         frame.unregister_data_response_handler(self)
         self.queue = None

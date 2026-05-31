@@ -1,7 +1,7 @@
 import asyncio
-from brilliant_ble import FrameBle, BrilliantDeviceType
+from brilliant_ble import BrilliantBle, BrilliantDeviceType
 
-async def set_standard_palette(b: FrameBle):
+async def set_standard_palette(b: BrilliantBle):
     
     frame_standard_palette = [
         0, 0, 0,          # 0: VOID 
@@ -32,7 +32,7 @@ async def set_standard_palette(b: FrameBle):
         await b.send_lua(lua_command, await_print=True)
     
 
-async def draw_palette_swatch(b: FrameBle, start_x=20, start_y=20):
+async def draw_palette_swatch(b: BrilliantBle, start_x=20, start_y=20):
     cols = 4  
     rows = 4 
     for row in range(rows):
@@ -43,13 +43,13 @@ async def draw_palette_swatch(b: FrameBle, start_x=20, start_y=20):
             lua_command = f"frame.display.bitmap({x}, {y}, 32, 4, {palette_index}, string.rep('\\xFF', 256));print(0)"
             await b.send_lua(lua_command, await_print=True)
 
-async def full_display_palette(b: FrameBle):
+async def full_display_palette(b: BrilliantBle):
     for palette_index in range(16):
         lua_command = f"frame.display.bitmap(0, 0, 320, 4, {palette_index}, string.rep('\\xFF', 320*240/2));print(0)"
         await b.send_lua(lua_command, await_print=True)
 
 async def main():
-    b = FrameBle()
+    b = BrilliantBle()
     await b.connect(print_response_handler=lambda s: print(s))
 
     if b.type != BrilliantDeviceType.HALO:

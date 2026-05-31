@@ -3,11 +3,11 @@ Tests the Frame specific Lua libraries over Bluetooth.
 """
 
 import asyncio
-from brilliant_ble import FrameBle
+from brilliant_ble import BrilliantBle
 
 
 async def main():
-    b = FrameBle()
+    b = BrilliantBle()
 
     try:
         await b.connect(print_response_handler=lambda s: print(s))

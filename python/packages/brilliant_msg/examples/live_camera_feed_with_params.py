@@ -6,7 +6,7 @@ import numpy as np
 import threading
 import queue
 
-from brilliant_msg import FrameMsg, RxPhoto, RxAutoExpResult, TxCaptureSettings, TxAutoExpSettings, TxManualExpSettings
+from brilliant_msg import BrilliantMsg, RxPhoto, RxAutoExpResult, TxCaptureSettings, TxAutoExpSettings, TxManualExpSettings
 from brilliant_ble import BrilliantDeviceType
 
 class CameraDisplay:
@@ -162,7 +162,7 @@ async def main(display):
     rx_autoexp = None
 
     try:
-        frame = FrameMsg()
+        frame = BrilliantMsg()
         await frame.connect()
 
         if frame.type != BrilliantDeviceType.FRAME:

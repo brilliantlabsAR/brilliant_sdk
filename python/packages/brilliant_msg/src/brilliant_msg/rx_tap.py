@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 from typing import Optional
-from brilliant_msg import FrameMsg
+from brilliant_msg import BrilliantMsg
 
 logging.basicConfig()
 _log = logging.getLogger("RxTap")
@@ -64,7 +64,7 @@ class RxTap:
         # Reset the threshold timer
         asyncio.create_task(self._reset_threshold_timer())
 
-    async def attach(self, frame: FrameMsg) -> asyncio.Queue:
+    async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
         Attach the tap handler to the Frame data response and return a queue that will receive tap counts.
 
@@ -80,7 +80,7 @@ class RxTap:
 
         return self.queue
 
-    def detach(self, frame: FrameMsg) -> None:
+    def detach(self, frame: BrilliantMsg) -> None:
         """Detach the tap handler from the Frame data response and clean up resources"""
         frame.unregister_data_response_handler(self)
         if self._threshold_task and not self._threshold_task.done():

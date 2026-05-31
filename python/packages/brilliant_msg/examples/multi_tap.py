@@ -1,12 +1,12 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, RxTap, TxCode
+from brilliant_msg import BrilliantMsg, RxTap, TxCode
 
 async def main():
     """
     Register multi-taps from Frame and print them to the console
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

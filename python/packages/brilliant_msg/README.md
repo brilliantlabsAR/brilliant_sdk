@@ -18,7 +18,7 @@ uv add brilliant-msg
 import asyncio
 from pathlib import Path
 
-from brilliant_msg import FrameMsg, TxSprite
+from brilliant_msg import BrilliantMsg, TxSprite
 
 async def main():
     """
@@ -26,7 +26,7 @@ async def main():
 
     The images are indexed (palette) PNG images, in 2, 4, and 16 colors (that is, 1-, 2- and 4-bits-per-pixel).
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 
@@ -89,5 +89,5 @@ The test suite covers all Tx message packing (TxCode, TxPlainText, TxSpriteCoord
 TxCaptureSettings, TxAutoExpSettings, TxSprite bit-packing and factory methods,
 TxImageSpriteBlock, TxTextSpriteBlock) and Rx message parsing (RxAudio WAV
 conversion, RxMeteringData, RxAutoExpResult, RxIMU including IMUData pitch/roll
-and SensorBuffer smoothing, RxTap, and FrameMsg handler dispatch). No hardware
+and SensorBuffer smoothing, RxTap, and BrilliantMsg handler dispatch). No hardware
 is required.

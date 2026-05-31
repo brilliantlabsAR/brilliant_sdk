@@ -1,14 +1,14 @@
 import asyncio
 import numpy as np
 
-from brilliant_msg import FrameMsg, RxAudio, TxCode
+from brilliant_msg import BrilliantMsg, RxAudio, TxCode
 from pvspeaker import PvSpeaker
 
 async def main():
     """
     Subscribe to an Audio stream from Frame and play to the default output device using pvspeaker
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     speaker = None
     stop_requested = False
 

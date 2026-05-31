@@ -3,14 +3,14 @@ from PIL import Image
 import io
 import numpy as np
 
-from brilliant_msg import FrameMsg, RxPhoto, TxCaptureSettings, TxSprite, TxImageSpriteBlock
+from brilliant_msg import BrilliantMsg, RxPhoto, TxCaptureSettings, TxSprite, TxImageSpriteBlock
 from brilliant_ble import BrilliantDeviceType
 
 async def main():
     """
     Repeatedly take photos using the Frame camera and display them on the Frame display
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

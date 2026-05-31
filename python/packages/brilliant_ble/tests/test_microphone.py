@@ -4,7 +4,7 @@ Records audio and saves it as a WAV file with timestamped filename.
 """
 
 import asyncio
-from brilliant_ble import FrameBle
+from brilliant_ble import BrilliantBle
 import numpy as np
 import wave
 from datetime import datetime
@@ -21,7 +21,7 @@ def receive_data(data):
     print(f"Received {len(audio_buffer)} bytes", end="\r")
 
 
-async def record_and_save(b: FrameBle, sample_rate, bit_depth, channels=2):
+async def record_and_save(b: BrilliantBle, sample_rate, bit_depth, channels=2):
     """
     Sends commands to start/stop microphone recording on the device,
     receives audio data over Bluetooth, and saves it as a timestamped WAV file.
@@ -101,7 +101,7 @@ async def record_and_save(b: FrameBle, sample_rate, bit_depth, channels=2):
 
 
 async def main():
-    b = FrameBle()
+    b = BrilliantBle()
     await b.connect(data_response_handler=receive_data)
     await record_and_save(b, sample_rate=16000, bit_depth=16, channels=1)
     await b.disconnect()

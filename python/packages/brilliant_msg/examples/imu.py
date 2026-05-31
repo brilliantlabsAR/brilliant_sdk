@@ -1,12 +1,12 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, RxIMU, TxCode
+from brilliant_msg import BrilliantMsg, RxIMU, TxCode
 
 async def main():
     """
     Subscribe to IMU updates from Frame and print them to the console
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

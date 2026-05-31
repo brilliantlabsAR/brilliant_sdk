@@ -3,7 +3,7 @@ import logging
 from typing import Dict, List, Optional
 import PIL.Image as Image
 import io
-from brilliant_msg import FrameMsg
+from brilliant_msg import BrilliantMsg
 
 logging.basicConfig()
 _log = logging.getLogger("RxPhoto")
@@ -102,7 +102,7 @@ class RxPhoto:
         self._image_data.clear()
         self._raw_offset = 0
 
-    async def attach(self, frame: FrameMsg) -> asyncio.Queue:
+    async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
         Attach the photo handler to the Frame data response and return a queue that will receive complete images.
 
@@ -127,7 +127,7 @@ class RxPhoto:
 
         return self.queue
 
-    def detach(self, frame: FrameMsg) -> None:
+    def detach(self, frame: BrilliantMsg) -> None:
         """Detach the photo handler from the Frame data response and clean up resources"""
         frame.unregister_data_response_handler(self)
         self.queue = None

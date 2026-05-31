@@ -1,13 +1,13 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, TxCode, TxTextSpriteBlock
+from brilliant_msg import BrilliantMsg, TxCode, TxTextSpriteBlock
 from brilliant_ble import BrilliantDeviceType
 
 async def main():
     """
     Use a simple layout engine to draw in separate regions of the display
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
 
     try:
         await frame.connect()

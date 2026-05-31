@@ -1,7 +1,7 @@
 import asyncio
 import time
 from aioconsole import ainput
-from brilliant_ble import FrameBle
+from brilliant_ble import BrilliantBle
 
 total_data_received = 0
 last_data_time = time.time()
@@ -30,7 +30,7 @@ async def main():
     end
     """
 
-    b = FrameBle()
+    b = BrilliantBle()
 
     await b.connect(data_response_handler=receive_data)
 

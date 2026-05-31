@@ -1,13 +1,13 @@
 import asyncio
 
-from brilliant_msg import FrameMsg, TxCode
+from brilliant_msg import BrilliantMsg, TxCode
 from brilliant_ble import BrilliantDeviceType
 
 async def main():
     """
     Play an LC3 file on the Halo speakers
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     try:
         await frame.connect()
 

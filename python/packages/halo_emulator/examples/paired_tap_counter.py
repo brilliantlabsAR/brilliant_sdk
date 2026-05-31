@@ -26,12 +26,12 @@ async def main() -> None:
 
     # ---- connection ----
     if args.emulator:
-        from halo_emulator import HaloEmulator, EmulatorFrameMsg
+        from halo_emulator import HaloEmulator, EmulatorBrilliantMsg
         emu = HaloEmulator(sandbox_dir="./lua")
-        frame = EmulatorFrameMsg(emu)
+        frame = EmulatorBrilliantMsg(emu)
     else:
-        from brilliant_msg import FrameMsg          # type: ignore[import]
-        frame = FrameMsg()
+        from brilliant_msg import BrilliantMsg          # type: ignore[import]
+        frame = BrilliantMsg()
 
     try:
         await frame.connect()

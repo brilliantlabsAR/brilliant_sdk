@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 from pvspeaker import PvSpeaker
 
-from brilliant_msg import FrameMsg, RxAudio, RxPhoto, TxCode, TxCaptureSettings
+from brilliant_msg import BrilliantMsg, RxAudio, RxPhoto, TxCode, TxCaptureSettings
 from brilliant_ble import BrilliantDeviceType
 import time
 
@@ -12,7 +12,7 @@ async def main():
     """
     Subscribe to an Audio stream from Frame and play to the default output device using pvspeaker, and take periodic photos
     """
-    frame = FrameMsg()
+    frame = BrilliantMsg()
     speaker = None
     stop_requested = False
 
