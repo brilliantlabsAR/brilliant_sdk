@@ -24,6 +24,13 @@ parsers[STOP_RECORDING_MSG] = code.parse_code
 parsers[START_PLAYBACK_MSG] = code.parse_code
 parsers[STOP_PLAYBACK_MSG] = code.parse_code
 
+local recording = false
+local playing = false
+local audio_data = ''
+local mtu = frame.bluetooth.max_length() - 1 -- leave 1 byte for message type
+-- data buffer needs to be even for reading from microphone
+if mtu % 2 == 1 then mtu = mtu - 1 end
+
 function show_text(text)
 	if frame.HARDWARE_VERSION == "Frame" then
 		frame.display.text(text, 1, 1)
@@ -113,12 +120,6 @@ function app_loop()
 	frame.display.power_save(false)
 	clear_display()
     local last_batt_update = 0
-	local recording = false
-	local playing = false
-	local audio_data = ''
-	local mtu = frame.bluetooth.max_length() - 1 -- leave 1 byte for message type
-	-- data buffer needs to be even for reading from microphone
-	if mtu % 2 == 1 then mtu = mtu - 1 end
 	print("Frame app started")
 
 	while true do

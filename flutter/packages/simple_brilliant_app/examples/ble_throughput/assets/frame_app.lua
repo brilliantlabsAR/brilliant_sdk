@@ -18,14 +18,19 @@ parsers[TEXT_MSG] = plain_text.parse_plain_text
 parsers[CLEAR_MSG] = code.parse_code
 parsers[START_DATA_SEND_MSG] = code.parse_code
 
+local streaming = false
+local payload = ''
+local NUM_PACKETS = 4000
+
+
 function print_text(text)
     local i = 0
     for line in text:gmatch("([^\n]*)\n?") do
         if line ~= "" then
 			if frame.HARDWARE_VERSION == "Frame" then
-					frame.display.text(line, 1, i * 60 + 1)
+					frame.display.text(line, 50, i * 60 + 1)
 			else
-					frame.display.text(line, 1, i * 20 + 1, 0xFFFFFF)
+					frame.display.text(line, 50, i * 20 + 1, 0xFFFFFF)
 			end
             i = i + 1
         end
@@ -62,7 +67,7 @@ handlers[START_DATA_SEND_MSG] = function(parsed_data)
 	print_text("Streaming starting")
 	streaming = true
 	-- send back some data on code 0x30
-	payload = "\x30" .. string.rep("A", mtu - 1)
+	payload = "\x30" .. string.rep("A", frame.bluetooth.max_length() - 1)
 
 	for i=1,NUM_PACKETS do
 		while true do
@@ -80,10 +85,6 @@ end
 function app_loop()
 	clear_display()
     local last_batt_update = 0
-	local streaming = false
-	local payload = ''
-	local mtu = frame.bluetooth.max_length()
-	local NUM_PACKETS = 4000
 
 	print("Frame app started")
 

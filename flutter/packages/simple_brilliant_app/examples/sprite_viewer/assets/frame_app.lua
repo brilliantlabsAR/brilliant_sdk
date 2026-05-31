@@ -105,7 +105,7 @@ function app_loop()
 						local parsed
 
 						-- accumulating types: need to pass previous state to the parser
-						if flag == TEXT_SPRITE_BLOCK then
+						if flag == IMAGE_SPRITE_BLOCK then
 							parsed = parsers[flag](raw, state[flag])
 							state[flag] = parsed
 						else

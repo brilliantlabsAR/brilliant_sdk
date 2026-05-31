@@ -14,7 +14,7 @@ CLICK_SUBS_MSG = 0x11
 
 -- Frame to Phone flags
 TAP_MSG = 0x09
-CLICK_MSG = 0x06
+CLICK_MSG = 0x0B
 
 -- message parsers, keyed by message flag
 local parsers = {}

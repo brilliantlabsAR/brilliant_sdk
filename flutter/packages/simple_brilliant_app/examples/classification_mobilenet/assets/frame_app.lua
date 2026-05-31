@@ -14,7 +14,7 @@ CLICK_SUBS_MSG = 0x11
 
 -- Frame to Phone flags
 TAP_MSG = 0x09
-CLICK_MSG = 0x06
+CLICK_MSG = 0x0B
 
 -- message parsers, keyed by message flag
 local parsers = {}
@@ -51,9 +51,9 @@ function print_text(parsed_data)
     for line in parsed_data.string:gmatch("([^\n]*)\n?") do
         if line ~= "" then
 			if frame.HARDWARE_VERSION == "Frame" then
-				frame.display.text(line, 1, i * 60 + 1)
+				frame.display.text(line, 20, i * 20 + 1)
 			else
-				frame.display.text(line, 1, i * 60 + 1, 0xFFFFFF)
+				frame.display.text(line, 20, i * 20 + 1, 0xFFFFFF)
 			end
             i = i + 1
         end
