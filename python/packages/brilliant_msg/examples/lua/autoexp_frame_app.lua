@@ -68,8 +68,7 @@ function app_loop()
 		if rc == false then
 			-- send the error back on the stdout stream
 			print(err)
-			frame.display.text(" ", 1, 1)
-			frame.display.show()
+			clear_display()
 			frame.sleep(0.04)
 			break
 		end
