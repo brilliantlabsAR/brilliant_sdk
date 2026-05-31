@@ -49,15 +49,16 @@ async def main():
         # Note that the frameside app is expecting a message of type TxSprite on msgCode 0x20
         sprite = TxSprite.from_indexed_png_bytes(Path("images/logo_1bit.png").read_bytes())
         await frame.send_message(0x20, sprite.pack())
+        await asyncio.sleep(5.0)
 
         # send a 2-bit image
         sprite = TxSprite.from_indexed_png_bytes(Path("images/street_2bit.png").read_bytes())
         await frame.send_message(0x20, sprite.pack())
+        await asyncio.sleep(5.0)
 
         # send a 4-bit image
         sprite = TxSprite.from_indexed_png_bytes(Path("images/hotdog_4bit.png").read_bytes())
         await frame.send_message(0x20, sprite.pack())
-
         await asyncio.sleep(5.0)
 
         # unhook the print handler

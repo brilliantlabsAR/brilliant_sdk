@@ -53,15 +53,13 @@ function app_loop()
 						local spr = sprite.parse_sprite(raw)
 
 						-- show the sprite
-						clear_display()
-
 						if frame.HARDWARE_VERSION == 'Frame' then
 							-- set the palette in case it's different to the standard palette
 							sprite.set_palette(spr.num_colors, spr.palette_data)
 							frame.display.bitmap(1, 1, spr.width, 2^spr.bpp, 0, spr.pixel_data)
-
 							frame.display.show()
 						else
+							clear_display()
 							frame.display.bitmap(1, 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
 						end
 
