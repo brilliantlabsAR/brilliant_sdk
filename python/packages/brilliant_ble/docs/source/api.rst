@@ -1,9 +1,9 @@
 API Reference
 =================
 
-.. automodule:: frame_ble
+.. automodule:: brilliant_ble
 
-.. autoclass:: frame_ble.FrameBle
+.. autoclass:: brilliant_ble.BrilliantBle
    :members:
    :undoc-members:
    :show-inheritance:

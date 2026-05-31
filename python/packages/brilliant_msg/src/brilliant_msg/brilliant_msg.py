@@ -79,7 +79,7 @@ class BrilliantMsg:
         """Send the specified standard frame-msg Lua files to Frame that are used by the frame_app, e.g. ['data', 'camera'] """
         for stdlua in lib_names:
             suffix = ".min" if minified else ""
-            await self.ble.upload_file_from_string(files("frame_msg").joinpath(f"lua/{stdlua}{suffix}.lua").read_text(), f"{stdlua}{suffix}.lua")
+            await self.ble.upload_file_from_string(files("brilliant_msg").joinpath(f"lua/{stdlua}{suffix}.lua").read_text(), f"{stdlua}{suffix}.lua")
 
     async def upload_frame_app(self, local_filename: str, frame_filename: str='frame_app.lua'):
         """ Send the main lua application from this project to Frame that will run the app (but doesn't run the file)"""
@@ -129,7 +129,7 @@ class BrilliantMsg:
         For example, if the frame_app is expecting a TxCaptureSettings message on msg_code 0x0d
         to initiate a photo capture, you might send:
         `frame.send_message(0x0d, TxCaptureSettings(resolution=720).pack())`
-        Wraps the frame_ble function of the same name
+        Wraps the brilliant_ble function of the same name
         """
         await self.ble.send_message(msg_code, payload, show_me)
 

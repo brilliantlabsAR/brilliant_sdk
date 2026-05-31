@@ -1,15 +1,15 @@
 API Reference
 =============
 
-.. automodule:: frame_msg
+.. automodule:: brilliant_msg
    :members:
    :show-inheritance:
    :undoc-members:
 
-FrameMsg
---------
+BrilliantMsg
+------------
 
-.. automodule:: frame_msg.frame_msg
+.. automodule:: brilliant_msg.brilliant_msg
    :members:
    :show-inheritance:
    :undoc-members:
@@ -17,7 +17,7 @@ FrameMsg
 RxAudio
 -------
 
-.. automodule:: frame_msg.rx_audio
+.. automodule:: brilliant_msg.rx_audio
    :members:
    :show-inheritance:
    :undoc-members:
@@ -25,7 +25,7 @@ RxAudio
 RxAutoExpResult
 ---------------
 
-.. automodule:: frame_msg.rx_auto_exp_result
+.. automodule:: brilliant_msg.rx_auto_exp_result
    :members:
    :show-inheritance:
    :undoc-members:
@@ -33,7 +33,7 @@ RxAutoExpResult
 RxIMU
 -----
 
-.. automodule:: frame_msg.rx_imu
+.. automodule:: brilliant_msg.rx_imu
    :members:
    :show-inheritance:
    :undoc-members:
@@ -41,7 +41,7 @@ RxIMU
 RxMeteringData
 --------------
 
-.. automodule:: frame_msg.rx_metering_data
+.. automodule:: brilliant_msg.rx_metering_data
    :members:
    :show-inheritance:
    :undoc-members:
@@ -49,7 +49,7 @@ RxMeteringData
 RxPhoto
 -------
 
-.. automodule:: frame_msg.rx_photo
+.. automodule:: brilliant_msg.rx_photo
    :members:
    :show-inheritance:
    :undoc-members:
@@ -57,7 +57,7 @@ RxPhoto
 RxTap
 -----
 
-.. automodule:: frame_msg.rx_tap
+.. automodule:: brilliant_msg.rx_tap
    :members:
    :show-inheritance:
    :undoc-members:
@@ -65,7 +65,7 @@ RxTap
 TxAutoExpSettings
 -----------------
 
-.. automodule:: frame_msg.tx_auto_exp_settings
+.. automodule:: brilliant_msg.tx_auto_exp_settings
    :members:
    :show-inheritance:
    :undoc-members:
@@ -73,7 +73,7 @@ TxAutoExpSettings
 TxCaptureSettings
 -----------------
 
-.. automodule:: frame_msg.tx_capture_settings
+.. automodule:: brilliant_msg.tx_capture_settings
    :members:
    :show-inheritance:
    :undoc-members:
@@ -81,7 +81,7 @@ TxCaptureSettings
 TxCode
 ------
 
-.. automodule:: frame_msg.tx_code
+.. automodule:: brilliant_msg.tx_code
    :members:
    :show-inheritance:
    :undoc-members:
@@ -89,7 +89,7 @@ TxCode
 TxImageSpriteBlock
 ------------------
 
-.. automodule:: frame_msg.tx_image_sprite_block
+.. automodule:: brilliant_msg.tx_image_sprite_block
    :members:
    :show-inheritance:
    :undoc-members:
@@ -97,7 +97,7 @@ TxImageSpriteBlock
 TxManualExpSettings
 -------------------
 
-.. automodule:: frame_msg.tx_manual_exp_settings
+.. automodule:: brilliant_msg.tx_manual_exp_settings
    :members:
    :show-inheritance:
    :undoc-members:
@@ -105,7 +105,7 @@ TxManualExpSettings
 TxPlainText
 -----------
 
-.. automodule:: frame_msg.tx_plain_text
+.. automodule:: brilliant_msg.tx_plain_text
    :members:
    :show-inheritance:
    :undoc-members:
@@ -113,7 +113,7 @@ TxPlainText
 TxSprite
 --------
 
-.. automodule:: frame_msg.tx_sprite
+.. automodule:: brilliant_msg.tx_sprite
    :members:
    :show-inheritance:
    :undoc-members:
@@ -121,7 +121,7 @@ TxSprite
 TxTextSpriteBlock
 -----------------
 
-.. automodule:: frame_msg.tx_text_sprite_block
+.. automodule:: brilliant_msg.tx_text_sprite_block
    :members:
    :show-inheritance:
    :undoc-members:
