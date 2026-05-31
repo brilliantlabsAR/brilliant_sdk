@@ -3,7 +3,7 @@ Tests the Frame specific Lua libraries over Bluetooth.
 """
 
 import asyncio
-from frame_ble import FrameBle
+from frame_ble import FrameBle, BrilliantDeviceType
 
 
 async def main():
@@ -14,7 +14,8 @@ async def main():
     try:
         while True:
             await b.send_lua("print('Battery Level: ' .. tostring(frame.battery_level()))")
-            await b.send_lua("print('Charging: ' .. tostring(frame.battery_charging()))")
+            if b.type == BrilliantDeviceType.HALO:
+                await b.send_lua("print('Charging: ' .. tostring(frame.battery_charging()))")
             await asyncio.sleep(5)
 
     except asyncio.CancelledError:

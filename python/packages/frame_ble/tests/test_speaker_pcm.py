@@ -1,5 +1,5 @@
 import asyncio
-from frame_ble import FrameBle
+from frame_ble import FrameBle, BrilliantDeviceType
 
 # convert s8 to s16 le
 def s8_to_s16_le(data: bytes) -> bytes:
@@ -18,6 +18,11 @@ def s8_to_s16_le(data: bytes) -> bytes:
 async def main():
     b = FrameBle()
     await b.connect()
+
+    if b.type != BrilliantDeviceType.HALO:
+        print("Speaker PCM example is Halo-only")
+        await b.disconnect()
+        return
 
     frame_size = 400
  
