@@ -181,7 +181,7 @@ class FrameBle:
         Returns the maximum length of a Lua string which may be transmitted.
         """
         try:
-            return self._client.mtu_size - 3
+            return min(self._client.mtu_size, 512) - 3
         except AttributeError:
             return 0
 
@@ -190,7 +190,7 @@ class FrameBle:
         Returns the maximum length of a raw bytearray which may be transmitted.
         """
         try:
-            return self._client.mtu_size - 4
+            return min(self._client.mtu_size, 512) - 4
         except AttributeError:
             return 0
 
