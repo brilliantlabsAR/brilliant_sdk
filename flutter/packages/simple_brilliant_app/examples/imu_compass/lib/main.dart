@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:imu_compass/compass_heading.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:frame_msg/rx/imu.dart';
-import 'package:frame_msg/tx/code.dart';
-import 'package:frame_msg/tx/plain_text.dart';
-import 'package:simple_frame_app/simple_frame_app.dart';
+import 'package:brilliant_msg/rx/imu.dart';
+import 'package:brilliant_msg/tx/code.dart';
+import 'package:brilliant_msg/tx/plain_text.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
 
 import 'magnetometer_calibrator.dart';
 

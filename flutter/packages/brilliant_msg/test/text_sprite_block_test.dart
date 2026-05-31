@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frame_msg/tx/text_sprite_block.dart';
+import 'package:brilliant_msg/tx/text_sprite_block.dart';
 
 void main() {
   // necessary to initialize Dart UI for paragraph/Canvas use

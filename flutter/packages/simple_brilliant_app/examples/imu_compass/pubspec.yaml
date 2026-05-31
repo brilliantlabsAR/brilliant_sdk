@@ -14,10 +14,10 @@ dependencies:
   shared_preferences: ^2.3.2
   # Note: We use a path dependency because the example apps & library packages are bundled together.
   # In *your* app you should use a versioned dependency from pub.dev
-  simple_frame_app: 
+  simple_brilliant_app: 
     path: ../../
-  frame_msg:
-    path: ../../../frame_msg
+  brilliant_msg:
+    path: ../../../brilliant_msg
 
 dev_dependencies:
   flutter_test:
@@ -27,9 +27,9 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - packages/frame_msg/lua/battery.min.lua
-    - packages/frame_msg/lua/code.min.lua
-    - packages/frame_msg/lua/data.min.lua
-    - packages/frame_msg/lua/imu.min.lua
-    - packages/frame_msg/lua/plain_text.min.lua
+    - packages/brilliant_msg/lua/battery.min.lua
+    - packages/brilliant_msg/lua/code.min.lua
+    - packages/brilliant_msg/lua/data.min.lua
+    - packages/brilliant_msg/lua/imu.min.lua
+    - packages/brilliant_msg/lua/plain_text.min.lua
     - assets/frame_app.lua

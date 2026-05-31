@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:frame_msg/rx/audio.dart';
-import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:frame_msg/tx/code.dart';
+import 'package:brilliant_msg/rx/audio.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
+import 'package:brilliant_msg/tx/code.dart';
 
 void main() => runApp(const MainApp());
 

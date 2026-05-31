@@ -41,14 +41,28 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  brilliant_ble:
+    dependency: "direct main"
+    description:
+      path: "../../../brilliant_ble"
+      relative: true
+    source: path
+    version: "5.0.0"
+  brilliant_msg:
+    dependency: "direct main"
+    description:
+      path: "../../../brilliant_msg"
+      relative: true
+    source: path
+    version: "4.0.0"
   characters:
     dependency: transitive
     description:
       name: characters
-      sha256: f71061c654a3380576a52b451dd5532377954cf9dbd272a78fc8479606670803
+      sha256: faf38497bda5ead2a8c7615f4f7939df04333478bf32e4173fcb06d428b5716b
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.0"
+    version: "1.4.1"
   clock:
     dependency: transitive
     description:
@@ -130,50 +144,50 @@ packages:
     dependency: transitive
     description:
       name: flutter_blue_plus
-      sha256: "2d926dbef0fd6c58d4be8fca9eaaf1ba747c0ccb8373ddd5386665317e26eb61"
+      sha256: "69a8c87c11fc792e8cf0f997d275484fbdb5143ac9f0ac4d424429700cb4e0ed"
       url: "https://pub.dev"
     source: hosted
-    version: "1.35.3"
+    version: "1.36.8"
   flutter_blue_plus_android:
     dependency: transitive
     description:
       name: flutter_blue_plus_android
-      sha256: c1d83f84b514e46345a8a58599c428f20b11e78379521e0d3b0611c7b7cbf2c1
+      sha256: "6f7fe7e69659c30af164a53730707edc16aa4d959e4c208f547b893d940f853d"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "7.0.4"
   flutter_blue_plus_darwin:
     dependency: transitive
     description:
       name: flutter_blue_plus_darwin
-      sha256: "8d0a0f11f83b13dda173396b7e4028b4e8656bc8dbbc82c26a7e49aafc62644b"
+      sha256: "682982862c1d964f4d54a3fb5fccc9e59a066422b93b7e22079aeecd9c0d38f8"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "7.0.3"
   flutter_blue_plus_linux:
     dependency: transitive
     description:
       name: flutter_blue_plus_linux
-      sha256: "1d367ed378b2bd6c3b9685fda7044e1d2f169884802b7dec7badb31a99a72660"
+      sha256: "56b0c45edd0a2eec8f85bd97a26ac3cd09447e10d0094fed55587bf0592e3347"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "7.0.3"
   flutter_blue_plus_platform_interface:
     dependency: transitive
     description:
       name: flutter_blue_plus_platform_interface
-      sha256: "114f8e85a03a28a48d707a4df6cc9218e1f2005cf260c5e815e5585a00da5778"
+      sha256: "84fbd180c50a40c92482f273a92069960805ce324e3673ad29c41d2faaa7c5c2"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "7.0.0"
   flutter_blue_plus_web:
     dependency: transitive
     description:
       name: flutter_blue_plus_web
-      sha256: db70cdc41bc743763dc0d47e8c7c10f3923cbbe71b33d9dc21deea482affeb4d
+      sha256: a1aceee753d171d24c0e0cdadb37895b5e9124862721f25f60bb758e20b72c99
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "7.0.2"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -192,20 +206,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  frame_ble:
-    dependency: "direct main"
-    description:
-      path: "../../../frame_ble"
-      relative: true
-    source: path
-    version: "3.0.0"
-  frame_msg:
-    dependency: "direct main"
-    description:
-      path: "../../../frame_msg"
-      relative: true
-    source: path
-    version: "2.0.0"
   image:
     dependency: "direct main"
     description:
@@ -258,26 +258,26 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: dc58c723c3c24bf8d3e2d3ad3f2f9d7bd9cf43ec6feaa64181775e60190153f2
+      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.17"
+    version: "0.12.19"
   material_color_utilities:
     dependency: transitive
     description:
       name: material_color_utilities
-      sha256: f7142bb1154231d7ea5f96bc7bde4bda2a0945d2806bb11670e30b850d56bdec
+      sha256: "9c337007e82b1889149c82ed242ed1cb24a66044e30979c44912381e9be4c48b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.1"
+    version: "0.13.0"
   meta:
     dependency: transitive
     description:
       name: meta
-      sha256: e3641ec5d63ebf0d9b41bd43201a66e3fc79a65db5f61fc181f04cd27aab950c
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
       url: "https://pub.dev"
     source: hosted
-    version: "1.16.0"
+    version: "1.17.0"
   mime:
     dependency: transitive
     description:
@@ -398,13 +398,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.1"
-  simple_frame_app:
+  simple_brilliant_app:
     dependency: "direct main"
     description:
       path: "../.."
       relative: true
     source: path
-    version: "7.1.0"
+    version: "9.0.0"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -462,10 +462,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "522f00f556e73044315fa4585ec3270f1808a4b186c936e612cab0b565ff1e00"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.6"
+    version: "0.7.10"
   typed_data:
     dependency: transitive
     description:
@@ -563,5 +563,5 @@ packages:
     source: hosted
     version: "6.5.0"
 sdks:
-  dart: ">=3.8.0-0 <4.0.0"
+  dart: ">=3.9.0-0 <4.0.0"
   flutter: ">=3.22.0"

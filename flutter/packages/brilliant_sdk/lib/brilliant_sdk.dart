@@ -1,7 +1,7 @@
 library brilliant_sdk;
 
-// Re-export frame_ble
-export 'package:frame_ble/frame_ble.dart';
+// Re-export brilliant_ble
+export 'package:brilliant_ble/brilliant_ble.dart';
 
-// Re-export frame_msg
-export 'package:frame_msg/frame_msg.dart';
+// Re-export brilliant_msg
+export 'package:brilliant_msg/brilliant_msg.dart';

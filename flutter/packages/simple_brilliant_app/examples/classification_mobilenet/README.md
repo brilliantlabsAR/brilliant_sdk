@@ -17,5 +17,5 @@ Takes repeated snapshots on Frame camera, runs image classification through a Mo
 ![Architecture](docs/Frame%20App%20Architecture%20-%20Vision%20-%20Classification.svg)
 
 ### See Also
-- [Frame Camera](https://github.com/CitizenOneX/frame_flutter_camera)
-- [Live Camera Feed](https://github.com/CitizenOneX/live_camera_feed)
+- [Frame Camera](https://github.com/brilliantLabsAR/brilliant_sdk)
+- [Live Camera Feed](https://github.com/brilliantLabsAR/brilliant_sdk)

@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:frame_msg/rx/click.dart';
+import 'package:brilliant_msg/rx/click.dart';
 import 'package:logging/logging.dart';
-import 'package:simple_frame_app/frame_vision_app.dart';
-import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:frame_msg/tx/plain_text.dart';
+import 'package:simple_brilliant_app/brilliant_vision_app.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
+import 'package:brilliant_msg/tx/plain_text.dart';
 
 void main() => runApp(const MainApp());
 
@@ -19,7 +19,7 @@ class MainApp extends StatefulWidget {
   MainAppState createState() => MainAppState();
 }
 
-class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionAppState {
+class MainAppState extends State<MainApp> with SimpleFrameAppState, BrilliantVisionAppState {
 
   // the image and metadata to show
   Image? _image;
@@ -100,7 +100,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionA
     try {
       // NOTE: Frame camera is rotated 90 degrees clockwise, so by default RxPhoto makes it upright (`img.copyRotate()`) for image processing.
       // Some processing packages e.g. ML Kit allow us to pass in a rotation parameter
-      // To save processing we can set `upright=false` when we construct/initialize our main FrameVisionApp class and handle it manually.
+      // To save processing we can set `upright=false` when we construct/initialize our main BrilliantVisionApp class and handle it manually.
 
       // update Widget UI
       // For the widget we rotate it upon display with a transform, not changing the source image

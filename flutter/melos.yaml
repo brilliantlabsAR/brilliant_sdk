@@ -6,7 +6,7 @@ packages:
 command:
   version:
     # When running `melos version`, Melos will update inter-package dependencies
-    # (frame_ble, frame_msg) inside brilliant_sdk to proper semver ranges.
+    # (brilliant_ble, brilliant_msg) inside brilliant_sdk to proper semver ranges.
     updateDependents: true
     linkToWorkspaceDependencies: false   # ensures semver instead of path deps
     workspaceChangelog: true

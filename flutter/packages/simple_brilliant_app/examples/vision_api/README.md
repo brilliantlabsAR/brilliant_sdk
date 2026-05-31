@@ -2,7 +2,7 @@
 
 Captures a photo from the Brilliant Labs Frame camera, sends it to a user-specified API for processing and displays the text result. This allows for head-worn mobile computer vision/AI applications with no mobile coding required.
 
-An example compatible implementation using Python/FastAPI is provided in [frame_vision_api_impl](https://github.com/CitizenOneX/frame_vision_api_impl).
+An example compatible implementation using Python/FastAPI is provided in [frame_vision_api_impl](https://github.com/brilliantLabsAR/brilliant_sdk).
 
 ## Usage Notes
 * Enter your API endpoint into the textbox and "Save"

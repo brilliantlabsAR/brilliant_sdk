@@ -1,6 +1,6 @@
 name: brilliant_sdk
 description: Brilliant SDK - Flutter package for Brilliant Labs Halo and Frame devices
-version: 1.0.0
+version: 2.0.0
 homepage: https://github.com/brilliantLabsAR/brilliant_sdk
 publish_to: none
 
@@ -11,10 +11,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  frame_ble:
-    path: ../frame_ble
-  frame_msg:
-    path: ../frame_msg
+  brilliant_ble:
+    path: ../brilliant_ble
+  brilliant_msg:
+    path: ../brilliant_msg
 
 
 dev_dependencies:

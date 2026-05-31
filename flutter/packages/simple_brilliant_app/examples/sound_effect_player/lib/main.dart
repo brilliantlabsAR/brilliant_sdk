@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'dart:convert';
 
-import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:frame_msg/tx/code.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
+import 'package:brilliant_msg/tx/code.dart';
 
 import 'sfxr.dart';
 

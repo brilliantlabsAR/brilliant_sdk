@@ -10,7 +10,7 @@ dev_dependencies:
   melos: ^6.3.3
 
 dependency_overrides:
-  frame_ble:
-    path: packages/frame_ble
-  frame_msg:
-    path: packages/frame_msg
+  brilliant_ble:
+    path: packages/brilliant_ble
+  brilliant_msg:
+    path: packages/brilliant_msg

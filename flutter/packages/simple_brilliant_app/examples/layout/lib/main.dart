@@ -2,11 +2,11 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:frame_msg/frame_msg.dart';
-import 'package:frame_msg/tx/text_sprite_block.dart';
+import 'package:brilliant_msg/brilliant_msg.dart';
+import 'package:brilliant_msg/tx/text_sprite_block.dart';
 import 'package:logging/logging.dart';
 
-import 'package:simple_frame_app/simple_frame_app.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
 
 void main() => runApp(const MainApp());
 

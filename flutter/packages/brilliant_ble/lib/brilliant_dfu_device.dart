@@ -5,8 +5,8 @@ import 'dart:typed_data';
 import 'package:archive/archive_io.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter/services.dart';
-import 'package:frame_ble/brilliant_bluetooth_exception.dart';
-import 'package:frame_ble/brilliant_connection_state.dart';
+import 'package:brilliant_ble/brilliant_bluetooth_exception.dart';
+import 'package:brilliant_ble/brilliant_connection_state.dart';
 import 'package:logging/logging.dart';
 
 final _log = Logger("Bluetooth");

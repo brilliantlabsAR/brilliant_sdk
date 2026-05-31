@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frame_ble/frame_ble.dart';
+import 'package:brilliant_ble/brilliant_ble.dart';
 import 'package:logging/logging.dart';
 
 void main() {

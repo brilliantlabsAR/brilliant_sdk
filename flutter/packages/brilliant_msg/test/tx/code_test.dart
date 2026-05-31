@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frame_msg/tx/code.dart';
+import 'package:brilliant_msg/tx/code.dart';
 
 void main() {
   test('check pack', () {

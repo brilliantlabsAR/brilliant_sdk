@@ -3,14 +3,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:frame_ble/brilliant_device.dart';
-import 'package:frame_msg/rx/click.dart';
+import 'package:brilliant_ble/brilliant_device.dart';
+import 'package:brilliant_msg/rx/click.dart';
 import 'package:logging/logging.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:simple_frame_app/frame_vision_app.dart';
-import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:frame_msg/tx/plain_text.dart';
+import 'package:simple_brilliant_app/brilliant_vision_app.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
+import 'package:brilliant_msg/tx/plain_text.dart';
 
 import 'api_call.dart';
 import 'foreground_service.dart';
@@ -32,9 +32,9 @@ class MainApp extends StatefulWidget {
   MainAppState createState() => MainAppState();
 }
 
-/// FrameVisionAppState mixin provides scaffolding for photo capture on (multi-) tap and a mechanism for processing each photo
+/// BrilliantVisionAppState mixin provides scaffolding for photo capture on (multi-) tap and a mechanism for processing each photo
 /// in addition to the connection and application state management provided by SimpleFrameAppState
-class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionAppState {
+class MainAppState extends State<MainApp> with SimpleFrameAppState, BrilliantVisionAppState {
 
   // Custom API state
   String _apiEndpoint = '';

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:frame_ble/brilliant_bluetooth.dart';
+import 'package:brilliant_ble/brilliant_bluetooth.dart';
 import 'package:logging/logging.dart';
 
 import 'brilliant_bluetooth_exception.dart';

@@ -1,8 +1,8 @@
-name: frame_ble
+name: brilliant_ble
 description: 'Low level BLE communication for the Brilliant Labs Frame using Flutter Blue Plus'
-version: 4.0.0
+version: 5.0.0
 # homepage:
-repository: https://github.com/CitizenOneX/frame_ble
+repository: https://github.com/brilliantLabsAR/brilliant_sdk
 
 environment:
   sdk: '>=3.4.4 <4.0.0'

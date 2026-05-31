@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:frame_msg/frame_msg.dart';
+import 'package:brilliant_msg/brilliant_msg.dart';
 import 'package:logging/logging.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:simple_frame_app/simple_frame_app.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
 import 'lc3_encoder_service.dart';
 import 'lc3_packet_pacer.dart';
 

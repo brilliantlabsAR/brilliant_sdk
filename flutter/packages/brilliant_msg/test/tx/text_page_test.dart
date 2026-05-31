@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frame_msg/tx/text_page.dart';
+import 'package:brilliant_msg/tx/text_page.dart';
 
 void main() {
   // Ensure Flutter binding is initialized for text rendering

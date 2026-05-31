@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
-import 'package:frame_ble/brilliant_bluetooth.dart';
-import 'package:frame_ble/brilliant_connection_state.dart';
-import 'package:frame_ble/brilliant_device.dart';
-import 'package:frame_ble/brilliant_scanned_device.dart';
-import 'package:frame_msg/tx/sprite.dart';
+import 'package:brilliant_ble/brilliant_bluetooth.dart';
+import 'package:brilliant_ble/brilliant_connection_state.dart';
+import 'package:brilliant_ble/brilliant_device.dart';
+import 'package:brilliant_ble/brilliant_scanned_device.dart';
+import 'package:brilliant_msg/tx/sprite.dart';
 
 /// basic State Machine for the app; mostly for bluetooth lifecycle,
 /// all app activity expected to take place during "running" state

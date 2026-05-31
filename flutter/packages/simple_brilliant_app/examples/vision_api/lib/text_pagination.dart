@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:simple_frame_app/text_utils.dart';
+import 'package:simple_brilliant_app/text_utils.dart';
 
 class TextPagination {
   final List<String> _originalLines = [];

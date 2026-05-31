@@ -3,20 +3,20 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
-import 'package:frame_ble/brilliant_device.dart';
-import 'package:frame_msg/rx/photo.dart';
-import 'package:frame_msg/rx/tap.dart';
-import 'package:frame_msg/rx/click.dart';
-import 'package:frame_msg/tx/capture_settings.dart';
-import 'package:frame_msg/tx/manual_exp_settings.dart';
-import 'package:frame_msg/tx/auto_exp_settings.dart';
-import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:frame_msg/tx/code.dart';
-import 'package:frame_msg/tx/plain_text.dart';
+import 'package:brilliant_ble/brilliant_device.dart';
+import 'package:brilliant_msg/rx/photo.dart';
+import 'package:brilliant_msg/rx/tap.dart';
+import 'package:brilliant_msg/rx/click.dart';
+import 'package:brilliant_msg/tx/capture_settings.dart';
+import 'package:brilliant_msg/tx/manual_exp_settings.dart';
+import 'package:brilliant_msg/tx/auto_exp_settings.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
+import 'package:brilliant_msg/tx/code.dart';
+import 'package:brilliant_msg/tx/plain_text.dart';
 
 final _log = Logger("FVA");
 
-mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
+mixin BrilliantVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
 
   final Stopwatch _stopwatch = Stopwatch();
 
@@ -58,17 +58,17 @@ mixin FrameVisionAppState<T extends StatefulWidget> on SimpleFrameAppState<T> {
   /// a chance to perform some cleanup
   Future<void> onCancel();
 
-  /// abstract method that must be implemented by the class mixing in frame_vision_app
+  /// abstract method that must be implemented by the class mixing in brilliant_vision_app
   /// to capture a photo and perform some action on a 1-, 2-, 3-, n-tap etc.
   Future<void> onTap(int taps);
 
-  /// abstract method that must be implemented by the class mixing in frame_vision_app
+  /// abstract method that must be implemented by the class mixing in brilliant_vision_app
   /// to capture a photo and perform some action on a single, double or long click.
   Future<void> onClick(ClickType type);
 
-  /// Implements simple_frame_app run() by listening for taps
+  /// Implements simple_brilliant_app run() by listening for taps
   /// and handing off to a tapHandler() function
-  /// in the class that mixes in frame_vision_app.
+  /// in the class that mixes in brilliant_vision_app.
   /// That function would be expected to call capture() and
   /// then perform processing on the image
   @override

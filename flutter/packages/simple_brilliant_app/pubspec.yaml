@@ -1,9 +1,9 @@
-name: simple_frame_app
-description: "Flutter and Lua quickstart app scaffolding and standard library functions for Brilliant Frame development on Android/iOS"
-version: 8.0.0
+name: simple_brilliant_app
+description: "Flutter and Lua quickstart app scaffolding and standard library functions for Brilliant Labs Halo and Frame development on Android/iOS"
+version: 9.0.0
 publish_to: 'none'
 homepage:
-repository: https://github.com/CitizenOneX/simple_frame_app
+repository: https://github.com/brilliantLabsAR/brilliant_sdk
 
 environment:
   sdk: '>=3.6.0 <4.0.0'
@@ -15,10 +15,10 @@ dependencies:
   flutter_blue_plus: ^1.32.12
   image: ^4.2.0
   logging: ^1.2.0
-  frame_msg:
-    path: ../frame_msg
-  frame_ble:
-    path: ../frame_ble
+  brilliant_msg:
+    path: ../brilliant_msg
+  brilliant_ble:
+    path: ../brilliant_ble
 
 dev_dependencies:
   flutter_test:

@@ -1,13 +1,13 @@
-Flutter and Lua quickstart app scaffolding and standard library functions for Brilliant Frame development on Android/iOS.
+Flutter and Lua quickstart app scaffolding and standard library functions for Brilliant Labs Halo and Frame development on Android/iOS.
 
 ## Images
-![frameshot1](https://github.com/CitizenOneX/simple_frame_app/raw/main/doc/frameshot1.png)
-![frameshot2](https://github.com/CitizenOneX/simple_frame_app/raw/main/doc/frameshot2.png)
-![frameshot3](https://github.com/CitizenOneX/simple_frame_app/raw/main/doc/frameshot3.jpg)
-![frameshot4](https://github.com/CitizenOneX/simple_frame_app/raw/main/doc/frameshot4.jpg)
-![frameshot5](https://github.com/CitizenOneX/simple_frame_app/raw/main/doc/frameshot5.jpg)
-![screenshot1](https://github.com/CitizenOneX/simple_frame_app/raw/main/doc/screenshot1.png)
-![screenshot2](https://github.com/CitizenOneX/simple_frame_app/raw/main/doc/screenshot2.png)
+![frameshot1](https://github.com/brilliantLabsAR/brilliant_sdk/raw/main/flutter/packages/simple_brilliant_app/doc/frameshot1.png)
+![frameshot2](https://github.com/brilliantLabsAR/brilliant_sdk/raw/main/flutter/packages/simple_brilliant_app/doc/frameshot2.png)
+![frameshot3](https://github.com/brilliantLabsAR/brilliant_sdk/raw/main/flutter/packages/simple_brilliant_app/doc/frameshot3.jpg)
+![frameshot4](https://github.com/brilliantLabsAR/brilliant_sdk/raw/main/flutter/packages/simple_brilliant_app/doc/frameshot4.jpg)
+![frameshot5](https://github.com/brilliantLabsAR/brilliant_sdk/raw/main/flutter/packages/simple_brilliant_app/doc/frameshot5.jpg)
+![screenshot1](https://github.com/brilliantLabsAR/brilliant_sdk/raw/main/flutter/packages/simple_brilliant_app/doc/screenshot1.png)
+![screenshot2](https://github.com/brilliantLabsAR/brilliant_sdk/raw/main/flutter/packages/simple_brilliant_app/doc/screenshot2.png)
 
 ## Features
 
@@ -27,20 +27,20 @@ Flutter and Lua quickstart app scaffolding and standard library functions for Br
 ## Getting started
 
 * Create a Flutter mobile app
-* `flutter pub add simple_frame_app`
+* `flutter pub add simple_brilliant_app`
 * Follow the `flutter_blue_plus` [instructions](https://pub.dev/packages/flutter_blue_plus#getting-started) for modifying configuration files on Android and iOS for Bluetooth LE support
 * On Android, also append `|navigation` to the long list in `android:configChanges` to prevent app activity restarts on bluetooth connect/disconnect.
-* Copy template files `template/main.dart` and `template/frame_app.lua` to your project's lib/ and assets/ directories respectively (also see [sample projects](https://github.com/CitizenOneX?tab=repositories) for examples of phoneside and frameside apps.)
-* Add assets to `pubspec.yaml` under `flutter:` `assets:`, both standard and custom, that you wish to send to Frame on app startup e.g. `- packages/frame_msg/lua/camera.min.lua` for a standard Lua library, or `- assets/sprites/20_mysprite.png` for an app-specific sprite. For the template `frame_app.lua`, add the following:
+* Copy template files `template/main.dart` and `template/frame_app.lua` to your project's lib/ and assets/ directories respectively (also see [sample projects](https://github.com/brilliantLabsAR/brilliant_sdk) for examples of phoneside and frameside apps.)
+* Add assets to `pubspec.yaml` under `flutter:` `assets:`, both standard and custom, that you wish to send to Frame on app startup e.g. `- packages/brilliant_msg/lua/camera.min.lua` for a standard Lua library, or `- assets/sprites/20_mysprite.png` for an app-specific sprite. For the template `frame_app.lua`, add the following:
 ```
 flutter:
   assets:
-  - packages/frame_msg/lua/battery.min.lua
-  - packages/frame_msg/lua/data.min.lua
-  - packages/frame_msg/lua/code.min.lua
-  - packages/frame_msg/lua/plain_text.min.lua
-  - packages/frame_msg/lua/sprite.min.lua
-  - packages/frame_msg/lua/camera.min.lua
+  - packages/brilliant_msg/lua/battery.min.lua
+  - packages/brilliant_msg/lua/data.min.lua
+  - packages/brilliant_msg/lua/code.min.lua
+  - packages/brilliant_msg/lua/plain_text.min.lua
+  - packages/brilliant_msg/lua/sprite.min.lua
+  - packages/brilliant_msg/lua/camera.min.lua
   - assets/frame_app.lua
 ```
 
@@ -105,7 +105,7 @@ if (data.app_data[HOTDOG_MSG] ~= nil) then
 end
 ```
 
-Numerous example projects can be found [in the CitizenOneX GitHub](https://github.com/CitizenOneX?tab=repositories).
+Numerous example projects can be found [in the Brilliant Labs SDK repository](https://github.com/brilliantLabsAR/brilliant_sdk).
 
 ## Additional information
 

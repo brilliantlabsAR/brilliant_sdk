@@ -9,12 +9,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  frame_ble:
-    path: ../../../frame_ble
-  frame_msg:
-    path: ../../../frame_msg
+  brilliant_ble:
+    path: ../../../brilliant_ble
+  brilliant_msg:
+    path: ../../../brilliant_msg
   logging: ^1.2.0
-  simple_frame_app:
+  simple_brilliant_app:
     # Note: We use a path dependency because the example apps & library packages are bundled together.
     # In *your* app you should use a versioned dependency from pub.dev
     path: ../../
@@ -27,8 +27,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-  - packages/frame_msg/lua/battery.min.lua
-  - packages/frame_msg/lua/data.min.lua
-  - packages/frame_msg/lua/code.min.lua
-  - packages/frame_msg/lua/plain_text.min.lua
+  - packages/brilliant_msg/lua/battery.min.lua
+  - packages/brilliant_msg/lua/data.min.lua
+  - packages/brilliant_msg/lua/code.min.lua
+  - packages/brilliant_msg/lua/plain_text.min.lua
   - assets/frame_app.lua

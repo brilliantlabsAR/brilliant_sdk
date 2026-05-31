@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:frame_ble/brilliant_device.dart';
-import 'package:frame_msg/rx/click.dart';
+import 'package:brilliant_ble/brilliant_device.dart';
+import 'package:brilliant_msg/rx/click.dart';
 import 'package:image/image.dart' as image_lib;
 import 'package:logging/logging.dart';
-import 'package:simple_frame_app/frame_vision_app.dart';
-import 'package:simple_frame_app/simple_frame_app.dart';
-import 'package:frame_msg/tx/plain_text.dart';
+import 'package:simple_brilliant_app/brilliant_vision_app.dart';
+import 'package:simple_brilliant_app/simple_brilliant_app.dart';
+import 'package:brilliant_msg/tx/plain_text.dart';
 
 import 'helper/image_classification_helper.dart';
 
@@ -23,7 +23,7 @@ class MainApp extends StatefulWidget {
   MainAppState createState() => MainAppState();
 }
 
-class MainAppState extends State<MainApp> with SimpleFrameAppState, FrameVisionAppState {
+class MainAppState extends State<MainApp> with SimpleFrameAppState, BrilliantVisionAppState {
   // main state of image processing in progress
   bool _processing = false;
 

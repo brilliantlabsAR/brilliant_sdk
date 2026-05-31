@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:logging/logging.dart';
-import 'package:frame_msg/tx_msg.dart';
+import 'package:brilliant_msg/tx_msg.dart';
 
 final _log = Logger("TxSfxr");
 

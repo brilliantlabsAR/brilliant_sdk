@@ -1,4 +1,4 @@
-library frame_msg;
+library brilliant_msg;
 
 export 'tx_msg.dart';
 

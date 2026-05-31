@@ -1,3 +1,10 @@
+## 9.0.0
+
+* Renamed package from `simple_frame_app` to `simple_brilliant_app`
+* Updated dependencies: `brilliant_ble` (was `frame_ble`) and `brilliant_msg` (was `frame_msg`)
+* Update all imports from `package:simple_frame_app/` to `package:simple_brilliant_app/`
+* Update asset paths from `packages/frame_msg/lua/` to `packages/brilliant_msg/lua/`
+
 ## 8.0.0
 
 * Added Halo device support to `SimpleFrameAppState` and `FrameVisionAppState`

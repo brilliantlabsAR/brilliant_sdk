@@ -12,5 +12,5 @@ Quality, Auto-Exposure/Gain Iterations, Metering Mode, Manual Exposure, Shutter 
 ![Architecture](docs/Frame%20App%20Architecture%20-%20Camera.svg)
 
 ### See Also
-- [Live Camera Feed](https://github.com/CitizenOneX/live_camera_feed)
-- [Simple Frame Hello World](https://github.com/CitizenOneX/simpleframe_helloworld)
+- [Live Camera Feed](https://github.com/brilliantLabsAR/brilliant_sdk)
+- [Simple Frame Hello World](https://github.com/brilliantLabsAR/brilliant_sdk)
