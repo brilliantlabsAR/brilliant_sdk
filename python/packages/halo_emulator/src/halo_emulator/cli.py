@@ -8,8 +8,14 @@ import threading
 from pathlib import Path
 
 
-def _pygame_window(emulator: object) -> None:  # type: ignore[type-arg]
-    """Run a pygame window showing the emulator display (called in a thread)."""
+def _pygame_window(emulator: object, stop_event: threading.Event) -> None:  # type: ignore[type-arg]
+    """Run a pygame window showing the emulator display.
+
+    On macOS this must run on the main thread: SDL's Cocoa backend sets the
+    application main menu during video init, which AppKit only permits from the
+    main thread. The loop exits when the window is closed or ``stop_event`` is
+    set (e.g. when the REPL exits).
+    """
     os.environ.setdefault("SDL_VIDEO_WINDOW_POS", "100,100")
     import pygame
 
@@ -26,11 +32,11 @@ def _pygame_window(emulator: object) -> None:  # type: ignore[type-arg]
         pygame.K_t: "inject_imu_tap",
     }
 
-    while True:
+    while not stop_event.is_set():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                emulator.stop()  # type: ignore[union-attr]
-                return
+                stop_event.set()
+                break
             elif event.type == pygame.KEYDOWN:
                 method = key_map.get(event.key)
                 if method:
@@ -44,6 +50,8 @@ def _pygame_window(emulator: object) -> None:  # type: ignore[type-arg]
         screen.blit(scaled, (0, 0))
         pygame.display.flip()
         clock.tick(30)
+
+    pygame.display.quit()
 
 
 def main() -> None:
@@ -106,12 +114,6 @@ def main() -> None:
         emulator.start_recording(fps=args.fps)
         print(f"[halo-emulator] Recording at {args.fps:.0f} fps → {args.record}")
 
-    if not args.headless:
-        win_thread = threading.Thread(
-            target=_pygame_window, args=(emulator,), daemon=True, name="pygame-window"
-        )
-        win_thread.start()
-
     banner = (
         "Halo Emulator — 'emulator' is in scope\n"
         "Keyboard (window): SPACE=single click, D=double, L=long, T=tap\n"
@@ -123,7 +125,28 @@ def main() -> None:
         "  emulator.get_bluetooth_sent()\n"
         "  emulator.start_recording(fps=30) / emulator.stop_recording('out.mp4')\n"
     )
-    code.interact(local={"emulator": emulator}, banner=banner)
+
+    if args.headless:
+        code.interact(local={"emulator": emulator}, banner=banner)
+    else:
+        # The pygame window must own the main thread (macOS Cocoa requires GUI
+        # init on the main thread), so the REPL runs on a background thread.
+        stop_event = threading.Event()
+
+        def _run_repl() -> None:
+            try:
+                code.interact(local={"emulator": emulator}, banner=banner)
+            finally:
+                stop_event.set()
+
+        repl_thread = threading.Thread(target=_run_repl, daemon=True, name="repl")
+        repl_thread.start()
+        try:
+            _pygame_window(emulator, stop_event)
+        except KeyboardInterrupt:
+            stop_event.set()
+
+    emulator.stop()
 
     if args.record:
         emulator.stop_recording(args.record)
