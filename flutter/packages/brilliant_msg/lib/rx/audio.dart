@@ -12,6 +12,7 @@ class RxAudio {
   final int finalChunkFlag;
   final bool streaming;
   StreamController<Uint8List>? _controller;
+  StreamSubscription<List<int>>? _dataResponseSubs;
 
   RxAudio({
     this.nonFinalChunkFlag = 0x05,
@@ -29,9 +30,28 @@ class RxAudio {
   Stream<Uint8List> attach(Stream<List<int>> dataResponse) {
     // TODO check for illegal state - attach() already called on this RxAudio etc?
     // might be possible though after a clean close(), do I want to prevent it?
+    _cancelUpstream();
     return streaming ?
       _audioDataStreamResponse(dataResponse) :
       _audioDataResponse(dataResponse);
+  }
+
+  void _cancelUpstream() {
+    _dataResponseSubs?.cancel();
+    _dataResponseSubs = null;
+  }
+
+  void _safeAdd(Uint8List data) {
+    final controller = _controller;
+    if (controller == null || controller.isClosed) {
+      return;
+    }
+    controller.add(data);
+  }
+
+  void _closeController() {
+    _cancelUpstream();
+    _controller?.close();
   }
 
   /// Audio data stream with a single element of a raw audio clip
@@ -41,15 +61,12 @@ class RxAudio {
     BytesBuilder audioData = BytesBuilder(copy: false);
     int rawOffset = 0;
 
-    // the subscription to the underlying data stream
-    StreamSubscription<List<int>>? dataResponseSubs;
-
     // Our stream controller that transforms/accumulates the raw data into audio (as bytes)
     _controller = StreamController();
 
     _controller!.onListen = () {
       _log.fine('stream subscribed');
-      dataResponseSubs = dataResponse
+      _dataResponseSubs = dataResponse
           .where(
               (data) => data[0] == nonFinalChunkFlag || data[0] == finalChunkFlag)
           .listen((data) {
@@ -65,20 +82,25 @@ class RxAudio {
           rawOffset += data.length - 1;
 
           // When full audio data is received, emit it and clear the buffer
-          _controller!.add(audioData.takeBytes());
+          _safeAdd(audioData.takeBytes());
           rawOffset = 0;
 
           // and close the stream
-          _controller!.close();
+          _closeController();
         }
         _log.finer(() => 'Chunk size: ${data.length - 1}, rawOffset: $rawOffset');
-      }, onDone: _controller!.close, onError: _controller!.addError);
+      }, onDone: _closeController, onError: (Object error, StackTrace stackTrace) {
+        final controller = _controller;
+        if (controller != null && !controller.isClosed) {
+          controller.addError(error, stackTrace);
+        }
+        _closeController();
+      });
     };
 
     _controller!.onCancel = () {
       _log.fine('stream unsubscribed');
-      dataResponseSubs?.cancel();
-      _controller!.close();
+      _closeController();
     };
 
     return _controller!.stream;
@@ -90,9 +112,6 @@ class RxAudio {
   /// from Frame
   Stream<Uint8List> _audioDataStreamResponse(Stream<List<int>> dataResponse) {
 
-    // the subscription to the underlying data stream
-    StreamSubscription<List<int>>? dataResponseSubs;
-
     // Our stream controller that transforms/accumulates the raw data into audio (as bytes)
     // It needs to be a broadcast stream so users can subscribe, unsubscribe, then resubscribe
     // to the same stream
@@ -100,8 +119,8 @@ class RxAudio {
 
     _controller!.onListen = () {
       _log.fine('stream subscribed');
-      dataResponseSubs?.cancel();
-      dataResponseSubs = dataResponse
+      _cancelUpstream();
+      _dataResponseSubs = dataResponse
         .where(
             (data) => data[0] == nonFinalChunkFlag || data[0] == finalChunkFlag)
         .listen((data) {
@@ -111,7 +130,7 @@ class RxAudio {
             if (data.length % 2 != 1) {
               _log.severe('Unexpected odd length audio data payload chunk received: ${data.length - 1}');
             }
-            _controller!.add(Uint8List.fromList(data.skip(1).toList()));
+            _safeAdd(Uint8List.fromList(data.skip(1).toList()));
           }
           // the last chunk has a first byte of finalChunkFlag so stop after this
           else if (data[0] == finalChunkFlag) {
@@ -119,22 +138,28 @@ class RxAudio {
             _log.finer(() => 'Final: ${data.length}');
 
             if (data.length > 1) {
-              _controller!.add(Uint8List.fromList(data.skip(1).toList()));
+              _safeAdd(Uint8List.fromList(data.skip(1).toList()));
             }
 
             // upstream is done so close the downstream
             _log.fine('About to close stream');
-            _controller!.close();
+            _closeController();
             _log.fine('stream closed');
           }
           // close or pass on errors if the upstream dataResponse closes/errors
-        }, onDone: _controller!.close, onError: _controller!.addError);
+        }, onDone: _closeController, onError: (Object error, StackTrace stackTrace) {
+          final controller = _controller;
+          if (controller != null && !controller.isClosed) {
+            controller.addError(error, stackTrace);
+          }
+          _closeController();
+        });
     };
 
     _controller!.onCancel = () {
       _log.fine('stream unsubscribed');
       // unsubscribe from upstream dataResponse
-      dataResponseSubs?.cancel();
+      _cancelUpstream();
 
       // don't close the controller, if the client re-listens to the returned Stream
       // then we re-subscribe to dataResponse in onListen and continue sending data
@@ -151,7 +176,8 @@ class RxAudio {
   /// the controller for the stream will not be closed. But when finished, it
   /// can be closed with detach and cannot be listened to again.
   void detach() {
-    _controller?.close();
+    _closeController();
+    _controller = null;
   }
 
   /// Create the contents of a WAV files corresponding to the provided pcmData
