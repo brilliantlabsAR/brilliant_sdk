@@ -26,7 +26,5 @@ flutter:
   uses-material-design: true
   assets:
     - packages/brilliant_msg/lua/battery.min.lua
-    - packages/brilliant_msg/lua/code.min.lua
     - packages/brilliant_msg/lua/data.min.lua
-    - assets/sfxr.min.lua
     - assets/frame_app.lua

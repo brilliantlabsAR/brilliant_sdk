@@ -1,15 +1,34 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
-import 'dart:convert';
 
 import 'package:simple_brilliant_app/simple_brilliant_app.dart';
-import 'package:brilliant_msg/tx/code.dart';
 
-import 'sfxr.dart';
+import 'tx_sound_effect.dart';
 
 void main() => runApp(const MainApp());
 
 final _log = Logger("MainApp");
+
+/// firmware sound presets available via frame.sound.play()
+const _effects = [
+  'pickup',
+  'laser',
+  'explosion',
+  'powerup',
+  'hit',
+  'jump',
+  'blip',
+];
+
+/// a sound that has been played, so the user can find the seed of one they liked
+class _PlayedEffect {
+  final String effect;
+  final int seed;
+  _PlayedEffect(this.effect, this.seed);
+}
 
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
@@ -20,10 +39,19 @@ class MainApp extends StatefulWidget {
 
 /// SimpleFrameAppState mixin helps to manage the lifecycle of the Frame connection outside of this file
 class MainAppState extends State<MainApp> with SimpleFrameAppState {
+  static const _playSoundMsg = 0x20;
 
-  // show the loaded image in the Flutter UI also
-  late TextEditingController _jsonController;
+  /// firmware sounds default to 1000ms duration, so space plays out a little
+  /// further than that - only one sound effect can play at a time
+  static const _soundGap = Duration(milliseconds: 1200);
+
+  final _random = Random();
+  late TextEditingController _seedController;
   final GlobalKey<ScaffoldMessengerState> _messengerKey = GlobalKey<ScaffoldMessengerState>();
+
+  String _selectedEffect = _effects.first;
+  final List<_PlayedEffect> _history = [];
+  bool _autoPlay = false;
 
   MainAppState() {
     Logger.root.level = Level.INFO;
@@ -35,7 +63,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   @override
   void initState() {
     super.initState();
-    _jsonController = TextEditingController();
+    _seedController = TextEditingController();
 
     // start up if the Frame can be found
     tryScanAndConnectAndStart(andRun: false);
@@ -43,67 +71,72 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
   @override
   void dispose() {
-    _jsonController.dispose();
+    _seedController.dispose();
     super.dispose();
   }
 
+  /// The seed to play with: the number typed into the seed field,
+  /// a random seed if the field is empty, or null if the text is invalid
+  int? _chooseSeed() {
+    final text = _seedController.text.trim();
+    if (text.isEmpty) return _random.nextInt(0x100000000);
+
+    final seed = int.tryParse(text);
+    if (seed == null || seed < 0 || seed > 0xFFFFFFFF) return null;
+    return seed;
+  }
+
+  /// send the play message to Halo and log the sound in the history
+  Future<void> _playSound(String effect, int seed) async {
+    await frame!.sendMessage(_playSoundMsg, TxSoundEffect(effect: effect, seed: seed).pack());
+    if (mounted) setState(() => _history.insert(0, _PlayedEffect(effect, seed)));
+  }
+
+  /// Play the selected effect once, with the seed from the text field
+  /// (or a random seed if the field is empty)
   @override
   Future<void> run() async {
+    final seed = _chooseSeed();
+    if (seed == null) {
+      _messengerKey.currentState?.showSnackBar(
+          const SnackBar(content: Text('Seed must be a number from 0 to 4294967295')));
+      return;
+    }
+
     currentState = ApplicationState.running;
     if (mounted) setState(() {});
 
     try {
-      // try to parse the JSON description from the text box
-      final jsonString = _jsonController.text;
-      final jsonLength = jsonString.length;
-      try {
-        final jsonData = json.decode(jsonString);
-        _log.info('JSON length: $jsonLength, Valid JSON: true');
-
-        // make a TxSfxr from the JSON data
-        final sfxr = TxSfxr.fromJson(jsonData);
-        
-        // send the SFXR to Halo to play
-        await frame!.sendMessage(0x20, sfxr.pack());
-
-        await Future.delayed(const Duration(milliseconds: 3000));
-
-        currentState = ApplicationState.ready;
-        if (mounted) setState(() {});
-        return;
-
-      } catch (e) {
-        _log.warning('JSON length: $jsonLength, Valid JSON: false');
-        // pop up a toast indicating invalid JSON
-        _messengerKey.currentState?.showSnackBar(const SnackBar(content: Text('Invalid JSON')));
-
-        currentState = ApplicationState.ready;
-        if (mounted) setState(() {});
-        return;
-      }
-
+      await _playSound(_selectedEffect, seed);
+      // block further submissions until the sound has finished playing
+      await Future.delayed(_soundGap);
     } catch (e) {
-      _log.fine('Error executing application logic: $e');
+      _log.warning('Error playing sound: $e');
+    }
+
+    if (currentState == ApplicationState.running) {
       currentState = ApplicationState.ready;
       if (mounted) setState(() {});
     }
   }
 
-  Future<void> runRandom() async {
+  /// keep playing random variations of the selected effect until canceled
+  Future<void> _runAutoPlay() async {
+    _autoPlay = true;
     currentState = ApplicationState.running;
     if (mounted) setState(() {});
 
     try {
-        // send the code telling Halo to generate and play a random SFXR sound effect
-        await frame!.sendMessage(0x21, TxCode().pack());
-
-        await Future.delayed(const Duration(milliseconds: 3000));
-
-        currentState = ApplicationState.ready;
-        if (mounted) setState(() {});
-        return;
+      while (_autoPlay && currentState == ApplicationState.running) {
+        await _playSound(_selectedEffect, _random.nextInt(0x100000000));
+        await Future.delayed(_soundGap);
+      }
     } catch (e) {
-      _log.fine('Error executing application logic: $e');
+      _log.warning('Error during auto play: $e');
+    }
+
+    _autoPlay = false;
+    if (currentState == ApplicationState.running) {
       currentState = ApplicationState.ready;
       if (mounted) setState(() {});
     }
@@ -111,66 +144,115 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
   @override
   Future<void> cancel() async {
-    currentState = ApplicationState.ready;
-    if (mounted) setState(() {});
+    // single plays finish by themselves; the auto play loop notices the flag
+    // and restores the ready state
+    _autoPlay = false;
   }
-
-  FloatingActionButton? getRandomFloatingActionButtonWidget(
-    Icon ready, Icon running) {
-    return currentState == ApplicationState.ready
-        ? FloatingActionButton(onPressed: runRandom, child: ready)
-        : currentState == ApplicationState.running
-            ? FloatingActionButton(onPressed: cancel, child: running)
-            : null;
-  }
-
 
   @override
   Widget build(BuildContext context) {
+    final bool ready = currentState == ApplicationState.ready;
+    final bool autoRunning = _autoPlay && currentState == ApplicationState.running;
+
     return MaterialApp(
       title: 'Sound Effect Player',
       theme: ThemeData.dark(),
       home: ScaffoldMessenger(
         key: _messengerKey,
         child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Sound Effect Player'),
-          actions: [getBatteryWidget()]
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _jsonController,
-                  onSubmitted: (value) {
-                    // Handle JSON submission
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Enter SFXR JSON',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: null,
-                  expands: true,
-                ),
-              ),
-            ],
+          appBar: AppBar(
+            title: const Text('Sound Effect Player'),
+            actions: [getBatteryWidget()]
           ),
+          body: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: _effects.map((effect) => ChoiceChip(
+                    label: Text(effect),
+                    selected: _selectedEffect == effect,
+                    onSelected: (selected) {
+                      if (selected) setState(() => _selectedEffect = effect);
+                    },
+                  )).toList(),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _seedController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    labelText: 'Seed',
+                    hintText: 'Leave empty for a random seed',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear),
+                      tooltip: 'Clear seed',
+                      onPressed: () => _seedController.clear(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: ready ? run : null,
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('Play'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: autoRunning ? cancel : (ready ? _runAutoPlay : null),
+                        icon: Icon(autoRunning ? Icons.stop : Icons.all_inclusive),
+                        label: Text(autoRunning ? 'Stop Auto' : 'Auto Play'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: _history.isEmpty
+                      ? const Center(child: Text('Played sounds appear here with their seeds'))
+                      : ListView.builder(
+                          itemCount: _history.length,
+                          itemBuilder: (context, index) {
+                            final item = _history[index];
+                            return ListTile(
+                              dense: true,
+                              title: Text('${item.effect} (${item.seed})'),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.copy),
+                                tooltip: 'Copy seed',
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: '${item.seed}'));
+                                  _messengerKey.currentState?.showSnackBar(
+                                      SnackBar(content: Text('Copied seed ${item.seed}')));
+                                },
+                              ),
+                              // load this sound back into the controls for replay
+                              onTap: () {
+                                setState(() {
+                                  _selectedEffect = item.effect;
+                                  _seedController.text = '${item.seed}';
+                                });
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+          persistentFooterButtons: getFooterButtonsWidget(),
         ),
-        floatingActionButton: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            getRandomFloatingActionButtonWidget(const Icon(Icons.tag_faces_rounded), const Icon(Icons.stop)) ?? const SizedBox.shrink(),
-            const SizedBox(height: 16),
-            getFloatingActionButtonWidget(const Icon(Icons.play_arrow), const Icon(Icons.stop)) ?? const SizedBox.shrink(),
-          ],
-        ),
-        persistentFooterButtons: getFooterButtonsWidget(),
       ),
-    ),
     );
   }
 }
