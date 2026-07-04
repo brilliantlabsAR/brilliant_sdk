@@ -184,6 +184,10 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                 TextField(
                   controller: _seedController,
                   keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
+                  // the number pad has no dismiss key on some platforms, so
+                  // dismiss the keyboard when the user taps anywhere else
+                  onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
                     labelText: 'Seed',
