@@ -29,6 +29,21 @@ class BrilliantBluetooth {
       // make sure the adapter is ready (iOS in particular)
       await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
 
+      // A connected device does not advertise, so a scan alone can never find
+      // it. On iOS in particular, an ANCS-soliciting Halo is auto-connected by
+      // the system as soon as it advertises (no app involved), making this the
+      // common case rather than the exception. Surface system-connected
+      // devices first, then fall back to scanning for advertising ones.
+      for (final device in await getSystemConnectedDevices()) {
+        _log.info(() =>
+            "Found system-connected device ${device.advName} (${device.remoteId.str})");
+        yield BrilliantScannedDevice(
+          device: device,
+          // no advertisement, so no RSSI reading is available
+          rssi: null,
+        );
+      }
+
       _log.info("Starting to scan for devices");
       await FlutterBluePlus.startScan(
         withServices: [
@@ -105,21 +120,45 @@ class BrilliantBluetooth {
     }
   }
 
-  /// This is a public method so apps can query real connection status on demand.
-  static Future<BluetoothDevice?> getSystemConnectedDevice(String uuid) async {
+  /// Brilliant devices that are connected at the system level - possibly by
+  /// another app or by the OS itself (iOS holds the connection to an
+  /// ANCS-soliciting Halo; Android can hold one to a Halo acting as an
+  /// LE Audio accessory). Such devices do not advertise, so they can only be
+  /// discovered this way, never by scanning.
+  static Future<List<BluetoothDevice>> getSystemConnectedDevices() async {
+    final List<BluetoothDevice> devices;
     try {
-      final connectedDevices = await FlutterBluePlus.systemDevices([
+      devices = await FlutterBluePlus.systemDevices([
         Guid('7a230001-5475-a6a4-654c-8431f6ad49c4'),
         Guid('fe59'),
       ]);
-      for (final device in connectedDevices) {
-        if (device.remoteId.str == uuid) {
-          _log.info(() => "Device $uuid is already system-connected");
-          return device;
-        }
-      }
     } catch (e) {
       _log.fine(() => "Could not query system-connected devices: $e");
+      return [];
+    }
+
+    // iOS filters by the requested services; Android ignores the service
+    // filter and returns every connected BLE device from any profile
+    // (smartwatch, earbuds, ...), so narrow it by the platform-cached
+    // device name instead (firmware-fixed "Halo XX" / "Frame XX").
+    if (Platform.isIOS) {
+      return devices;
+    }
+
+    return devices
+        .where((d) =>
+            d.platformName.startsWith('Halo') ||
+            d.platformName.startsWith('Frame'))
+        .toList();
+  }
+
+  /// This is a public method so apps can query real connection status on demand.
+  static Future<BluetoothDevice?> getSystemConnectedDevice(String uuid) async {
+    for (final device in await getSystemConnectedDevices()) {
+      if (device.remoteId.str == uuid) {
+        _log.info(() => "Device $uuid is already system-connected");
+        return device;
+      }
     }
     return null;
   }
@@ -132,7 +171,19 @@ class BrilliantBluetooth {
       BluetoothDevice? existingDevice = await getSystemConnectedDevice(uuid);
       if (existingDevice != null) {
         _log.info(() => "Reusing existing system connection for device: $uuid");
-        // Device is already connected, just enable services and return
+        // The system (or another app) holds the physical link, but this app
+        // must still attach its own session via connect() before any GATT
+        // operations are allowed; it completes quickly as no fresh
+        // connection needs to be established over the air.
+        await existingDevice.connect(
+          autoConnect: false,
+          mtu: null,
+        );
+
+        await existingDevice.connectionState
+            .firstWhere((state) => state == BluetoothConnectionState.connected)
+            .timeout(const Duration(seconds: 3));
+
         return await enableServices(existingDevice);
       }
 
