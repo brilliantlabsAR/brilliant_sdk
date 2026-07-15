@@ -16,6 +16,11 @@
     <!-- legacy for Android 9 or lower -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="28" />
 
+    <!-- Required to reach the Realtime endpoint (wss://). Flutter's debug/profile
+         manifests add INTERNET automatically, but release builds use this main
+         manifest, so it must be declared here or release builds can't connect. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="realtime_openai"
         android:name="${applicationName}"

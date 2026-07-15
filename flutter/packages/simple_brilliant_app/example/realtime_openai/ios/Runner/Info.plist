@@ -26,6 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<!-- This is a developer SDK example, not an App Store app. Allow cleartext
+	     (ws:// / http://) connections so it can reach a local, non-TLS backend
+	     such as the huggingface/speech-to-speech server (ws://<host>:8765), whose
+	     address is dynamic and so can't be scoped to a fixed exception domain.
+	     The default wss:// OpenAI endpoint does not need this. -->
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>This app needs Bluetooth to function</string>
 	<key>UIApplicationSceneManifest</key>
