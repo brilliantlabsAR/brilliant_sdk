@@ -11,16 +11,18 @@ API. liblc3 (via the ``lc3py`` package) does the conversion inside the codec:
 the Halo LC3 streams stay at 16 kHz while the decoder outputs / encoder accepts
 24 kHz PCM. So there's no separate resampler, and no rate to configure.
 
-Full-duplex: the mic streams continuously, even while the assistant is
-speaking, so you can talk over a reply to interrupt it ("barge-in"). This
-relies on the Halo firmware's on-device acoustic echo canceller to strip the
-bone-conduction speaker's bleed out of the mic feed - otherwise the server's
-voice-activity detector would hear the assistant's own voice and the reply
-would interrupt itself. The server VAD starts a reply when you stop talking
-and flags a barge-in when you start; on a barge-in we drop the rest of the
-current reply and flush the queued playback so the assistant stops promptly
-(the server can't cancel audio it already finished streaming to us, so the
-client must drain its own buffer).
+Full-duplex barge-in: you can talk over a reply to interrupt it. This leans on
+the Halo firmware's on-device acoustic echo canceller to strip the bone-conduction
+speaker's bleed out of the mic - otherwise the server's voice-activity detector
+would hear the assistant's own voice and interrupt itself. The AEC alone is enough
+for a forgiving VAD (e.g. a local Silero server), but OpenAI's server VAD is
+sensitive enough to trip on the post-AEC echo residual - transcribing it as a
+phantom user turn and answering it, a self-interruption spiral. So during playback
+the mic is held closed to the server by a client-side RMS gate and only opened once
+the near-end level confirms you are really talking (see BARGE_RMS; --barge-rms 0
+disables it for full duplex). On a barge-in we also drop the rest of the current
+reply and flush the queued playback so the assistant stops promptly (the server
+can't cancel audio it already finished streaming to us, so the client drains it).
 
 Usage:
     export OPENAI_API_KEY=sk-...
@@ -39,8 +41,11 @@ import base64
 import json
 import os
 import signal
+import time
+from collections import deque
 
 import lc3
+import numpy as np
 from websockets.asyncio.client import connect
 
 from brilliant_ble import BrilliantDeviceType
@@ -65,6 +70,34 @@ SERVER_RATE = 24000  # PCM rate over the wire, per the official OpenAI Realtime 
 PCM_FRAME_BYTES = SERVER_RATE // 100 * 2  # 10 ms of 24 kHz PCM16 = 480 bytes
 MIC_GAIN_VALUE = 10  # device maps 0..20 -> gain -10..10; 10 -> gain 0
 SPEAKER_VOLUME = 100  # the Halo speaker is quiet, so run it at full volume
+
+# After this long with no new reply audio (and nothing queued), treat playback
+# as finished. Used INSTEAD of response.done to decide when a reply is "playing"
+# for barge-in, because some backends (e.g. jarvis in server-VAD mode) never
+# send response.done - keying on it would leave a reply flagged active forever,
+# so every later user turn would spuriously barge (flushing 0 frames).
+PLAYBACK_IDLE_S = 1.0
+
+# How long after the device finishes playing (per the playback clock) a reply still
+# counts as playing, covering on-device / in-flight buffer latency. The client sends
+# audio faster than real time but the device plays it out in real time, so the
+# barge-in gate must stay armed for the whole physical playout - not just while the
+# client queue is non-empty - or the reply's tail leaks its echo past the gate.
+PLAYBACK_TAIL_S = 0.6
+
+# RMS barge-in gate. A sensitive server VAD (notably OpenAI's, which also runs
+# transcription) can trip on the assistant's own post-AEC echo residual, transcribe
+# it as a phantom user turn and answer it - a self-interruption loop. The gate is
+# applied ONLY while a reply is playing: when the assistant is silent the mic streams
+# straight through (normal turn-taking needs no raised voice); while it plays, the
+# mic is held closed to the server until the near-end (DC-removed / AC) RMS confirms
+# the wearer is talking OVER it. The bar must sit ABOVE the echo peak, not just the
+# quiet floor - too low and echo both opens the gate AND keeps it from re-closing.
+# Set --barge-rms 0 to disable the gate (full duplex; fine for a backend that does
+# not trip on the residual). See tests/aec/README.md "server-VAD-alone A/B".
+BARGE_RMS = 400.0          # AC-RMS a mic read must clear to barge OVER a live reply
+BARGE_CONFIRM_FRAMES = 3   # consecutive above-threshold reads to open the mic gate
+BARGE_HANGOVER_MS = 400.0  # sub-threshold audio after which the open gate re-closes
 
 # glasses display: monospace 9pt, ~21 chars fit across the 256px width
 HALO_CHARS_PER_LINE = 21
@@ -102,8 +135,25 @@ def wrap_for_halo(text: str, max_lines: int = 4) -> str:
     return "\n".join(lines[-max_lines:])
 
 
-def session_update(voice: str, instructions: str) -> dict:
+def session_update(voice: str, instructions: str,
+                   vad_threshold: float = 0.6,
+                   vad_silence_ms: int = None) -> dict:
     """The OpenAI Realtime GA session.update message (24 kHz PCM)."""
+    turn_detection = {"type": "server_vad",
+                      # interrupt_response lets the server stop generating when it
+                      # detects a barge-in; the client still flushes its own queued
+                      # playback (below), since the server can't cancel audio it has
+                      # already streamed to us.
+                      "interrupt_response": True,
+                      # VAD activation threshold (default 0.5). Raising it makes the
+                      # assistant's own residual echo less likely to trip the VAD -
+                      # but the echo IS speech-shaped, so this scores it high and a
+                      # higher threshold also costs real barges: the client RMS gate
+                      # (near-end ENERGY, --barge-rms) is the sharper separator. Kept
+                      # exposed (--vad-threshold) to tune or stack with the gate.
+                      "threshold": vad_threshold}
+    if vad_silence_ms is not None:
+        turn_detection["silence_duration_ms"] = vad_silence_ms
     return {
         "type": "session.update",
         "session": {
@@ -114,12 +164,7 @@ def session_update(voice: str, instructions: str) -> dict:
                 "input": {
                     "format": {"type": "audio/pcm", "rate": SERVER_RATE},
                     "transcription": {"model": "whisper-1"},
-                    # interrupt_response lets the server stop generating when it
-                    # detects a barge-in; the client still flushes its own queued
-                    # playback (below), since the server can't cancel audio it has
-                    # already streamed to us.
-                    "turn_detection": {"type": "server_vad",
-                                       "interrupt_response": True},
+                    "turn_detection": turn_detection,
                 },
                 "output": {
                     "format": {"type": "audio/pcm", "rate": SERVER_RATE},
@@ -133,10 +178,25 @@ def session_update(voice: str, instructions: str) -> dict:
 class Session:
     """Bridges the Halo audio streams and an OpenAI Realtime websocket."""
 
-    def __init__(self, frame: BrilliantMsg, ws, frames_per_write: int):
+    def __init__(self, frame: BrilliantMsg, ws, frames_per_write: int,
+                 barge_rms: float = BARGE_RMS,
+                 barge_confirm_frames: int = BARGE_CONFIRM_FRAMES,
+                 barge_hangover_ms: float = BARGE_HANGOVER_MS):
         self.frame = frame
         self.ws = ws
         self.frames_per_write = frames_per_write
+
+        # RMS barge-in gate (see BARGE_RMS): near-end confirmation before the mic
+        # is opened to the server during playback, so the assistant's echo can't
+        # be transcribed as a phantom turn and spiral. barge_rms<=0 disables it.
+        self.barge_rms = barge_rms
+        self.barge_confirm_frames = max(1, barge_confirm_frames)
+        self.barge_hangover_ms = barge_hangover_ms
+        self.gate_open = False        # currently forwarding near-end during playback
+        self.gate_hot = 0             # consecutive above-threshold reads (to open)
+        self.gate_peak = 0.0          # loudest read while arming (logged on open)
+        self.gate_quiet_ms = 0.0      # accumulated sub-threshold audio (to close)
+        self._preroll: deque = deque(maxlen=self.barge_confirm_frames)  # onset back-fill
 
         # liblc3 does the resampling inside the codec: coded 16 kHz Halo LC3 <->
         # 24 kHz PCM over the wire. The decoder upsamples the mic to 24 kHz; the
@@ -147,7 +207,8 @@ class Session:
         self.speaker_queue: asyncio.Queue = asyncio.Queue()  # LC3 frames to play out
         self._mic_lc3_buf = bytearray()  # unaligned LC3 bytes from the mic
         self._spk_pcm_buf = bytearray()  # server PCM awaiting frame alignment
-        self.response_active = False  # a reply is being generated
+        self.last_audio_time = None  # monotonic time of the last reply audio delta
+        self.play_until = 0.0  # monotonic time the device finishes playing what we sent
         self._assistant_text = ""  # accumulates the current reply transcript
         self._saw_transcript_delta = False  # did this turn stream transcript deltas?
 
@@ -156,10 +217,30 @@ class Session:
         self.current_response_id = None  # id of the reply currently streaming audio
         self.cancelled_response_id = None  # id cancelled on barge; drop only its tail
 
+    def _recent_audio(self) -> bool:
+        """True if a reply is actively streaming - audio arrived within the last
+        PLAYBACK_IDLE_S. Used instead of a sticky response_active flag so that a
+        backend which never sends response.done can't leave a reply flagged live
+        forever (which would make every later user turn spuriously barge)."""
+        return (self.last_audio_time is not None
+                and time.monotonic() - self.last_audio_time < PLAYBACK_IDLE_S)
+
     def _playback_pending(self) -> bool:
-        """True while a reply is generating or still queued/playing out."""
-        return (self.response_active or not self.speaker_queue.empty()
-                or bool(self._spk_pcm_buf))
+        """True while the DEVICE is still playing a reply out (not merely while the
+        client still holds audio).
+
+        Keys on the playback clock (see PLAYBACK_TAIL_S), not on when audio was
+        received: the client drains its queue seconds before the device finishes
+        the physical playout, so using the queue/recent-audio as "done" reopens the
+        mic - gate off - mid-playout and leaks the reply's tail to the server. The
+        queue check stays as a floor for the instant between enqueue and the first
+        send that advances the clock.
+
+        Deliberately does NOT consider `_spk_pcm_buf`: it holds the trailing sub-
+        frame (<10 ms) that never filled a whole 480-byte block and is never
+        played, so treating it as "playing" would gate every later user turn."""
+        return (not self.speaker_queue.empty()
+                or time.monotonic() < self.play_until + PLAYBACK_TAIL_S)
 
     # --- Halo mic -> OpenAI -----------------------------------------------
     async def pump_mic(self, mic_queue: asyncio.Queue):
@@ -178,12 +259,75 @@ class Session:
             if not pcm:
                 continue
 
-            # full duplex: the mic streams even while the assistant speaks; the
-            # firmware AEC strips the speaker bleed so this is (mostly) near-end
-            await self.ws.send(json.dumps({
-                "type": "input_audio_buffer.append",
-                "audio": base64.b64encode(bytes(pcm)).decode("ascii"),
-            }))
+            await self._forward_mic(bytes(pcm))
+
+    async def _send_mic(self, pcm: bytes):
+        await self.ws.send(json.dumps({
+            "type": "input_audio_buffer.append",
+            "audio": base64.b64encode(pcm).decode("ascii"),
+        }))
+
+    async def _forward_mic(self, pcm: bytes):
+        """Forward a mic block to the server, RMS-gated during playback.
+
+        With the gate disabled (--barge-rms 0) or when no reply is playing, the
+        mic streams straight through - normal full-duplex listening / turn-taking.
+        While a reply IS playing, the mic is held closed and only opened once the
+        near-end AC-RMS clears the gate for `barge_confirm_frames` consecutive
+        reads, so the server never hears (and so never transcribes and answers)
+        the assistant's own echo. On open we back-fill the buffered onset so the
+        barge's first word isn't clipped; the gate then stays open through the
+        utterance, re-closing after BARGE_HANGOVER_MS of near-silence."""
+        if self.barge_rms <= 0 or not self._playback_pending():
+            # gate disabled, or nothing playing: stream through; reset gate state
+            self.gate_open = False
+            self.gate_hot = 0
+            self.gate_quiet_ms = 0.0
+            self._preroll.clear()
+            await self._send_mic(pcm)
+            return
+
+        samples = np.frombuffer(pcm, dtype=np.int16)
+        # DC-removed (AC) RMS: echo residual is low-energy post-AEC even though it
+        # is speech-shaped, so measure energy (std), not level (see BARGE_RMS).
+        rms = float(np.std(samples.astype(np.float64))) if samples.size > 1 else 0.0
+        dur_ms = 1000.0 * samples.size / SERVER_RATE
+
+        if self.gate_open:
+            # stay open through the utterance; close after a beat of near-silence
+            if rms < self.barge_rms:
+                self.gate_quiet_ms += dur_ms
+            else:
+                self.gate_quiet_ms = 0.0
+            if self.gate_quiet_ms < self.barge_hangover_ms:
+                await self._send_mic(pcm)
+                return
+            self.gate_open = False  # fell quiet: re-close and re-arm below
+            self.gate_hot = 0
+            self.gate_quiet_ms = 0.0
+
+        # gate closed: buffer the onset and count consecutive above-threshold reads
+        self._preroll.append(pcm)
+        if rms >= self.barge_rms:
+            self.gate_hot += 1
+            self.gate_peak = max(self.gate_peak, rms)
+        else:
+            self.gate_hot = 0
+            self.gate_peak = 0.0
+        if self.gate_hot >= self.barge_confirm_frames:
+            # confirmed near-end: open, back-fill the buffered onset, then stream.
+            # Log the RMS that opened it: an open near the threshold (rather than
+            # well above it) is echo leaking through - raise --barge-rms if so.
+            print(f"[gate open] near-end rms={self.gate_peak:.0f}", flush=True)
+            self.gate_open = True
+            self.gate_quiet_ms = 0.0
+            self.gate_hot = 0
+            self.gate_peak = 0.0
+            for buffered in self._preroll:
+                await self._send_mic(buffered)
+            self._preroll.clear()
+        # else: closed + unconfirmed -> drop this block (echo-only); the server
+        # never sees it, so it can't spiral
 
     # --- OpenAI -> Halo speaker -------------------------------------------
     def _enqueue_playback(self, pcm: bytes):
@@ -203,6 +347,10 @@ class Session:
                 except asyncio.QueueEmpty:
                     break
             await self.frame.send_audio(b"".join(frames), await_bt_response=False)
+            # advance the playback clock: the device plays these frames out in real
+            # time (10 ms each) from wherever it's currently up to, so the gate stays
+            # armed for the full physical playout (see PLAYBACK_TAIL_S)
+            self.play_until = max(self.play_until, time.monotonic()) + len(frames) * 0.010
             # pace slightly faster than realtime (each frame is 10 ms of audio)
             await asyncio.sleep(len(frames) * 0.009)
 
@@ -216,20 +364,23 @@ class Session:
         return dropped
 
     async def _client_barge_in(self):
-        """The server VAD flagged near-end speech over a live reply: stop it now.
-        Flushing the queue is what actually stops the echo - the server can't
-        cancel audio it already sent us, and up to several seconds of it may be
-        buffered here. We also latch `barged` (to drop the reply's trailing
-        deltas) only if it is still generating; if it already completed there is
-        no tail to drop and latching would wrongly mute the next reply. Tag the
-        cancelled reply by id so only its tail is dropped."""
-        self.barged = self.response_active
-        self.cancelled_response_id = self.current_response_id if self.response_active else None
+        """The server VAD flagged near-end speech over a live reply. The server
+        stops generating on its own (interrupt_response, set in the session), so
+        here the client only flushes the queued playback - that is what actually
+        stops the echo, since the server can't unsend audio it already streamed
+        to us and up to several seconds of it may be buffered here. We latch
+        `barged` (to drop the reply's trailing deltas) only if it is still
+        generating; if it already completed there is no tail to drop and latching
+        would wrongly mute the next reply. Tag the cancelled reply by id so only
+        its tail is dropped.
+
+        We deliberately do NOT send response.cancel: with interrupt_response the
+        server has usually already cancelled the response by now, so it would
+        race and error with "Cancellation failed: no active response found"."""
+        live = self._recent_audio()
+        self.barged = live
+        self.cancelled_response_id = self.current_response_id if live else None
         dropped = self._flush_playback()
-        try:
-            await self.ws.send(json.dumps({"type": "response.cancel"}))
-        except Exception:
-            pass
         print(f"\n[barge-in] flushed {dropped} queued frames", flush=True)
 
     # --- OpenAI event stream ----------------------------------------------
@@ -239,7 +390,6 @@ class Session:
             etype = event.get("type")
 
             if etype == "response.created":
-                self.response_active = True
                 self.barged = False
                 self.cancelled_response_id = None
                 self.current_response_id = (event.get("response") or {}).get("id")
@@ -256,13 +406,12 @@ class Session:
                         continue
                     self.barged = False
                     self.cancelled_response_id = None
-                # Track response_active off the audio stream, not just
-                # response.created: some backends (e.g. jarvis in server-VAD mode)
-                # never emit response.created for auto-created replies, so keying
-                # the barge logic on it alone would silently break. A delta means
-                # a reply is live; response.done ends it.
+                # Mark the reply live off the audio stream (see _recent_audio):
+                # some backends (e.g. jarvis in server-VAD mode) emit neither
+                # response.created nor response.done, so a fresh audio delta is
+                # the only reliable "a reply is playing" signal.
                 self.current_response_id = rid
-                self.response_active = True
+                self.last_audio_time = time.monotonic()
                 self._enqueue_playback(base64.b64decode(event["delta"]))
             elif etype == "response.output_audio_transcript.delta":
                 delta = event.get("delta", "")
@@ -291,14 +440,15 @@ class Session:
                 if not self.barged and self._playback_pending():
                     await self._client_barge_in()
             elif etype == "response.done":
-                self.response_active = False
-                # Clear the barge latch so the NEXT reply plays. The queued
-                # playback was already flushed at barge-in and the cancelled
-                # reply's tail deltas are dropped by id, so there is nothing
-                # left to flush here.
+                # (OpenAI sends this; jarvis doesn't - the barge logic no longer
+                # depends on it, but honour it when present.) Clear the barge
+                # latch so the NEXT reply plays; the queued playback was already
+                # flushed at barge-in and the cancelled reply's tail deltas are
+                # dropped by id, so there is nothing left to flush here.
                 self.barged = False
                 self.cancelled_response_id = None
                 self.current_response_id = None
+                self.last_audio_time = None
             elif etype == "error":
                 err = event.get("error", {})
                 print(f"\n[error] {err.get('message', err)}", flush=True)
@@ -320,8 +470,26 @@ def parse_args() -> argparse.Namespace:
                    help="API key; defaults to env OPENAI_API_KEY. Pass '' for a "
                         "local backend with no auth")
     p.add_argument("--voice", default="alloy", help="assistant voice")
+    p.add_argument("--volume", type=int, default=SPEAKER_VOLUME,
+                   help="Halo speaker volume 1..100 (default 100)")
+    p.add_argument("--barge-rms", type=float, default=BARGE_RMS,
+                   help="RMS barge-in gate: near-end AC-RMS a mic read must clear "
+                        "to open the mic to the server DURING playback, so the "
+                        "assistant's echo can't self-interrupt a sensitive server "
+                        "VAD (default 150). 0 disables the gate (full duplex)")
+    p.add_argument("--barge-confirm-frames", type=int, default=BARGE_CONFIRM_FRAMES,
+                   help="consecutive above-threshold mic reads to open the gate "
+                        "(debounce; higher = fewer false barges, slightly slower onset)")
+    p.add_argument("--barge-hangover-ms", type=float, default=BARGE_HANGOVER_MS,
+                   help="sub-threshold audio after which an open gate re-closes "
+                        "(keep short so it doesn't forward echo into the next reply)")
+    p.add_argument("--vad-threshold", type=float, default=0.6,
+                   help="server VAD activation threshold 0..1 (default 0.6; raise "
+                        "to make echo less likely to trip it - blunter than the gate)")
+    p.add_argument("--vad-silence-ms", type=int, default=None,
+                   help="server VAD silence_duration_ms (turn-end hangover)")
     p.add_argument("--name", default=None,
-                   help="Halo device local name to connect to (e.g. \"Halo 08\"); "
+                   help="Halo device local name to connect to (e.g. \"Halo XX\"); "
                         "defaults to the first Halo found")
     p.add_argument("--no-voice-mode", dest="voice_mode", action="store_false",
                    help="disable the on-device AEC voice mode (band-pass) on the mic")
@@ -360,18 +528,28 @@ async def main():
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         print(f"Connecting to {args.url} ...", flush=True)
         async with connect(args.url, additional_headers=headers, max_size=None) as ws:
-            await ws.send(json.dumps(session_update(args.voice, args.instructions)))
+            await ws.send(json.dumps(session_update(
+                args.voice, args.instructions,
+                vad_threshold=args.vad_threshold,
+                vad_silence_ms=args.vad_silence_ms)))
 
             frames_per_write = max(1, frame.max_lua_payload() // LC3_FRAME_BYTES)
-            session = Session(frame, ws, frames_per_write)
+            session = Session(frame, ws, frames_per_write,
+                              barge_rms=args.barge_rms,
+                              barge_confirm_frames=args.barge_confirm_frames,
+                              barge_hangover_ms=args.barge_hangover_ms)
 
             rx_audio = RxAudio(streaming=True)
             mic_queue = await rx_audio.attach(frame)
 
+            gate = ("off" if args.barge_rms <= 0
+                    else f"rms>={args.barge_rms:.0f}x{args.barge_confirm_frames}")
             print(f"mic: gain={MIC_GAIN_VALUE - 10} aec={'on' if args.aec else 'off'} "
-                  f"voice_mode={'on' if args.voice_mode else 'off'}", flush=True)
+                  f"voice_mode={'on' if args.voice_mode else 'off'} "
+                  f"volume={args.volume} barge_gate={gate} "
+                  f"vad_threshold={args.vad_threshold}", flush=True)
 
-            await frame.send_message(START_PLAYBACK_MSG, TxCode(SPEAKER_VOLUME).pack())
+            await frame.send_message(START_PLAYBACK_MSG, TxCode(args.volume).pack())
             await frame.send_message(
                 START_LISTENING_MSG,
                 mic_start_payload(MIC_GAIN_VALUE, aec=args.aec, voice=args.voice_mode))
