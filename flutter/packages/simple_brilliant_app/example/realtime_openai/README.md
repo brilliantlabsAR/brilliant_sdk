@@ -20,7 +20,7 @@ Halo speaker <--LC3(16k)-- phone <--downsample+encode-- PCM16 24kHz <-- endpoint
 
 The client (`lib/openai_realtime.dart`) speaks the current OpenAI Realtime **GA** interface: `session.type: realtime`, nested `audio.{input,output}` config (24kHz `audio/pcm`), and `response.output_audio.delta` events. OpenAI has disabled the older beta shape, and self-hosted OpenAI-Realtime-compatible stacks such as [huggingface/speech-to-speech](https://github.com/huggingface/speech-to-speech) also speak GA — so one shape covers both.
 
-Auth is header-based (`Authorization: Bearer …`, omitted when the key is blank), unlike Gemini's query-parameter key. Server-side VAD is enabled (`turn_detection: server_vad`), so the endpoint auto-commits the input buffer, auto-creates responses, and emits `input_audio_buffer.speech_started` on barge-in.
+Auth is header-based (`Authorization: Bearer …`, omitted when the key is blank), unlike Gemini's query-parameter key. Server-side VAD is enabled with `interrupt_response` (`turn_detection: {server_vad, interrupt_response}`), so the endpoint auto-commits the input buffer, auto-creates responses, and stops generating on a barge-in — emitting `input_audio_buffer.speech_started` when you start talking.
 
 ## Usage
 
@@ -31,7 +31,14 @@ Auth is header-based (`Authorization: Bearer …`, omitted when the key is blank
 
 ## Interruption and echo
 
-There is no acoustic echo cancellation yet, and the Halo mic can hear the Halo (bone conduction) speaker. By default the app is **half-duplex**: the mic is muted while response audio is playing. The *Allow barge-in* switch keeps the mic open during replies so the endpoint's server-side VAD can interrupt the response (`input_audio_buffer.speech_started` drops all queued audio) — expect the model to hear itself in this mode until AEC lands.
+The app is **full-duplex**: the mic streams continuously, even while a reply is playing, so you can talk over the assistant to interrupt it (barge-in). This relies on the Halo firmware's on-device **acoustic echo canceller** to strip the bone-conduction speaker's bleed out of the mic feed — otherwise the server VAD would hear the assistant's own voice and the reply would interrupt itself.
+
+On a barge-in (`input_audio_buffer.speech_started` while a reply is playing) the client cancels the server's reply (`response.cancel`), drops the reply's trailing audio deltas, and flushes the queued playback so the assistant stops promptly (the server can't unsend audio it already streamed to us).
+
+Two on-device switches (applied at mic start) mirror the Python sample's `--aec-off` / `--no-voice-mode`, both **on** by default:
+
+- **Echo cancellation (AEC)** — removes the speaker bleed so the mic can stay open for barge-in. Turn off for a raw-echo control baseline.
+- **Voice mode** — band-passes the AEC output to the AEC's working band so the server VAD only hears near-end speech (removes the out-of-band residual echo the VAD would otherwise trip on).
 
 ## Notes
 

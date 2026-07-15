@@ -42,6 +42,25 @@ class OpenAiRealtime {
   bool _connected = false;
   bool _sessionReady = false;
 
+  /// a reply is currently being generated (tracked off both response.created
+  /// and the audio deltas, since some backends - e.g. jarvis in server-VAD mode
+  /// - auto-create replies without emitting response.created)
+  bool _responseActive = false;
+
+  /// the user has barged in over the current reply: drop its trailing audio
+  /// deltas (the server can't unsend audio it already streamed to us)
+  bool _barged = false;
+
+  /// response id of the reply currently streaming audio (may be null on
+  /// backends that don't tag deltas, e.g. jarvis)
+  String? _currentResponseId;
+
+  /// response id we cancelled on barge-in. While barged, only deltas from THIS
+  /// id are dropped; a delta from a new id (or any delta when ids are absent)
+  /// clears the barge and plays - so the latch can never get stuck silencing
+  /// every future reply if the backend omits response.done/created.
+  String? _cancelledResponseId;
+
   /// true once the input transcription arrived as incremental deltas, so the
   /// terminal `.completed` transcript can be ignored (avoids duplication)
   bool _sawInputTranscriptDelta = false;
@@ -55,6 +74,12 @@ class OpenAiRealtime {
 
   /// the user spoke over the model: discard all buffered response audio
   final void Function() onInterrupted;
+
+  /// true while response audio is still queued/playing on the phone or device.
+  /// The barge-in logic needs this because a reply keeps playing out of the
+  /// local buffer after the server has finished streaming it: the split analog
+  /// of the Python sample's `_playback_pending()`.
+  final bool Function()? isPlaybackPending;
 
   /// transcription of the user's speech (incremental fragments)
   final void Function(String text)? onInputTranscript;
@@ -70,6 +95,7 @@ class OpenAiRealtime {
   OpenAiRealtime({
     required this.onAudio,
     required this.onInterrupted,
+    this.isPlaybackPending,
     this.onInputTranscript,
     this.onOutputTranscript,
     this.onTurnComplete,
@@ -128,7 +154,13 @@ class OpenAiRealtime {
           'input': {
             'format': {'type': 'audio/pcm', 'rate': serverSampleRate},
             'transcription': {'model': 'whisper-1'},
-            'turn_detection': {'type': 'server_vad'},
+            // interrupt_response lets the server stop generating on a barge-in;
+            // the client still flushes its own queued playback (below), since
+            // the server can't cancel audio it has already streamed to us.
+            'turn_detection': {
+              'type': 'server_vad',
+              'interrupt_response': true,
+            },
           },
           'output': {
             'format': {'type': 'audio/pcm', 'rate': serverSampleRate},
@@ -159,6 +191,11 @@ class OpenAiRealtime {
     _connected = false;
     _sessionReady = false;
     _sawInputTranscriptDelta = false;
+    _sawOutputTranscriptDelta = false;
+    _responseActive = false;
+    _barged = false;
+    _currentResponseId = null;
+    _cancelledResponseId = null;
     await _channelSubs?.cancel();
     _channelSubs = null;
     await _channel?.sink.close();
@@ -191,8 +228,31 @@ class OpenAiRealtime {
         }
         break;
 
+      case 'response.created':
+        _responseActive = true;
+        _barged = false;
+        _cancelledResponseId = null;
+        _currentResponseId = event['response']?['id'] as String?;
+        break;
+
       // response audio chunk (PCM16 at the endpoint's sample rate)
       case 'response.output_audio.delta':
+        final rid = event['response_id'] as String?;
+        if (_barged) {
+          // drop ONLY the cancelled reply's tail; a delta from a new reply (or
+          // any delta when the backend omits ids) means the barge is over
+          final isCancelledTail = rid != null &&
+              _cancelledResponseId != null &&
+              rid == _cancelledResponseId;
+          if (isCancelledTail) break;
+          _barged = false;
+          _cancelledResponseId = null;
+        }
+        // Track the active reply off the audio stream, not just
+        // response.created: some backends (e.g. jarvis in server-VAD mode)
+        // never emit response.created for auto-created replies.
+        _currentResponseId = rid;
+        _responseActive = true;
         final delta = event['delta'] as String?;
         if (delta != null) onAudio(base64Decode(delta));
         break;
@@ -235,15 +295,35 @@ class OpenAiRealtime {
         _sawInputTranscriptDelta = false;
         break;
 
-      // barge-in: the server's VAD detected the user speaking; drop queued
-      // response audio (the server cancels its own in-flight response)
+      // barge-in: the server's VAD detected the user speaking over a reply.
+      // The on-device AEC keeps the assistant's own voice out of the mic, so a
+      // speech_started while a reply is playing is the user talking. Cancel the
+      // server's reply and flush the queued playback (the server can't unsend
+      // audio it already streamed to us, so the client must drain its buffer).
       case 'input_audio_buffer.speech_started':
-        _event('---Interrupted---');
-        onInterrupted();
+        final pending = _responseActive || (isPlaybackPending?.call() ?? false);
+        if (!_barged && pending) {
+          // latch `barged` (to drop trailing deltas) only if a reply is still
+          // generating; if it already completed there is no tail to drop and
+          // latching would wrongly mute the next reply. Tag the cancelled reply
+          // by id so only its tail is dropped.
+          _barged = _responseActive;
+          _cancelledResponseId = _responseActive ? _currentResponseId : null;
+          _event('---Interrupted---');
+          _channel?.sink.add(jsonEncode({'type': 'response.cancel'}));
+          onInterrupted();
+        }
         break;
 
       case 'response.done':
+        _responseActive = false;
         _sawOutputTranscriptDelta = false;
+        // Clear the barge latch so the NEXT reply plays. The queued playback was
+        // already flushed at barge-in and the cancelled reply's tail deltas are
+        // dropped by id, so there is nothing left to flush here.
+        _barged = false;
+        _cancelledResponseId = null;
+        _currentResponseId = null;
         onTurnComplete?.call();
         break;
 

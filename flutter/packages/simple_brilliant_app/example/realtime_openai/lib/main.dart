@@ -88,7 +88,14 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
   // conversation state
   bool _conversing = false;
-  bool _allowBargeIn = false;
+
+  // on-device audio processing (applied at mic start). Full-duplex barge-in
+  // relies on the AEC to strip the Halo speaker's bleed out of the mic, and on
+  // voice mode to band-pass the AEC output so the server VAD only hears the
+  // near-end - matching the Python sample's defaults (--aec-off / --no-voice-mode
+  // turn them off there).
+  bool _aec = true;
+  bool _voiceMode = true;
 
   final List<TranscriptEntry> _transcript = [];
   final List<String> _eventLog = [];
@@ -115,6 +122,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     _openai = OpenAiRealtime(
       onAudio: _handleOpenAiAudio,
       onInterrupted: _handleOpenAiInterrupted,
+      isPlaybackPending: () => _conversing && (_pacer?.bufferedFrames ?? 0) > 0,
       onInputTranscript: (text) => _appendTranscript(fromUser: true, text: text),
       onOutputTranscript: (text) =>
           _appendTranscript(fromUser: false, text: text),
@@ -311,9 +319,18 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
 
     await frame!.sendMessage(
         startPlaybackMsg, TxCode(value: haloSpeakerVolume).pack());
-    await frame!.sendMessage(
-        startListeningMsg, TxCode(value: haloMicGainValue).pack());
+    await frame!.sendMessage(startListeningMsg,
+        _micStartPayload(gain: haloMicGainValue, aec: _aec, voice: _voiceMode));
   }
+
+  /// START_LISTENING payload: three named bytes, one field each, decoded by the
+  /// frame app's START_LISTENING handler:
+  ///   [0] gain code 0..20 (10 = 0 dB)   [1] aec 0/1   [2] voice 0/1
+  /// Maps 1:1 onto frame.microphone.start{gain=}, .aec(bool), .voice(bool).
+  Uint8List _micStartPayload(
+          {required int gain, required bool aec, required bool voice}) =>
+      Uint8List.fromList(
+          [gain.clamp(0, 20), aec ? 1 : 0, voice ? 1 : 0]);
 
   Future<void> _stopAudioPipeline() async {
     try {
@@ -366,16 +383,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   }
 
   /// decoded PCM microphone audio (already at the endpoint's sample rate):
-  /// batch and forward. Without acoustic echo cancellation the Halo mic hears
-  /// the Halo speaker, so by default the mic is muted while response audio is
-  /// playing (half-duplex). Enable barge-in to keep the mic open and let the
-  /// server's voice activity detection interrupt the response instead.
+  /// batch and forward. Full-duplex: the mic streams continuously, even while
+  /// a reply is playing, so the user can talk over it to interrupt (barge-in).
+  /// The on-device AEC strips the Halo speaker's bleed out of the mic feed, so
+  /// this is (mostly) near-end speech and the server VAD won't self-interrupt.
   void _handleMicPcm(Uint8List pcmFrame) {
     if (!_conversing) return;
-    if (!_allowBargeIn && (_pacer?.bufferedFrames ?? 0) > 0) {
-      _micPcmBatch.clear();
-      return;
-    }
 
     _micPcmBatch.add(pcmFrame);
     if (_micPcmBatch.length >= micBatchBytes) {
@@ -545,11 +558,26 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
               SwitchListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: const Text(
-                    'Allow barge-in (mic stays open during replies - '
-                    'no echo cancellation yet)'),
-                value: _allowBargeIn,
-                onChanged: (v) => setState(() => _allowBargeIn = v),
+                title: const Text('Echo cancellation (AEC)'),
+                subtitle: const Text(
+                    'On-device AEC removes the speaker bleed so the mic can '
+                    'stay open for barge-in'),
+                value: _aec,
+                onChanged: _conversing
+                    ? null
+                    : (v) => setState(() => _aec = v),
+              ),
+              SwitchListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Voice mode'),
+                subtitle: const Text(
+                    'Band-pass the AEC output so the server VAD only hears '
+                    'near-end speech'),
+                value: _voiceMode,
+                onChanged: _conversing
+                    ? null
+                    : (v) => setState(() => _voiceMode = v),
               ),
               if (currentState == ApplicationState.running)
                 Card(
