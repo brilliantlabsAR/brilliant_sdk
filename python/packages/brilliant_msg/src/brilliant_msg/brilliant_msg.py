@@ -15,13 +15,16 @@ class BrilliantMsg:
         self.ble = BrilliantBle()
         self.data_response_handlers = {}
 
-    async def connect(self, initialize:bool=True):
+    async def connect(self, initialize:bool=True, name=None):
         """
         Connect to the Frame device and optionally run the initialization sequence.
 
         Args:
             initialize (bool): If True, runs the break/reset/break sequence after connecting.
                              Defaults to True.
+            name (str): Optional device local name (e.g. "Halo 08") to connect to
+                             only that specific device. If None, connects to the
+                             first Halo/Frame discovered.
 
         Returns:
             bool: True if connection and initialization were successful
@@ -30,7 +33,7 @@ class BrilliantMsg:
             Any exceptions from the underlying BrilliantBle connection
         """
         try:
-            await self.ble.connect(data_response_handler=self._handle_data_response)
+            await self.ble.connect(name=name, data_response_handler=self._handle_data_response)
 
             if initialize:
                 # Send break signal in case an application loop is running
