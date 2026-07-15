@@ -11,10 +11,16 @@ API. liblc3 (via the ``lc3py`` package) does the conversion inside the codec:
 the Halo LC3 streams stay at 16 kHz while the decoder outputs / encoder accepts
 24 kHz PCM. So there's no separate resampler, and no rate to configure.
 
-Half-duplex: the mic is muted while the assistant is speaking, because the
-bone-conduction speaker bleeds into the mic and there is no echo cancellation
-yet. This keeps the session simple and linear - the server's voice-activity
-detection starts a reply when you stop talking; talk again after it finishes.
+Full-duplex: the mic streams continuously, even while the assistant is
+speaking, so you can talk over a reply to interrupt it ("barge-in"). This
+relies on the Halo firmware's on-device acoustic echo canceller to strip the
+bone-conduction speaker's bleed out of the mic feed - otherwise the server's
+voice-activity detector would hear the assistant's own voice and the reply
+would interrupt itself. The server VAD starts a reply when you stop talking
+and flags a barge-in when you start; on a barge-in we drop the rest of the
+current reply and flush the queued playback so the assistant stops promptly
+(the server can't cancel audio it already finished streaming to us, so the
+client must drain its own buffer).
 
 Usage:
     export OPENAI_API_KEY=sk-...
@@ -64,6 +70,15 @@ SPEAKER_VOLUME = 100  # the Halo speaker is quiet, so run it at full volume
 HALO_CHARS_PER_LINE = 21
 
 
+def mic_start_payload(gain: int, aec: bool, voice: bool) -> bytes:
+    """START_LISTENING payload: three named bytes, one field each, decoded by
+    the frame app's START_LISTENING handler:
+        [0] gain code 0..20 (10 = 0 dB)   [1] aec 0/1   [2] voice 0/1
+    This maps 1:1 onto frame.microphone.start{gain=}, .aec(bool), .voice(bool).
+    """
+    return bytes([max(0, min(20, gain)), 1 if aec else 0, 1 if voice else 0])
+
+
 def wrap_for_halo(text: str, max_lines: int = 4) -> str:
     """Word-wrap text for the Halo display and keep the last `max_lines` lines."""
     lines: list[str] = []
@@ -99,7 +114,12 @@ def session_update(voice: str, instructions: str) -> dict:
                 "input": {
                     "format": {"type": "audio/pcm", "rate": SERVER_RATE},
                     "transcription": {"model": "whisper-1"},
-                    "turn_detection": {"type": "server_vad"},
+                    # interrupt_response lets the server stop generating when it
+                    # detects a barge-in; the client still flushes its own queued
+                    # playback (below), since the server can't cancel audio it has
+                    # already streamed to us.
+                    "turn_detection": {"type": "server_vad",
+                                       "interrupt_response": True},
                 },
                 "output": {
                     "format": {"type": "audio/pcm", "rate": SERVER_RATE},
@@ -131,9 +151,15 @@ class Session:
         self._assistant_text = ""  # accumulates the current reply transcript
         self._saw_transcript_delta = False  # did this turn stream transcript deltas?
 
-    def _speaking(self) -> bool:
-        """Half-duplex gate: True while a reply is generating or still playing out."""
-        return self.response_active or not self.speaker_queue.empty()
+        # barge-in state
+        self.barged = False  # client has cancelled the current reply; drop its tail
+        self.current_response_id = None  # id of the reply currently streaming audio
+        self.cancelled_response_id = None  # id cancelled on barge; drop only its tail
+
+    def _playback_pending(self) -> bool:
+        """True while a reply is generating or still queued/playing out."""
+        return (self.response_active or not self.speaker_queue.empty()
+                or bool(self._spk_pcm_buf))
 
     # --- Halo mic -> OpenAI -----------------------------------------------
     async def pump_mic(self, mic_queue: asyncio.Queue):
@@ -149,9 +175,11 @@ class Session:
                 del self._mic_lc3_buf[:LC3_FRAME_BYTES]
                 pcm += self.decoder.decode(frame_bytes, bit_depth=16)
 
-            # drop mic audio while the assistant is speaking (no echo cancellation)
-            if not pcm or self._speaking():
+            if not pcm:
                 continue
+
+            # full duplex: the mic streams even while the assistant speaks; the
+            # firmware AEC strips the speaker bleed so this is (mostly) near-end
             await self.ws.send(json.dumps({
                 "type": "input_audio_buffer.append",
                 "audio": base64.b64encode(bytes(pcm)).decode("ascii"),
@@ -178,6 +206,32 @@ class Session:
             # pace slightly faster than realtime (each frame is 10 ms of audio)
             await asyncio.sleep(len(frames) * 0.009)
 
+    def _flush_playback(self) -> int:
+        """Drop all queued/partial playback; return the frame count dropped."""
+        dropped = 0
+        while not self.speaker_queue.empty():
+            self.speaker_queue.get_nowait()
+            dropped += 1
+        self._spk_pcm_buf.clear()
+        return dropped
+
+    async def _client_barge_in(self):
+        """The server VAD flagged near-end speech over a live reply: stop it now.
+        Flushing the queue is what actually stops the echo - the server can't
+        cancel audio it already sent us, and up to several seconds of it may be
+        buffered here. We also latch `barged` (to drop the reply's trailing
+        deltas) only if it is still generating; if it already completed there is
+        no tail to drop and latching would wrongly mute the next reply. Tag the
+        cancelled reply by id so only its tail is dropped."""
+        self.barged = self.response_active
+        self.cancelled_response_id = self.current_response_id if self.response_active else None
+        dropped = self._flush_playback()
+        try:
+            await self.ws.send(json.dumps({"type": "response.cancel"}))
+        except Exception:
+            pass
+        print(f"\n[barge-in] flushed {dropped} queued frames", flush=True)
+
     # --- OpenAI event stream ----------------------------------------------
     async def receive(self):
         async for message in self.ws:
@@ -186,9 +240,29 @@ class Session:
 
             if etype == "response.created":
                 self.response_active = True
+                self.barged = False
+                self.cancelled_response_id = None
+                self.current_response_id = (event.get("response") or {}).get("id")
                 self._assistant_text = ""
                 self._saw_transcript_delta = False
             elif etype == "response.output_audio.delta":
+                rid = event.get("response_id")
+                if self.barged:
+                    # drop ONLY the cancelled reply's tail; a delta from a new
+                    # reply (or any delta when the backend omits ids) means the
+                    # barge is over - so the latch can never get stuck silencing
+                    # every future reply if response.done/created never arrive
+                    if rid is not None and rid == self.cancelled_response_id:
+                        continue
+                    self.barged = False
+                    self.cancelled_response_id = None
+                # Track response_active off the audio stream, not just
+                # response.created: some backends (e.g. jarvis in server-VAD mode)
+                # never emit response.created for auto-created replies, so keying
+                # the barge logic on it alone would silently break. A delta means
+                # a reply is live; response.done ends it.
+                self.current_response_id = rid
+                self.response_active = True
                 self._enqueue_playback(base64.b64decode(event["delta"]))
             elif etype == "response.output_audio_transcript.delta":
                 delta = event.get("delta", "")
@@ -199,22 +273,35 @@ class Session:
             elif etype == "conversation.item.input_audio_transcription.completed":
                 transcript = (event.get("transcript") or "").strip()
                 if transcript:
-                    print(f"\nYou: {transcript}")
+                    print(f"\nYou: {transcript}", flush=True)
             elif etype == "response.output_audio_transcript.done":
                 # some backends (e.g. huggingface/speech-to-speech) send the
                 # assistant transcript only here, not as deltas - render it then
                 if not self._saw_transcript_delta:
                     full = (event.get("transcript") or "").strip()
                     if full:
-                        print(f"Assistant: {full}")
+                        print(f"Assistant: {full}", flush=True)
                         await self._show(wrap_for_halo(full))
                 else:
                     print()  # newline after the streamed transcript
+            elif etype == "input_audio_buffer.speech_started":
+                # The server VAD heard near-end speech. If a reply is playing,
+                # barge in: the on-device AEC keeps the assistant's own voice
+                # out of the mic, so a speech_started here is the user talking.
+                if not self.barged and self._playback_pending():
+                    await self._client_barge_in()
             elif etype == "response.done":
                 self.response_active = False
+                # Clear the barge latch so the NEXT reply plays. The queued
+                # playback was already flushed at barge-in and the cancelled
+                # reply's tail deltas are dropped by id, so there is nothing
+                # left to flush here.
+                self.barged = False
+                self.cancelled_response_id = None
+                self.current_response_id = None
             elif etype == "error":
                 err = event.get("error", {})
-                print(f"\n[error] {err.get('message', err)}")
+                print(f"\n[error] {err.get('message', err)}", flush=True)
 
     async def _show(self, text: str):
         try:
@@ -233,6 +320,14 @@ def parse_args() -> argparse.Namespace:
                    help="API key; defaults to env OPENAI_API_KEY. Pass '' for a "
                         "local backend with no auth")
     p.add_argument("--voice", default="alloy", help="assistant voice")
+    p.add_argument("--name", default=None,
+                   help="Halo device local name to connect to (e.g. \"Halo 08\"); "
+                        "defaults to the first Halo found")
+    p.add_argument("--no-voice-mode", dest="voice_mode", action="store_false",
+                   help="disable the on-device AEC voice mode (band-pass) on the mic")
+    p.add_argument("--aec-off", dest="aec", action="store_false",
+                   help="disable the on-device AEC entirely (control baseline)")
+    p.set_defaults(voice_mode=True, aec=True)
     p.add_argument("--instructions",
                    default="You are a helpful assistant speaking to the user "
                            "through their smart glasses. Be natural, direct and "
@@ -248,7 +343,7 @@ async def main():
     frame = BrilliantMsg()
     started_audio = False
     try:
-        await frame.connect()
+        await frame.connect(name=args.name)
         if frame.type != BrilliantDeviceType.HALO:
             print("This example requires a Halo (LC3 audio in both directions)")
             return
@@ -263,7 +358,7 @@ async def main():
         await frame.start_frame_app()
 
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
-        print(f"Connecting to {args.url} ...")
+        print(f"Connecting to {args.url} ...", flush=True)
         async with connect(args.url, additional_headers=headers, max_size=None) as ws:
             await ws.send(json.dumps(session_update(args.voice, args.instructions)))
 
@@ -273,11 +368,16 @@ async def main():
             rx_audio = RxAudio(streaming=True)
             mic_queue = await rx_audio.attach(frame)
 
+            print(f"mic: gain={MIC_GAIN_VALUE - 10} aec={'on' if args.aec else 'off'} "
+                  f"voice_mode={'on' if args.voice_mode else 'off'}", flush=True)
+
             await frame.send_message(START_PLAYBACK_MSG, TxCode(SPEAKER_VOLUME).pack())
-            await frame.send_message(START_LISTENING_MSG, TxCode(MIC_GAIN_VALUE).pack())
+            await frame.send_message(
+                START_LISTENING_MSG,
+                mic_start_payload(MIC_GAIN_VALUE, aec=args.aec, voice=args.voice_mode))
             started_audio = True
             await session._show("Listening...")
-            print("Session started - speak to the Halo. Ctrl-C to quit.\n")
+            print("Session started - speak to the Halo. Ctrl-C to quit.\n", flush=True)
 
             # run until Ctrl-C or a task ends (e.g. the websocket closes)
             stop = asyncio.Event()
@@ -299,7 +399,7 @@ async def main():
             for t in done:
                 exc = t.exception()
                 if exc and not isinstance(exc, asyncio.CancelledError):
-                    print(f"\n[stopped] {exc!r}")
+                    print(f"\n[stopped] {exc!r}", flush=True)
 
             rx_audio.detach(frame)
     except KeyboardInterrupt:

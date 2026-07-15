@@ -18,7 +18,9 @@ AUDIO_DATA_FINAL_MSG = 0x06
 local parsers = {}
 parsers[CLEAR_MSG] = code.parse_code
 parsers[TEXT_MSG] = plain_text.parse_plain_text
-parsers[START_LISTENING_MSG] = code.parse_code
+-- START_LISTENING carries three named config bytes (see its handler), not a
+-- single code, so it takes the raw payload straight through.
+parsers[START_LISTENING_MSG] = function(raw) return raw end
 parsers[STOP_LISTENING_MSG] = code.parse_code
 parsers[START_PLAYBACK_MSG] = code.parse_code
 parsers[STOP_PLAYBACK_MSG] = code.parse_code
@@ -62,14 +64,23 @@ handlers[CLEAR_MSG] = function(parsed_data)
 	clear_display()
 end
 
-handlers[START_LISTENING_MSG] = function(parsed_data)
-	-- Halo-only: stream LC3-encoded microphone audio at 16kHz mono
-	-- value carries the mic gain offset by +10 (0..20 -> gain -10..10)
-	local gain = 0
-	if parsed_data.value ~= nil and parsed_data.value >= 0 and parsed_data.value <= 20 then
-		gain = parsed_data.value - 10
+handlers[START_LISTENING_MSG] = function(raw)
+	-- Halo-only: stream LC3-encoded microphone audio at 16kHz mono.
+	-- Payload is three named bytes (see openai_realtime.py mic_start_payload):
+	--   [1] gain code 0..20  -> mic gain -10..10  ([1] - 10)
+	--   [2] aec   0/1         -> echo cancellation on/off
+	--   [3] voice 0/1         -> voice-band mode on/off (band-pass the AEC
+	--                            output, so the server VAD only hears near-end)
+	local gain, aec_on, voice = 0, true, false
+	if raw ~= nil and #raw >= 3 then
+		gain = string.byte(raw, 1) - 10
+		aec_on = string.byte(raw, 2) ~= 0
+		voice = string.byte(raw, 3) ~= 0
 	end
+	if gain < -10 then gain = -10 elseif gain > 10 then gain = 10 end
 	pcall(frame.microphone.start, {encoder='lc3', sample_rate=16000, bitrate=32000, channels=1, gain=gain})
+	pcall(frame.microphone.aec, aec_on)
+	pcall(frame.microphone.voice, voice)
 	listening = true
 end
 
