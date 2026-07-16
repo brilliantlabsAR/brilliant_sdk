@@ -13,10 +13,14 @@ async def main():
     frame = BrilliantBle()
 
     try:
-        await frame.connect(name=args.name)
+        name = await frame.connect(name=args.name)
         # stop any application, if running, so we can send lua commands
         frame._user_print_response_handler = None
         await frame.send_break_signal()
+        fw = await frame.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
+        tag = await frame.send_lua("print(frame.GIT_TAG)", await_print=True)
+        batt = await frame.send_lua("print(frame.battery_level())", await_print=True)
+        print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
 
         if frame.type == BrilliantDeviceType.FRAME:
             # Set the palette back to the firmware default

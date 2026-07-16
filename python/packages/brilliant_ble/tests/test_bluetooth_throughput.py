@@ -40,9 +40,13 @@ async def main():
 
     b = BrilliantBle()
 
-    await b.connect(name=args.name, data_response_handler=receive_data)
+    name = await b.connect(name=args.name, data_response_handler=receive_data)
 
     await b.send_break_signal()
+    fw = await b.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
+    tag = await b.send_lua("print(frame.GIT_TAG)", await_print=True)
+    batt = await b.send_lua("print(frame.battery_level())", await_print=True)
+    print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
     await b.upload_file_from_string(lua_script, "test.lua")
     # why do we need to sleep to make sure the upload gets its reply?
     # Maybe the future from the send_lua() await_print misses getting completed

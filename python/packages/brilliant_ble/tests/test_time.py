@@ -11,7 +11,11 @@ async def main():
     )
     args = parser.parse_args()
     b = BrilliantBle()
-    await b.connect(name=args.name, print_response_handler=lambda s: print(s))
+    name = await b.connect(name=args.name, print_response_handler=lambda s: print(s))
+    fw = await b.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
+    tag = await b.send_lua("print(frame.GIT_TAG)", await_print=True)
+    batt = await b.send_lua("print(frame.battery_level())", await_print=True)
+    print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
 
     print("print(frame.time.utc())")
     await b.send_lua("print(frame.time.utc())")

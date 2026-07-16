@@ -81,6 +81,7 @@ class BrilliantBle:
         self._user_disconnect_handler = lambda: None
         self._user_print_response_handler = lambda: None
         self._type = BrilliantDeviceType.UNKNOWN
+        self._name = None
 
     @property
     def type(self):
@@ -88,6 +89,14 @@ class BrilliantBle:
         Returns the type of the Brilliant device.
         """
         return self._type
+
+    @property
+    def name(self):
+        """
+        Returns the BLE local name of the connected device (e.g. "Halo 08"),
+        or None if not connected.
+        """
+        return self._name
 
     def _disconnect_handler(self, _):
         self._user_disconnect_handler()
@@ -204,6 +213,7 @@ class BrilliantBle:
         except Exception as ble_error:
             raise Exception(f"Error subscribing for notifications: {ble_error}")
 
+        self._name = device.name
         return device.name
 
     async def disconnect(self):

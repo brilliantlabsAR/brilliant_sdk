@@ -28,7 +28,11 @@ async def main():
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
         
         frame = BrilliantMsg()
-        await frame.connect(name=args.name)
+        name = await frame.connect(name=args.name)
+        fw = await frame.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
+        tag = await frame.send_lua("print(frame.GIT_TAG)", await_print=True)
+        batt = await frame.send_lua("print(frame.battery_level())", await_print=True)
+        print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
 
         # debug only: check our current battery level and memory usage
         batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)

@@ -91,6 +91,10 @@ async def main():
     args = parser.parse_args()
     test = TestBluetooth()
     await test.initialize(name=args.name)
+    fw = await test.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
+    tag = await test.send_lua("print(frame.GIT_TAG)", await_print=True)
+    batt = await test.send_lua("print(frame.battery_level())", await_print=True)
+    print(f"{test.name} | firmware {fw} | git {tag} | battery {batt}%")
 
     # Upload main.lua
     await test.lua_send("f=frame.file.open('main.lua', 'w')")

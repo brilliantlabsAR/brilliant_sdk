@@ -14,10 +14,14 @@ async def main():
     frame = BrilliantBle()
 
     try:
-        await frame.connect(name=args.name)
+        name = await frame.connect(name=args.name)
 
         # stop any application, if running, so we can send lua commands
         await frame.send_break_signal()
+        fw = await frame.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
+        tag = await frame.send_lua("print(frame.GIT_TAG)", await_print=True)
+        batt = await frame.send_lua("print(frame.battery_level())", await_print=True)
+        print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
 
         # Keep Frame awake even in charging cradle (for development)
         await frame.send_lua("frame.stay_awake(true);print(0)", await_print=True)

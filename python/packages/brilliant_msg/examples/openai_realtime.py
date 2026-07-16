@@ -511,12 +511,16 @@ async def main():
     frame = BrilliantMsg()
     started_audio = False
     try:
-        await frame.connect(name=args.name)
+        name = await frame.connect(name=args.name)
         if frame.type != BrilliantDeviceType.HALO:
             print("This example requires a Halo (LC3 audio in both directions)")
             return
 
         await frame.send_break_signal()
+        fw = await frame.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
+        tag = await frame.send_lua("print(frame.GIT_TAG)", await_print=True)
+        batt = await frame.send_lua("print(frame.battery_level())", await_print=True)
+        print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
         await frame.print_short_text("Connecting...")
         await frame.upload_stdlua_libs(lib_names=["data", "code", "plain_text"])
         lua_path = os.path.join(os.path.dirname(__file__), "lua",

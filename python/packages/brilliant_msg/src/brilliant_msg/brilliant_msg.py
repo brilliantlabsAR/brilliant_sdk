@@ -27,13 +27,14 @@ class BrilliantMsg:
                              first Halo/Frame discovered.
 
         Returns:
-            bool: True if connection and initialization were successful
+            str: The BLE local name of the connected device (e.g. "Halo 08"),
+                 also available afterwards as `self.name`.
 
         Raises:
             Any exceptions from the underlying BrilliantBle connection
         """
         try:
-            await self.ble.connect(name=name, data_response_handler=self._handle_data_response)
+            device_name = await self.ble.connect(name=name, data_response_handler=self._handle_data_response)
 
             if initialize:
                 # Send break signal in case an application loop is running
@@ -45,7 +46,7 @@ class BrilliantMsg:
                 # Another break signal in case of auto-starting main.lua
                 await self.ble.send_break_signal()
 
-            return True
+            return device_name
 
         except Exception as e:
             # If anything fails during connection or initialization,

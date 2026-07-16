@@ -13,7 +13,11 @@ async def main():
     frame = BrilliantBle()
 
     try:
-        await frame.connect(name=args.name)
+        name = await frame.connect(name=args.name)
+        fw = await frame.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
+        tag = await frame.send_lua("print(frame.GIT_TAG)", await_print=True)
+        batt = await frame.send_lua("print(frame.battery_level())", await_print=True)
+        print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
 
         # Optionally attach the python print function to print incoming strings from Frame stdout
         # Note that the upload_file() function will receive a byte from Frame after every packet, and a nil
