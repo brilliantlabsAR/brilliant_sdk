@@ -1,11 +1,19 @@
 import asyncio
+import argparse
 from brilliant_ble import BrilliantBle, BrilliantDeviceType
 
 async def main():
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device over BLE and run this test.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     b = BrilliantBle()
 
     # Connect to the device
-    await b.connect(print_response_handler=lambda s: print(s))
+    await b.connect(name=args.name, print_response_handler=lambda s: print(s))
 
     if b.type != BrilliantDeviceType.HALO:
         print("AAD example is Halo-only")

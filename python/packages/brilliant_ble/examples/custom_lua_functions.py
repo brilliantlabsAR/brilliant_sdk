@@ -1,11 +1,19 @@
 import asyncio
+import argparse
 from brilliant_ble import BrilliantBle
 
 async def main():
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device over BLE and run this example.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     frame = BrilliantBle()
 
     try:
-        await frame.connect()
+        await frame.connect(name=args.name)
 
         # Optionally attach the python print function to print incoming strings from Frame stdout
         # Note that the upload_file() function will receive a byte from Frame after every packet, and a nil

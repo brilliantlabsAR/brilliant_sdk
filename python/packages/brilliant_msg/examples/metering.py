@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 
 from brilliant_msg import BrilliantMsg, TxCode, RxMeteringData
 from brilliant_ble import BrilliantDeviceType
@@ -7,9 +8,16 @@ async def main():
     """
     Query the metering data on Frame repeatedly and print the changing values to the console
     """
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device and run this example.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     frame = BrilliantMsg()
     try:
-        await frame.connect()
+        await frame.connect(name=args.name)
 
         if frame.type != BrilliantDeviceType.FRAME:
             print("Metering data is a Frame-only feature")

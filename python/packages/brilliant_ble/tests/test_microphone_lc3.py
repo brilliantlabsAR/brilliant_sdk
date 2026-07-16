@@ -4,6 +4,7 @@ Records LC3-encoded audio via Bluetooth and saves it as both .lc3 and .wav files
 """
 
 import asyncio
+import argparse
 from brilliant_ble import BrilliantBle, BrilliantDeviceType
 import numpy as np
 import lc3
@@ -121,8 +122,15 @@ async def record_and_save(b: BrilliantBle, sample_rate, bitrate, frame_duration_
 
 
 async def main():
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device over BLE and run this test.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     b = BrilliantBle()
-    await b.connect(data_response_handler=receive_data)
+    await b.connect(name=args.name, data_response_handler=receive_data)
 
     if b.type != BrilliantDeviceType.HALO:
         print("LC3 microphone example is Halo-only")

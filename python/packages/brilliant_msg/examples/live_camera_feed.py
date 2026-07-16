@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 from PIL import Image
 import io
 import cv2
@@ -11,6 +12,13 @@ async def main():
     """
     Take photos continuously using the Frame camera and display them in an OpenCV window
     """
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device and run this example.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     frame = None
     rx_photo = None
     window_name = "Camera Feed"
@@ -20,7 +28,7 @@ async def main():
         cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
         
         frame = BrilliantMsg()
-        await frame.connect()
+        await frame.connect(name=args.name)
 
         # debug only: check our current battery level and memory usage
         batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)

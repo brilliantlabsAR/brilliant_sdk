@@ -1,11 +1,20 @@
 import asyncio
+import argparse
 from brilliant_ble import BrilliantBle
 
 
 async def main():
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device over BLE and run this test.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     bluetooth = BrilliantBle()
 
     await bluetooth.connect(
+        name=args.name,
         print_response_handler=lambda string: print(f"Print: {string}"),
         data_response_handler=lambda data: print(f"Data: {bytes(data).decode()}"),
     )

@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 from PIL import Image
 import io
 
@@ -10,9 +11,16 @@ async def main():
     Run the autoexposure algorithm on Frame repeatedly and print the changing values to the console
     along with a photo taken at each step.
     """
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device and run this example.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     frame = BrilliantMsg()
     try:
-        await frame.connect()
+        await frame.connect(name=args.name)
 
         if frame.type != BrilliantDeviceType.FRAME:
             print("Auto exposure is a Frame-only feature")

@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 from brilliant_ble import BrilliantBle, BrilliantDeviceType
 
 async def set_standard_palette(b: BrilliantBle):
@@ -49,8 +50,15 @@ async def full_display_palette(b: BrilliantBle):
         await b.send_lua(lua_command, await_print=True)
 
 async def main():
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device over BLE and run this test.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     b = BrilliantBle()
-    await b.connect(print_response_handler=lambda s: print(s))
+    await b.connect(name=args.name, print_response_handler=lambda s: print(s))
 
     if b.type != BrilliantDeviceType.HALO:
         print("Display bitmap example is Halo-only")

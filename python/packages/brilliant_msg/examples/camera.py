@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 from PIL import Image
 import io
 
@@ -9,9 +10,16 @@ async def main():
     """
     Take a photo using the Frame camera and display it in the system viewer
     """
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device and run this example.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     frame = BrilliantMsg()
     try:
-        await frame.connect()
+        await frame.connect(name=args.name)
 
         # debug only: check our current battery level and memory usage (which varies between 16kb and 31kb or so even after the VM init)
         batt_mem = await frame.send_lua('print(frame.battery_level() .. " / " .. collectgarbage("count"))', await_print=True)

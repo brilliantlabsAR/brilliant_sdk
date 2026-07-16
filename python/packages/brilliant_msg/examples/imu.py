@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 
 from brilliant_msg import BrilliantMsg, RxIMU, TxCode
 
@@ -6,9 +7,16 @@ async def main():
     """
     Subscribe to IMU updates from Frame and print them to the console
     """
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device and run this example.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     frame = BrilliantMsg()
     try:
-        await frame.connect()
+        await frame.connect(name=args.name)
 
         # Let the user know we're starting
         await frame.print_short_text('Loading...')

@@ -3,6 +3,7 @@ Tests the Frame specific Lua libraries over Bluetooth.
 """
 
 import asyncio, sys
+import argparse
 from brilliant_ble import BrilliantBle
 
 
@@ -27,8 +28,8 @@ class TestBluetooth(BrilliantBle):
         else:
             print(f"\033[91mFAILED: {sent} => {responded} != {expected}")
 
-    async def initialize(self):
-        await self.connect()
+    async def initialize(self, name=None):
+        await self.connect(name=name)
 
     async def end(self):
         passed_tests = self._passed_tests
@@ -81,8 +82,15 @@ class TestBluetooth(BrilliantBle):
 
 
 async def main():
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device over BLE and run this test.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     test = TestBluetooth()
-    await test.initialize()
+    await test.initialize(name=args.name)
 
     ## Test all modes (writable, read only, and append)
     await test.lua_send("f=frame.file.open('test.lua', 'w')")

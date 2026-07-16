@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 import time
 from aioconsole import ainput
 from brilliant_ble import BrilliantBle
@@ -20,6 +21,13 @@ def receive_data(data):
 
 
 async def main():
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device over BLE and run this test.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
 
     lua_script = """
     data = string.rep('a',frame.bluetooth.max_length())
@@ -32,7 +40,7 @@ async def main():
 
     b = BrilliantBle()
 
-    await b.connect(data_response_handler=receive_data)
+    await b.connect(name=args.name, data_response_handler=receive_data)
 
     await b.send_break_signal()
     await b.upload_file_from_string(lua_script, "test.lua")

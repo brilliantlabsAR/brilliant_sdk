@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 import io
 import numpy as np
 from PIL import Image
@@ -12,6 +13,13 @@ async def main():
     """
     Subscribe to an Audio stream from Frame and play to the default output device using pvspeaker, and take periodic photos
     """
+    parser = argparse.ArgumentParser(description="Connect to a Halo/Frame device and run this example.")
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args = parser.parse_args()
     frame = BrilliantMsg()
     speaker = None
     stop_requested = False
@@ -24,7 +32,7 @@ async def main():
             stop_requested = True
 
     try:
-        await frame.connect()
+        await frame.connect(name=args.name)
 
         # Let the user know we're starting
         await frame.print_short_text('Loading...')
