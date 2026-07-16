@@ -1,3 +1,4 @@
+"""Restore the device display colour palette to the firmware defaults (Halo or Frame)."""
 import asyncio
 import argparse
 from brilliant_ble import BrilliantBle, BrilliantDeviceType
@@ -62,11 +63,10 @@ async def main():
             await frame.send_lua("frame.display.assign_color_ycbcr(15, 13, 4, 3);print(0)", await_print=True) # CLOUDBLUE
 
         print("Default palette set.")
-        await frame.disconnect()
-
     except Exception as e:
-        print(f"Not connected to Device: {e}")
-        return
+        print(f"An error occurred: {e}")
+    finally:
+        await frame.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())

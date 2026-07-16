@@ -1,3 +1,4 @@
+"""Soft-reset the device (restart the Lua VM)."""
 import asyncio
 import argparse
 from brilliant_ble import BrilliantBle
@@ -23,11 +24,10 @@ async def main():
         await frame.send_reset_signal()
         print("Reset sent")
 
-        await frame.disconnect()
-
     except Exception as e:
-        print(f"Not connected to Device: {e}")
-        return
+        print(f"An error occurred: {e}")
+    finally:
+        await frame.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())

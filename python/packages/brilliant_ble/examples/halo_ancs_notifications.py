@@ -62,8 +62,9 @@ async def main():
         print("paired/bonded) - its notifications will appear on the display.")
 
     except Exception as e:
-        print(f"Not connected to Device: {e}")
-        return
+        print(f"An error occurred: {e}")
+    finally:
+        await frame.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())

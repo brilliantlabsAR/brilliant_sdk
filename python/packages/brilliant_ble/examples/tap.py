@@ -1,3 +1,4 @@
+"""Register a tap callback on the device and print a message each time it is tapped."""
 import asyncio
 import argparse
 from brilliant_ble import BrilliantBle
@@ -29,11 +30,10 @@ async def main():
 
         await asyncio.sleep(20)  # Keep the program running to listen for taps
 
-        await frame.disconnect()
-
     except Exception as e:
-        print(f"Not connected to Device: {e}")
-        return
+        print(f"An error occurred: {e}")
+    finally:
+        await frame.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())

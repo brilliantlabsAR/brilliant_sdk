@@ -1,3 +1,4 @@
+"""Print 'Hello' on the device display (Halo or Frame)."""
 import asyncio
 import argparse
 from brilliant_ble import BrilliantBle, BrilliantDeviceType
@@ -33,11 +34,10 @@ async def main():
         print("'Hello' sent")
         await asyncio.sleep(3)  # Wait for a few seconds to see the message
 
-        await frame.disconnect()
-
     except Exception as e:
-        print(f"Not connected to Device: {e}")
-        return
+        print(f"An error occurred: {e}")
+    finally:
+        await frame.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())

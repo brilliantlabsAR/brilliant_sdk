@@ -1,3 +1,4 @@
+"""Restore normal sleep behaviour (device sleeps/turns off in the cradle) and put it to sleep now."""
 import asyncio
 import argparse
 from brilliant_ble import BrilliantBle
@@ -31,11 +32,13 @@ async def main():
             print("Halo will sleep now")
 
         await frame.send_lua("frame.sleep()", await_print=False)
-        # already disconnected from sleep - don't await frame.disconnect()
 
     except Exception as e:
-        print(f"Not connected to Device: {e}")
-        return
+        print(f"An error occurred: {e}")
+    finally:
+        # sleep() above usually drops the connection already, so this is a no-op
+        # on the happy path, but it still cleans up if an error happened earlier
+        await frame.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())

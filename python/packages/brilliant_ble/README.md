@@ -22,15 +22,15 @@ async def main():
     frame = BrilliantBle()
 
     try:
-        await frame.connect()
+        name = await frame.connect()
+        print(f"Connected to {name}")
 
         await frame.send_lua("frame.display.text('Hello, World!', 1, 1);frame.display.show();print(nil)", await_print=True)
 
-        await frame.disconnect()
-
     except Exception as e:
-        print(f"Not connected to Device: {e}")
-        return
+        print(f"An error occurred: {e}")
+    finally:
+        await frame.disconnect()
 
 if __name__ == "__main__":
     asyncio.run(main())

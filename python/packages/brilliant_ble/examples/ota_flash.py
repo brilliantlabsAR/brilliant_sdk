@@ -62,7 +62,7 @@ async def main():
     except OtaError as e:
         print(f"\nOTA update failed: {e}")
     except Exception as e:
-        print(f"Not connected to Device: {e}")
+        print(f"An error occurred: {e}")
     finally:
         await halo.disconnect()
 
