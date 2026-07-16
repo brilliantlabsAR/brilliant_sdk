@@ -1,8 +1,11 @@
 import unittest
 import asyncio
+import os
 import sys
 
 from brilliant_ble import BrilliantBle
+
+LUA_DIR = os.path.join(os.path.dirname(__file__), "lua")
 
 
 class TestBluetooth(unittest.IsolatedAsyncioTestCase):
@@ -81,7 +84,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         await b.connect()
         self.assertIsNone(await b.send_break_signal())
 
-        self.assertIsNone(await b.upload_file("./lua/test.lua", "test.lua"))
+        self.assertIsNone(await b.upload_file(os.path.join(LUA_DIR, "test.lua"), "test.lua"))
 
         self.assertIsNone(await b.send_lua("require('test')"))
         await asyncio.sleep(1)
