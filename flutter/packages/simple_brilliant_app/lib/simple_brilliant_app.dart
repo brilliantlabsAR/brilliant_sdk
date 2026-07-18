@@ -129,7 +129,12 @@ mixin SimpleFrameAppState<T extends StatefulWidget> on State<T> {
         // TODO looks like if the signal comes too early after connection, it isn't registered
         await Future.delayed(const Duration(milliseconds: 500));
         await frame!.sendBreakSignal();
-        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Soak up any 'interrupted'/reboot banner the break produced (e.g. from
+        // an auto-running main.lua) so the first awaited sendString below gets a
+        // clean response instead of the stray banner. Bounded, and a no-op (one
+        // short quiet window) on an idle device.
+        await frame!.drainPrintChannel();
 
         await frame!.sendString(
             'print("Connected to " .. frame.HARDWARE_VERSION .. " " .. frame.FIRMWARE_VERSION .. ", Mem: " .. tostring(collectgarbage("count")))',

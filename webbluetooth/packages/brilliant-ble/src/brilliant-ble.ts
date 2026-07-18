@@ -544,6 +544,46 @@ export class BrilliantBle {
     }
 
     /**
+     * Discards any unsolicited print output currently arriving on the channel
+     * (e.g. the 'interrupted'/reboot banner produced by a break or reset), so
+     * the next `sendLua({ awaitPrint: true })` receives a clean response rather
+     * than the stray banner.
+     *
+     * Bounded so it never hangs: returns after `quietMs` of silence, or
+     * `maxTotalMs` at the latest. An idle device emits nothing, so the common
+     * case costs a single quiet window. A break only prints 'interrupted' when
+     * it actually interrupts a running chunk, and the banner can span more than
+     * one notification, so we soak up everything until the channel goes quiet
+     * rather than awaiting a single line.
+     * @param quietMs Silence (ms) that marks the channel drained. Defaults to 250.
+     * @param maxTotalMs Hard cap (ms) so it always returns. Defaults to 1500.
+     */
+    public async drainPrintChannel(quietMs = 250, maxTotalMs = 1500): Promise<void> {
+        const start = Date.now();
+        while (Date.now() - start < maxTotalMs) {
+            const gotOne = await new Promise<boolean>((resolve) => {
+                if (this.printTimeoutId) clearTimeout(this.printTimeoutId);
+                this.awaitingPrintResponse = true;
+                this.printResolve = () => resolve(true);
+                this.printTimeoutId = setTimeout(() => {
+                    if (this.awaitingPrintResponse) {
+                        this.awaitingPrintResponse = false;
+                        this.printResolve = undefined;
+                        resolve(false);
+                    }
+                }, quietMs);
+            });
+            if (this.printTimeoutId) {
+                clearTimeout(this.printTimeoutId);
+                this.printTimeoutId = undefined;
+            }
+            if (!gotOne) break; // quiet window elapsed with no print
+        }
+        this.awaitingPrintResponse = false;
+        this.printResolve = undefined;
+    }
+
+    /**
      * Sends a reset signal (0x04) to the Frame device.
      * This typically causes the device to restart its Lua environment.
      * @param showMe If true, logs the transmitted signal (hex format) to the console. Defaults to false.

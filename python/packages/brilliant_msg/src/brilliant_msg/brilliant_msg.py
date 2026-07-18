@@ -46,6 +46,12 @@ class BrilliantMsg:
                 # Another break signal in case of auto-starting main.lua
                 await self.ble.send_break_signal()
 
+                # Soak up any 'interrupted'/reboot banner the break/reset/break
+                # sequence produced, so the caller's first
+                # send_lua(await_print=True) gets a clean channel. Bounded, and
+                # a no-op (one short quiet window) on an idle device.
+                await self.ble.drain_print_channel()
+
             return device_name
 
         except Exception as e:

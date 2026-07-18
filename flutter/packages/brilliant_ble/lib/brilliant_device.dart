@@ -1,4 +1,5 @@
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -139,6 +140,45 @@ class BrilliantDevice {
       else {
         rethrow;
       }
+    }
+  }
+
+  /// Discards any unsolicited print output currently arriving on the channel
+  /// (e.g. the 'interrupted'/reboot banner produced by a break or reset), so
+  /// the next `sendString(awaitResponse: true)` receives a clean response
+  /// rather than the stray banner.
+  ///
+  /// Bounded so it never hangs: returns after [quiet] of silence, or [maxTotal]
+  /// at the latest. An idle device emits nothing, so the common case costs a
+  /// single quiet window. A break only prints 'interrupted' when it actually
+  /// interrupts a running chunk, and the banner can span more than one
+  /// notification, so we soak up everything until the channel goes quiet rather
+  /// than awaiting a single line.
+  Future<void> drainPrintChannel({
+    Duration quiet = const Duration(milliseconds: 250),
+    Duration maxTotal = const Duration(milliseconds: 1500),
+  }) async {
+    if (rxChannel == null) return;
+    final done = Completer<void>();
+    Timer? quietTimer;
+    void restartQuiet() {
+      quietTimer?.cancel();
+      quietTimer = Timer(quiet, () {
+        if (!done.isCompleted) done.complete();
+      });
+    }
+
+    final sub = stringResponse.listen((_) => restartQuiet());
+    restartQuiet(); // start the silence clock even if nothing ever arrives
+    final cap = Timer(maxTotal, () {
+      if (!done.isCompleted) done.complete();
+    });
+    try {
+      await done.future;
+    } finally {
+      quietTimer?.cancel();
+      cap.cancel();
+      await sub.cancel();
     }
   }
 

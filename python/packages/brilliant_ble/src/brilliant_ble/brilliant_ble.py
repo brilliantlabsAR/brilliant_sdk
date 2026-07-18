@@ -320,6 +320,30 @@ class BrilliantBle:
         # stream audio as write-without-response (response=False)
         await self._client.write_gatt_char(self._audio_tx_characteristic, data, response=await_bt_response)
 
+    async def drain_print_channel(self, quiet=0.25, max_total=1.5):
+        """
+        Discards any unsolicited print output currently arriving on the channel
+        (e.g. the 'interrupted'/reboot banner produced by a break or reset), so
+        the next `send_lua(await_print=True)` receives a clean response rather
+        than the stray banner.
+
+        Bounded so it never hangs: returns after `quiet` seconds of silence, or
+        `max_total` seconds at the latest. An idle device emits nothing, so the
+        common case costs a single `quiet` window. A break only prints
+        'interrupted' when it actually interrupts a running chunk, and the
+        banner can span more than one notification, so we soak up everything
+        until the channel goes quiet rather than awaiting a single line.
+        """
+        loop = asyncio.get_running_loop()
+        start = loop.time()
+        while loop.time() - start < max_total:
+            self._awaiting_print_response = True
+            try:
+                await asyncio.wait_for(self._print_response.get(), timeout=quiet)
+            except asyncio.TimeoutError:
+                break
+        self._awaiting_print_response = False
+
     async def send_reset_signal(self, show_me=False):
         """
         Sends a reset signal to the device which will reset the Lua virtual

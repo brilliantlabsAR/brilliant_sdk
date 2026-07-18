@@ -115,6 +115,12 @@ export class BrilliantMsg {
                 await this.ble.sendBreakSignal();
                 await this.ble.sendResetSignal();
                 await this.ble.sendBreakSignal();
+
+                // Soak up any 'interrupted'/reboot banner the break/reset/break
+                // sequence produced, so the caller's first
+                // sendLua({ awaitPrint: true }) gets a clean channel. Bounded,
+                // and a no-op (one short quiet window) on an idle device.
+                await this.ble.drainPrintChannel();
             }
             return connectionResult;
         } catch (e) {
