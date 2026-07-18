@@ -154,8 +154,27 @@ class TestSensorBuffer:
         buf = SensorBuffer(5)
         buf.add((4.0, 8.0, 12.0))
         buf.add((2.0, 4.0,  6.0))
-        # floor division: (4+2)//2=3, (8+4)//2=6, (12+6)//2=9
+        # true division: (4+2)/2=3, (8+4)/2=6, (12+6)/2=9
         assert buf.average == (3.0, 6.0, 9.0)
+
+    def test_fractional_average_preserved(self):
+        # Regression guard: accel values are ~-1..1 g, so the average must NOT be
+        # floored (the old '//' floored 0.5 -> 0.0, corrupting pitch/roll).
+        buf = SensorBuffer(5)
+        buf.add((0.5, 0.25, 0.9))
+        avg = buf.average
+        assert avg[0] == pytest.approx(0.5)
+        assert avg[1] == pytest.approx(0.25)
+        assert avg[2] == pytest.approx(0.9)
+
+    def test_two_sample_fractional_average(self):
+        buf = SensorBuffer(5)
+        buf.add((0.2, 0.4, 0.6))
+        buf.add((0.4, 0.6, 0.8))
+        avg = buf.average
+        assert avg[0] == pytest.approx(0.3)
+        assert avg[1] == pytest.approx(0.5)
+        assert avg[2] == pytest.approx(0.7)
 
     def test_oldest_sample_evicted_when_full(self):
         buf = SensorBuffer(2)
@@ -163,7 +182,7 @@ class TestSensorBuffer:
         buf.add((10.0, 0.0, 0.0))
         buf.add((20.0, 0.0, 0.0))
         avg_x, _, _ = buf.average
-        # Only last two samples: (10+20)//2 = 15
+        # Only last two samples: (10+20)/2 = 15
         assert avg_x == 15.0
 
     def test_size_limit_maintained(self):
@@ -285,8 +304,10 @@ class TestRxIMU:
         await asyncio.sleep(0)
         imu: IMUData = rx.queue.get_nowait()
 
-        # average of (0,0,0) and (10,20,30) via floor division = (5, 10, 15)
-        assert imu.compass == (5.0, 10.0, 15.0)
+        # average of (0,0,0) and (10,20,30) via true division = (5, 10, 15)
+        assert imu.compass == pytest.approx((5.0, 10.0, 15.0))
+        # accel averaged too, and fractional precision preserved
+        assert imu.accel == pytest.approx((2.0, 3.0, 4.0))
 
     async def test_imu_data_pitch_and_roll_computed(self):
         rx = RxIMU()

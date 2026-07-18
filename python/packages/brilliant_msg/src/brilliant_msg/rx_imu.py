@@ -32,9 +32,9 @@ class SensorBuffer:
         length = len(self._buffer)
 
         return (
-            sum_x // length,
-            sum_y // length,
-            sum_z // length
+            sum_x / length,
+            sum_y / length,
+            sum_z / length
         )
 
 @dataclass

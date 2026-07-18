@@ -38,6 +38,7 @@ docs = [
 examples = [
     "websockets>=13.0",
     "lc3py>=1.1.3",
+    "numpy>=1.24",
 ]
 
 [tool.pytest.ini_options]

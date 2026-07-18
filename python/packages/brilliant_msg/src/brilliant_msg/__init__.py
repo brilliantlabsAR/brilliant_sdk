@@ -22,3 +22,12 @@ from .rx_imu import RxIMU
 from .rx_metering_data import RxMeteringData
 from .rx_photo import RxPhoto
 from .rx_tap import RxTap
+
+from .heading import (
+    basic_heading,
+    tilt_compensated_heading,
+    apply_declination,
+    degrees_to_cardinal,
+)
+
+from .calibration import MagCalibration

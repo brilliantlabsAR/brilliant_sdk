@@ -24,7 +24,7 @@
     "preview": "vite preview",
     "dev:demo": "vite --config example/vite.config.ts",
     "docs:api": "typedoc --out example/dist/api src",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "keywords": [],
   "author": "luke-brilliant",

@@ -20,11 +20,22 @@ parsers[CLEAR_MSG] = code.parse_code
 parsers[START_IMU_MSG] = code.parse_code
 parsers[STOP_IMU_MSG] = code.parse_code
 
+-- Clear the whole display.
+-- Frame presents a fresh buffer on every show(), so drawing a space + show()
+-- wipes the previous frame; Halo draws immediately and needs an explicit
+-- frame.display.clear() (the space trick is a no-op there and content overdraws).
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(" ", 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
 -- Main app loop
 function app_loop()
-	-- clear the display
-	frame.display.text(" ", 1, 1)
-	frame.display.show()
+	clear_display()
     local last_batt_update = 0
 	local streaming = false
 	local stream_rate = 1
@@ -34,6 +45,10 @@ function app_loop()
 
 	handlers[TEXT_MSG] = function(item)
 		if item.string ~= nil then
+			-- clear first so successive updates replace rather than overdraw on Halo
+			if frame.HARDWARE_VERSION ~= 'Frame' then
+				frame.display.clear()
+			end
 			local i = 0
 			for line in item.string:gmatch("([^\n]*)\n?") do
 				if line ~= "" then
@@ -46,9 +61,7 @@ function app_loop()
 	end
 
 	handlers[CLEAR_MSG] = function(item)
-		-- clear the display
-		frame.display.text(" ", 1, 1)
-		frame.display.show()
+		clear_display()
 	end
 
 	handlers[START_IMU_MSG] = function(item)
@@ -57,15 +70,17 @@ function app_loop()
 		if rate > 0 then
 			stream_rate = 1 / rate
 		end
+		-- clear first so this replaces the previous screen rather than overdrawing on Halo
+		if frame.HARDWARE_VERSION ~= 'Frame' then
+			frame.display.clear()
+		end
 		frame.display.text("Streaming IMU Data", 1, 1)
 		frame.display.show()
 	end
 
 	handlers[STOP_IMU_MSG] = function(item)
 		streaming = false
-		-- clear the display
-		frame.display.text(" ", 1, 1)
-		frame.display.show()
+		clear_display()
 	end
 
 	while true do

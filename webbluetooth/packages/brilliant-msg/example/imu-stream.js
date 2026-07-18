@@ -1,4 +1,4 @@
-import { BrilliantMsg, StdLua, TxCode, RxIMU } from 'brilliant-msg';
+import { BrilliantMsg, StdLua, TxCode, RxIMU, MagCalibration, CompassHeading } from 'brilliant-msg';
 import frameApp from './lua/imu_stream_frame_app.lua?raw';
 
 /**
@@ -47,6 +47,12 @@ export async function run() {
     const rxIMU = new RxIMU({smoothingSamples: 5});
     const imuQueue = await rxIMU.attach(frame);
 
+    // A default (uncalibrated) MagCalibration ships the Halo mag->accel alignment
+    // matrix, so the tilt-compensated heading below is usable on a worn Halo
+    // before any per-unit calibration. To go further, load a mag_calibration.json
+    // produced by the Python tool: MagCalibration.fromJsonString(jsonText).
+    const cal = new MagCalibration();
+
     // Start the IMU updates
     console.log("Starting IMU stream...");
     await frame.sendMessage(0x40, new TxCode({ value: 1 }).pack());
@@ -65,6 +71,14 @@ export async function run() {
       const imuData = await imuQueue.get();
       console.log("IMU Data:", imuData);
 
+      // Tilt-compensated magnetic heading from the smoothed host-frame samples,
+      // via the default (or a loaded) MagCalibration. This is a *magnetic*
+      // heading; add your location's declination for true North.
+      const [mx, my, mz] = imuData.compass;
+      const [ax, ay, az] = imuData.accel;
+      const heading = cal.heading(mx, my, mz, ax, ay, az);
+      const cardinal = CompassHeading.degreesToCardinal(heading);
+
       // Update the display element with the IMU data
       // breaking out the smoothed compass and accel arrays of 3 ints
       // and also the pitch and roll angles
@@ -74,6 +88,7 @@ export async function run() {
         <div>Accelerometer: ${imuData.accel.join(', ')}</div>
         <div>Pitch: ${imuData.pitch.toFixed(2)}</div>
         <div>Roll: ${imuData.roll.toFixed(2)}</div>
+        <div>Heading: ${heading.toFixed(1)} (${cardinal})</div>
       `;
     }
 

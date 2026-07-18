@@ -20,7 +20,13 @@ class CompassHeading {
     return degrees;
   }
 
-  // Tilt-compensated heading calculation
+  // Tilt-compensated heading calculation.
+  //
+  // Projects the magnetic vector onto the plane perpendicular to gravity, then
+  // takes the horizontal bearing. gravity is the raw accelerometer vector; it is
+  // normalised here (the projection requires a UNIT vector — feeding the raw
+  // accel, magnitude ~960, blows up the projection). Mirrors the Python
+  // tilt_compensated_heading in brilliant_msg/heading.py.
   static double calculateTiltCompensatedHeading({
     required double magX,
     required double magY,
@@ -30,6 +36,14 @@ class CompassHeading {
     required double gravityZ,
     }) {
     //print('gX: ${gravityX.toStringAsFixed(2)}, gY: ${gravityY.toStringAsFixed(2)}, gZ: ${gravityZ.toStringAsFixed(2)}');
+
+    // Normalise gravity to a unit vector; its sign does not matter.
+    final gMag = sqrt(gravityX * gravityX + gravityY * gravityY + gravityZ * gravityZ);
+    if (gMag > 0) {
+      gravityX /= gMag;
+      gravityY /= gMag;
+      gravityZ /= gMag;
+    }
 
     double magDotGrav = magX * gravityX + magY * gravityY + magZ * gravityZ;
     //print('magX: ${magX.toStringAsFixed(2)}, magY: ${magY.toStringAsFixed(2)}, magZ: ${magZ.toStringAsFixed(2)}');
