@@ -42,7 +42,7 @@ async def main() -> None:
     # ---- connection ----
     if args.emulator:
         from halo_emulator import HaloEmulator, EmulatorBrilliantMsg
-        emu = HaloEmulator(sandbox_dir="./lua")
+        emu = HaloEmulator()
         frame = EmulatorBrilliantMsg(emu)
     else:
         from brilliant_msg import BrilliantMsg          # type: ignore[import]
