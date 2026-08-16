@@ -25,6 +25,10 @@ function show_flash()
 		frame.sleep(0.04)
 	else
 		frame.display.clear(0xFFFFFF)
+		-- Halo draws straight into the live framebuffer (no vsync/present), so
+		-- hold the white frame for at least one full ~16ms panel scan or the
+		-- flash tears into a partial stripe. 40ms matches the Frame branch.
+		frame.sleep(0.04)
 		frame.display.clear(0x000000)
 	end
 end
