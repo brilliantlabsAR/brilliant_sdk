@@ -20,7 +20,13 @@ function show_flash()
 		frame.display.show()
 		frame.sleep(0.04)
 	else
+		-- Halo draws straight into the live framebuffer (no vsync/present):
+		-- wake the panel from power_save, then hold the white frame for
+		-- several ~16ms scan periods before blanking, or the flash tears into
+		-- a partial stripe (or, with the panel still asleep, never shows).
+		frame.display.power_save(false)
 		frame.display.clear(0xFFFFFF)
+		frame.sleep(0.04)
 		frame.display.clear(0x000000)
 	end
 end
