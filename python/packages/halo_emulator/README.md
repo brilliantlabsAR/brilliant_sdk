@@ -77,7 +77,9 @@ Opens a 512×512 pygame window (2× scaled) and drops into a Python REPL with `e
 | `Space` | Button single click |
 | `D` | Button double click |
 | `L` | Button long press |
-| `T` | IMU tap |
+| `T` | IMU tap (single) |
+| `2` | IMU double tap |
+| `3` | IMU triple tap |
 
 ```bash
 halo-emulator ./my_app/ --script frame_app.lua   # specify entry point
@@ -117,7 +119,8 @@ emu.inject_bluetooth_data(b'\x0a\x00\x05Hello')  # triggers frame.bluetooth.rece
 emu.inject_button_single()                         # triggers frame.button.single callback
 emu.inject_button_double()                         # triggers frame.button.double callback
 emu.inject_button_long()                           # triggers frame.button.long callback
-emu.inject_imu_tap()                               # triggers frame.imu.tap_callback
+emu.inject_imu_tap('double')                       # frame.imu.tap_callback('double')
+emu.inject_microphone_data(b'...')                 # queue frame.microphone.read() data
 ```
 
 Events are dispatched from within the Lua thread (inside `frame.sleep()`), so Lua callbacks fire safely.
@@ -127,8 +130,9 @@ Events are dispatched from within the Lua thread (inside `frame.sleep()`), so Lu
 ```python
 emu.set_battery_level(42)                          # frame.battery_level() → 42
 emu.set_battery_charging(True)                     # frame.battery_charging() → True
-emu.set_imu_direction(pitch=15.0, roll=-5.0, heading=0.0)  # frame.imu.direction()
+emu.set_imu_direction(pitch=15.0, roll=-5.0)       # frame.imu.direction() (heading is always 0.0)
 emu.set_imu_raw(compass=(10, 20, 30), accel=(0, 0, 1000))  # frame.imu.raw()
+emu.set_wakeup_source('button')                    # frame.wakeup_source() → 'button'
 ```
 
 ### Observation
@@ -230,9 +234,15 @@ uv run python packages/brilliant_ble/tests/test_display.py
 ## Supported `frame.*` API
 
 ### System
-`sleep`, `light_sleep`, `standby`, `yield`, `on_wakeup`, `stay_awake`, `reboot`, `battery_level`, `battery_voltage`, `battery_charging`, `wakeup_source`, `get_eui`
+`sleep`, `light_sleep`, `standby`, `yield`, `stay_awake`, `reboot`, `battery_level`, `battery_voltage`, `battery_charging`, `wakeup_source`, `get_eui`
 
-Constants: `HARDWARE_VERSION` (`"EMULATOR"`), `FIRMWARE_VERSION`, `GIT_TAG`, `SE_REVISION`
+Sleep semantics follow firmware 0.8.8: `standby([s])` resumes in place after a
+timeout or injected wake event; `light_sleep([s])` restarts the Lua VM and runs
+the entry script from the top on wake (check `frame.wakeup_source()` there);
+`sleep()` with no argument deep-sleeps and stops the emulator.
+`frame.on_wakeup()` was removed in firmware 0.8.8 and is not provided.
+
+Constants: `HARDWARE_VERSION` (`"EMULATOR"`), `FIRMWARE_VERSION` (`"0.8.8-emulator"`), `GIT_TAG`, `SE_REVISION`
 
 ### Time — `frame.time.*`
 `utc`, `zone`, `date`
@@ -240,7 +250,7 @@ Constants: `HARDWARE_VERSION` (`"EMULATOR"`), `FIRMWARE_VERSION`, `GIT_TAG`, `SE
 ### File — `frame.file.*`
 `open`, `remove`, `remove_all`, `rename`, `listdir`, `mkdir`
 
-File operations are sandboxed to the `sandbox_dir`. `require()` is overridden to load modules from the sandbox directory.
+File operations are sandboxed to the `sandbox_dir`. `require()` is overridden to load modules from the sandbox directory, with standard Lua semantics as on the firmware: modules are cached in `package.loaded`, `require()` returns the module's own value (or `true` for a module that returns nothing), and `package.loaded['mod'] = nil` forces a re-read.
 
 ### Button — `frame.button.*`
 `single(func)`, `double(func)`, `long(func)` — register/clear callbacks
@@ -249,7 +259,13 @@ File operations are sandboxed to the `sandbox_dir`. `require()` is overridden to
 `is_connected`, `address`, `max_length`, `send`, `receive_callback`
 
 ### IMU — `frame.imu.*`
-`tap_callback(func)`, `direction()`, `raw()`, `config(options)`
+`tap_callback(func)`, `tap_config([options])`, `direction()`, `raw()`, `config(options)`
+
+Tap callbacks receive the gesture kind (`'single'`, `'double'` or `'triple'`) as
+on firmware 0.8.8 — one callback per gesture. `tap_config()` stores and returns
+the firmware's tap-detector tuning table (defaults included); the values do not
+affect injected taps. `direction().heading` is always `0.0`, matching the
+firmware's host-side-compass stub.
 
 ### Compression — `frame.compression.*`
 `process_function(func)`, `decompress(data, block_size)` — LZ4 decompression
@@ -258,33 +274,48 @@ File operations are sandboxed to the `sandbox_dir`. `require()` is overridden to
 
 | Function | Description |
 |----------|-------------|
-| `assign_color(index, r, g, b)` | Set palette entry (index 1-16 or name) |
-| `assign_color_ycbcr(index, y, cb, cr)` | Set palette entry via YCbCr |
-| `text(text, x, y, color)` | Draw text at position (1-based, 0xRRGGBB) |
-| `char(codepoint, x, y, color)` | Draw a single Unicode character |
-| `set_font(font_id, size, scale)` | Set current font |
-| `get_font_list()` | List available fonts |
+| `assign_color(index, r, g, b)` | Set palette entry (index 0-15 or name) |
+| `assign_color_ycbcr(index, y, cb, cr)` | Set palette entry via 4:3:3 YCbCr |
+| `text(text, x, y, color)` | Draw text (1-based, 0xRRGGBB, y = top of cap box) |
+| `char(codepoint, x, y, color)` | Draw a single character (ASCII 0x20-0x7E) |
+| `set_font(font_id, size, scale)` | Font 0=Dogica, 1=DogicaBold; size a multiple of 8 |
+| `get_font_list()` | Returns `{[0]="Dogica", [1]="DogicaBold"}` |
 | `set_pixel(x, y, color)` | Set a single pixel |
 | `line(x0, y0, x1, y1, color)` | Draw a line |
 | `rect(x, y, w, h, color, filled)` | Draw a rectangle |
 | `circle(cx, cy, r, color, filled)` | Draw a circle |
-| `polygon(points, color)` | Draw a polygon |
-| `bitmap(x, y, width, format, offset, data, [opts])` | Draw indexed/RGB bitmap |
+| `polygon(points, color)` | Draw a polygon (max 64 coordinates) |
+| `bitmap(x, y, width, format, offset, data, [opts])` | format 0 (RGB888), 2, 4 or 16 colors |
 | `clear(color)` | Fill display with color |
 | `show([enable])` | No-op — Halo draws directly to display memory (no buffer flip) |
 | `width()` / `height()` | Returns 256 |
-| `brightness([value])` | Get/set brightness (0-100) |
-| `set_brightness(v)` / `get_brightness()` | Brightness -2..2 |
+| `brightness([value])` | Get/set brightness percent (0-100) |
+| `set_brightness(v)` / `get_brightness()` | Level -2..2 ↔ 10/25/50/75/100 % |
 | `set_pan(x, y)` / `get_pan()` | Pan offset (-50..50) |
-| `power_save(enable)` | No-op in emulator |
+| `power_save([enable])` | Tracks state (getter returns it); rendering not gated |
 
-Palette color names: `VOID`, `WHITE`, `GREY`, `RED`, `PINK`, `DARKBROWN`, `BROWN`, `ORANGE`, `YELLOW`, `DARKGREEN`, `GREEN`, `LIGHTGREEN`, `NIGHTBLUE`, `SEABLUE`, `SKYBLUE`, `CLOUDBLUE`
+Text renders with the firmware's Dogica 8 px pixel fonts (converted from the
+firmware sources), so emulator output is pixel-accurate. Bitmap `palette_offset`
+never wraps: source index 0 is transparent, and offset indices past 15 are
+dropped, exactly as on the device.
+
+Palette color names: `VOID`, `WHITE`, `GREY`, `RED`, `PINK`, `DARKBROWN`, `BROWN`, `ORANGE`, `YELLOW`, `DARKGREEN`, `GREEN`, `LIGHTGREEN`, `NIGHTBLUE`, `SEABLUE`, `SKYBLUE`, `CLOUDBLUE` — defaults match the firmware's RGB palette.
+
+### Sound — `frame.sound.*` *(no audio output)*
+`play(name, [opts])`, `play_async(name, [opts])`, `stop()`, `is_playing()` — the
+sfxr presets (`pickup`, `laser`, `explosion`, `powerup`, `hit`, `jump`, `blip`)
+and options (`sample_rate`, `duration_ms`, `volume`, `seed`) are validated and
+timed exactly as on firmware, but no audio is synthesized.
 
 ### Speaker — `frame.speaker.*` *(no-op)*
 `start`, `play`, `volume`, `stop` — accepted but produce no audio output.
 
-### Microphone — `frame.microphone.*` *(no-op)*
-`start`, `read`, `gain`, `stop`, `aad_callback` — accepted; `read()` returns `nil`.
+### Microphone — `frame.microphone.*` *(no audio capture)*
+`start`, `read`, `gain`, `stop`, `status`, `aec`, `voice`, `diag`, `aad_callback` —
+`start()` validates its config as the firmware does; `read()` follows the
+firmware's non-blocking semantics (`nil` when stopped, `""` when streaming with
+no data, partial even-sized reads, 4096-byte cap). Feed capture bytes in with
+`emulator.inject_microphone_data()`.
 
 ## Architecture Notes
 

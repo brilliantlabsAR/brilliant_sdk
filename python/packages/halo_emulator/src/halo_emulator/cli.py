@@ -26,10 +26,12 @@ def _pygame_window(emulator: object, stop_event: threading.Event) -> None:  # ty
     clock = pygame.time.Clock()
 
     key_map = {
-        pygame.K_SPACE: "inject_button_single",
-        pygame.K_d: "inject_button_double",
-        pygame.K_l: "inject_button_long",
-        pygame.K_t: "inject_imu_tap",
+        pygame.K_SPACE: lambda: emulator.inject_button_single(),
+        pygame.K_d: lambda: emulator.inject_button_double(),
+        pygame.K_l: lambda: emulator.inject_button_long(),
+        pygame.K_t: lambda: emulator.inject_imu_tap("single"),
+        pygame.K_2: lambda: emulator.inject_imu_tap("double"),
+        pygame.K_3: lambda: emulator.inject_imu_tap("triple"),
     }
 
     win_size = 256 * scale
@@ -46,9 +48,9 @@ def _pygame_window(emulator: object, stop_event: threading.Event) -> None:  # ty
                 stop_event.set()
                 break
             elif event.type == pygame.KEYDOWN:
-                method = key_map.get(event.key)
-                if method:
-                    getattr(emulator, method)()
+                inject = key_map.get(event.key)
+                if inject:
+                    inject()
 
         img = emulator.get_framebuffer()  # type: ignore[union-attr]
         mode = img.mode
@@ -125,11 +127,12 @@ def main() -> None:
 
     banner = (
         "Halo Emulator — 'emulator' is in scope\n"
-        "Keyboard (window): SPACE=single click, D=double, L=long, T=tap\n"
+        "Keyboard (window): SPACE=single click, D=double, L=long, "
+        "T=tap, 2=double tap, 3=triple tap\n"
         "Python API:\n"
         "  emulator.inject_bluetooth_data(b'...')\n"
         "  emulator.inject_button_single()\n"
-        "  emulator.inject_imu_tap()\n"
+        "  emulator.inject_imu_tap('single'|'double'|'triple')\n"
         "  emulator.get_framebuffer().save('frame.png')\n"
         "  emulator.get_bluetooth_sent()\n"
         "  emulator.start_recording(fps=30) / emulator.stop_recording('out.mp4')\n"

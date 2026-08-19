@@ -15,10 +15,15 @@ from halo_emulator.stubs.bluetooth import BluetoothStub
 from halo_emulator.stubs.button import ButtonStub
 from halo_emulator.stubs.compression import CompressionStub
 from halo_emulator.stubs.file_stubs import FileStub
-from halo_emulator.stubs.imu import ImuStub
+from halo_emulator.stubs.imu import TAP_KINDS, ImuStub
 from halo_emulator.stubs.microphone import MicrophoneStub
+from halo_emulator.stubs.sound import SoundStub
 from halo_emulator.stubs.speaker import SpeakerStub
-from halo_emulator.stubs.system import EmulatorStopException, SystemStub
+from halo_emulator.stubs.system import (
+    EmulatorRestartException,
+    EmulatorStopException,
+    SystemStub,
+)
 from halo_emulator.stubs.time_stubs import TimeStub
 
 
@@ -78,6 +83,7 @@ class HaloEmulator:
         self._compression = CompressionStub()
         self._speaker = SpeakerStub()
         self._microphone = MicrophoneStub()
+        self._sound = SoundStub(self._stop_event)
         self._system = SystemStub(
             event_queue=self._event_queue,
             dispatch_fn=self._dispatch_event,
@@ -117,6 +123,7 @@ class HaloEmulator:
             compression=self._compression,
             speaker=self._speaker,
             microphone=self._microphone,
+            sound=self._sound,
             sandbox_dir=self._sandbox_dir,
         )
         if self._print_handler is not None:
@@ -167,9 +174,17 @@ class HaloEmulator:
 
     def _run_lua(self, script_name: str) -> None:
         try:
-            script_path = self._sandbox_dir / script_name
-            code = script_path.read_text(encoding="utf-8")
-            self._lua.execute(code)
+            while True:
+                try:
+                    script_path = self._sandbox_dir / script_name
+                    code = script_path.read_text(encoding="utf-8")
+                    self._lua.execute(code)
+                    break
+                except EmulatorRestartException:
+                    # frame.light_sleep() woke: the firmware restarts the Lua
+                    # VM and runs the script from the top. A fresh runtime
+                    # drops Lua-side state and callbacks, as on hardware.
+                    self._build_runtime()
         except EmulatorStopException:
             pass  # clean stop
         except Exception as exc:
@@ -211,7 +226,7 @@ class HaloEmulator:
         elif event.type == "button_long":
             self._button.fire_long()
         elif event.type == "imu_tap":
-            self._imu.fire_tap()
+            self._imu.fire_tap(event.data or "single")
 
     # ------------------------------------------------------------------ injection API
 
@@ -228,8 +243,15 @@ class HaloEmulator:
     def inject_button_long(self) -> None:
         self._event_queue.put(Event(type="button_long"))
 
-    def inject_imu_tap(self) -> None:
-        self._event_queue.put(Event(type="imu_tap"))
+    def inject_imu_tap(self, kind: str = "single") -> None:
+        """Fire a tap gesture: kind is 'single', 'double' or 'triple'."""
+        if kind not in TAP_KINDS:
+            raise ValueError(f"kind must be one of {TAP_KINDS}")
+        self._event_queue.put(Event(type="imu_tap", data=kind))
+
+    def inject_microphone_data(self, data: bytes) -> None:
+        """Queue capture bytes for the Lua script's frame.microphone.read()."""
+        self._microphone.inject_data(bytes(data))
 
     # ------------------------------------------------------------------ configuration API
 
@@ -238,6 +260,10 @@ class HaloEmulator:
 
     def set_battery_charging(self, charging: bool) -> None:
         self._system._battery_charging = bool(charging)
+
+    def set_wakeup_source(self, source: str) -> None:
+        """Set what frame.wakeup_source() reports."""
+        self._system._wakeup_src = str(source)
 
     def set_imu_direction(self, pitch: float, roll: float, heading: float) -> None:
         self._imu.set_direction(pitch, roll, heading)

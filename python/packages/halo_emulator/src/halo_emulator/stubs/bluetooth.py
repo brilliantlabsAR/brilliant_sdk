@@ -30,6 +30,8 @@ class BluetoothStub:
             raw = bytes(data)
         else:
             raw = str(data).encode("latin-1")
+        if not raw:
+            return  # firmware: an empty string transmits nothing (still succeeds)
         self._sent.append(raw)
         for listener in self._send_listeners:
             listener(raw)

@@ -15,6 +15,7 @@ from halo_emulator.stubs.compression import CompressionStub
 from halo_emulator.stubs.file_stubs import FileStub
 from halo_emulator.stubs.imu import ImuStub
 from halo_emulator.stubs.microphone import MicrophoneStub
+from halo_emulator.stubs.sound import SoundStub
 from halo_emulator.stubs.speaker import SpeakerStub
 from halo_emulator.stubs.system import SystemStub
 from halo_emulator.stubs.time_stubs import TimeStub
@@ -31,6 +32,7 @@ def build_lua_runtime(
     compression: CompressionStub,
     speaker: SpeakerStub,
     microphone: MicrophoneStub,
+    sound: SoundStub,
     sandbox_dir: Path,
 ) -> lupa.LuaRuntime:
     """
@@ -42,6 +44,8 @@ def build_lua_runtime(
     # Inject runtime reference into stubs that need to build Lua tables
     imu._runtime = rt
     time_stub._runtime = rt
+    display._runtime = rt
+    microphone._runtime = rt
 
     g = rt.globals()
 
@@ -51,15 +55,17 @@ def build_lua_runtime(
 
     # ---- constants ----
     frame.HARDWARE_VERSION = "EMULATOR"
-    frame.FIRMWARE_VERSION = "0.0.0-emulator"
+    # Firmware version whose behavior this emulator mirrors
+    frame.FIRMWARE_VERSION = "0.8.8-emulator"
     frame.GIT_TAG = "emulator"
     frame.SE_REVISION = "0.0.0"
 
     # ---- system ----
+    # (frame.on_wakeup was removed in firmware 0.8.8: standby() resumes in
+    # place, light_sleep() restarts the VM and re-runs main.lua on wake.)
     frame.sleep = system.sleep
     frame.light_sleep = system.light_sleep
     frame.standby = system.standby
-    frame.on_wakeup = system.on_wakeup
     frame.stay_awake = system.stay_awake
     frame.reboot = system.reboot
     frame.battery_level = system.battery_level
@@ -73,7 +79,6 @@ def build_lua_runtime(
 
     # frame.yield is a Lua keyword — must be set via execute() after registering frame
     g.frame = frame
-    rt.execute("frame['yield'] = _py_yield")
     g._py_yield = system.yield_
     rt.execute("frame['yield'] = _py_yield; _py_yield = nil")
 
@@ -113,6 +118,7 @@ def build_lua_runtime(
     # ---- imu ----
     imu_tbl = rt.table()
     imu_tbl.tap_callback = imu.tap_callback
+    imu_tbl.tap_config = imu.tap_config
     imu_tbl.direction = imu.direction
     imu_tbl.raw = imu.raw
     imu_tbl.config = imu.config
@@ -132,14 +138,26 @@ def build_lua_runtime(
     spk_tbl.stop = speaker.stop
     frame.speaker = spk_tbl
 
-    # ---- microphone (no-op) ----
+    # ---- microphone (no audio capture; inject data from Python) ----
     mic_tbl = rt.table()
     mic_tbl.start = microphone.start
     mic_tbl.read = microphone.read
     mic_tbl.gain = microphone.gain
     mic_tbl.stop = microphone.stop
+    mic_tbl.status = microphone.status
+    mic_tbl.aec = microphone.aec
+    mic_tbl.voice = microphone.voice
+    mic_tbl.diag = microphone.diag
     mic_tbl.aad_callback = microphone.aad_callback
     frame.microphone = mic_tbl
+
+    # ---- sound (sfxr API surface, no audio output) ----
+    snd_tbl = rt.table()
+    snd_tbl.play = sound.play
+    snd_tbl.play_async = sound.play_async
+    snd_tbl.stop = sound.stop
+    snd_tbl.is_playing = sound.is_playing
+    frame.sound = snd_tbl
 
     # ---- display ----
     disp_tbl = rt.table()
@@ -171,11 +189,18 @@ def build_lua_runtime(
     g.frame = frame
 
     # ---- require() override — load modules from sandbox_dir ----
+    # Standard Lua semantics, as firmware 0.8.8: cache-first via
+    # package.loaded, return the module's own value, and cache `true`
+    # for a module that returns nothing.
     sandbox_path = str(sandbox_dir).replace("\\", "/")
     rt.execute(f"""
 local _sandbox_root = '{sandbox_path}'
 local _original_require = require
 require = function(modname)
+    local cached = package.loaded[modname]
+    if cached ~= nil then
+        return cached
+    end
     -- Try path-separated form first: data.min -> data/min.lua
     local full_path = _sandbox_root .. '/' .. modname:gsub('%.', '/') .. '.lua'
     local f = io.open(full_path, 'r')
@@ -190,7 +215,12 @@ require = function(modname)
         f:close()
         local chunk, err = load(src, modname, 't')
         if chunk then
-            return chunk()
+            local result = chunk()
+            if result == nil then
+                result = true
+            end
+            package.loaded[modname] = result
+            return result
         else
             error(err)
         end

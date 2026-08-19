@@ -12,6 +12,21 @@ class EmulatorStopException(Exception):
     """Raised inside frame.sleep() to break out of a running Lua loop."""
 
 
+class EmulatorRestartException(Exception):
+    """Raised by frame.light_sleep() on wake: the firmware restarts the Lua
+    VM and runs main.lua from the top, so the emulator restarts the script."""
+
+
+# Event type -> frame.wakeup_source() value
+_WAKE_SOURCES = {
+    "ble": "ble",
+    "button_single": "button",
+    "button_double": "button",
+    "button_long": "button",
+    "imu_tap": "imu",
+}
+
+
 class SystemStub:
     def __init__(
         self,
@@ -28,9 +43,8 @@ class SystemStub:
         self._wakeup_src: str = "timeout"
         self._eui: str = "EMUEMU00EMUEMU00"
         self._stay_awake_flag: bool = True
-        self._on_wakeup_cb: Callable | None = None
 
-    # Polling loop shared by sleep / light_sleep / standby / yield
+    # Polling loop shared by sleep / yield — dispatches injected events
     def _poll(self, seconds: float) -> None:
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
@@ -42,16 +56,43 @@ class SystemStub:
                 self._dispatch_fn(event)
             time.sleep(0.001)
 
-    def sleep(self, seconds: float = 0.0) -> None:
-        self._poll(float(seconds) if seconds else 0.0)
+    # Sleep-mode wait: callbacks do NOT run while asleep; an injected event
+    # is a wake source instead. Returns the wake source ("timeout" when the
+    # deadline was reached, or None deadline = wait indefinitely).
+    def _wait_for_wake(self, seconds: float | None) -> str:
+        deadline = None if seconds is None else time.monotonic() + seconds
+        while deadline is None or time.monotonic() < deadline:
+            if self._stop_event.is_set():
+                raise EmulatorStopException("Emulator stopped")
+            for event in self._event_queue.drain():
+                if event.type == "stop":
+                    raise EmulatorStopException("Emulator stopped")
+                source = _WAKE_SOURCES.get(event.type)
+                if source is not None:
+                    return source
+            time.sleep(0.001)
+        return "timeout"
 
-    def light_sleep(self, seconds: float = 0.0) -> None:
-        self._poll(float(seconds) if seconds else 0.0)
+    def sleep(self, seconds: float | None = None) -> None:
+        """frame.sleep(s). With no argument (or 0) the firmware deep-sleeps
+        (BLE dropped; wake behaves like a reboot) — the emulator stops."""
+        if not seconds:
+            raise EmulatorStopException("frame.sleep() deep sleep (shutdown)")
+        self._poll(float(seconds))
 
-    def standby(self, seconds: float = 0.0) -> None:
-        self._poll(float(seconds) if seconds else 0.0)
-        if self._on_wakeup_cb is not None:
-            self._on_wakeup_cb()
+    def light_sleep(self, seconds: float | None = None) -> None:
+        """Light sleep: on wake the firmware restarts the Lua VM and runs
+        main.lua from the top — nothing after this call executes."""
+        self._wakeup_src = self._wait_for_wake(
+            float(seconds) if seconds else None
+        )
+        raise EmulatorRestartException("light_sleep wake")
+
+    def standby(self, seconds: float | None = None) -> None:
+        """Standby resumes in place: execution continues after the call."""
+        self._wakeup_src = self._wait_for_wake(
+            float(seconds) if seconds else None
+        )
 
     def yield_(self) -> None:
         """frame.yield() — single queue drain."""
@@ -61,9 +102,6 @@ class SystemStub:
             if event.type == "stop":
                 raise EmulatorStopException("Emulator stopped")
             self._dispatch_fn(event)
-
-    def on_wakeup(self, cb: Callable | None) -> None:
-        self._on_wakeup_cb = cb
 
     def stay_awake(self, enabled: bool | None = None) -> bool | None:
         if enabled is None:
