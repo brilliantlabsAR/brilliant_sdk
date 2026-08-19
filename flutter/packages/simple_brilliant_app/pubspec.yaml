@@ -1,6 +1,6 @@
 name: simple_brilliant_app
 description: "Flutter and Lua quickstart app scaffolding and standard library functions for Brilliant Labs Halo and Frame development on Android/iOS"
-version: 9.0.1
+version: 9.1.0
 homepage:
 repository: https://github.com/brilliantLabsAR/brilliant_sdk
 

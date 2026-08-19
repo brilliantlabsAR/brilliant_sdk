@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "brilliant-msg"
-version = "7.0.0"
+version = "7.1.0"
 dependencies = [
     "lz4>=4.4.3,<5.0.0",
     "numpy>=2.2.3,<3.0.0",

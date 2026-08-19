@@ -20,7 +20,7 @@ class TxSprite extends TxMsg {
   Uint8List get pixelData => _pixelData;
 
   /// Create a sprite with the specified size, palette data and pixel data, identified by the specified message code (the identifier used on the Lua side to label this sprite)
-  /// width(Uint16), height(Uint16), bpp(Uint8), numColors(Uint8), palette (Uint8 r, Uint8 g, Uint8 b)*numColors, data (length: width x height bytes content: palette index)
+  /// width(Uint16), height(Uint16), compressed(Uint8), bpp(Uint8), numColors(Uint8), palette (Uint8 r, Uint8 g, Uint8 b)*numColors, data (length: width x height bytes content: palette index)
   TxSprite({
     required int width,
     required int height,

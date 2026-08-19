@@ -205,7 +205,7 @@ await ble.sendRemoveSignal();
 import { TxTextPage, CircularTextLayout, RectangularTextLayout } from 'brilliant-msg';
 
 // For Halo's circular display
-const layout = new CircularTextLayout({ width: 640, height: 400, fontSize: 36 });
+const layout = new CircularTextLayout({ width: 256, height: 256, fontSize: 24 });
 
 // For Frame's rectangular display
 // const layout = new RectangularTextLayout({ width: 640, height: 400, fontSize: 36 });

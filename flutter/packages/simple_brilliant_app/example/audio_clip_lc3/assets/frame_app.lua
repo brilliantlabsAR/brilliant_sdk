@@ -100,6 +100,7 @@ end
 handlers[START_PLAYBACK_MSG] = function(parsed_data)
 	if frame.HARDWARE_VERSION ~= "Frame" then
 		playing = true
+		-- LC3 duration is in units of 10 microseconds: 1000 = 10 ms frames (750 = 7.5 ms)
 		pcall(frame.speaker.start, {encoder="lc3", sample_rate=8000, channels=1, duration=1000, bitrate=32000, volume=100})
 	end
 	show_text("Playing Audio")

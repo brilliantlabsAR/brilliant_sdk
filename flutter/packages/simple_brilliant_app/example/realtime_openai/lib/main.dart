@@ -524,9 +524,9 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   }
 
   /// Word-wrap for the Halo display: 256px wide, text starts at x=15, and
-  /// the default FreeMono 9pt font is monospace at 11px per character,
-  /// so (256 - 15) ~/ 11 = 21 characters fit on a line.
-  static const int _haloCharsPerLine = 21;
+  /// the default Dogica 8px font is monospace at 8px per character,
+  /// so (256 - 15) ~/ 8 = 30 characters fit on a line.
+  static const int _haloCharsPerLine = 30;
 
   static List<String> _wrapForHalo(String text) {
     final lines = <String>[];

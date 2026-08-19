@@ -37,6 +37,16 @@ class RxTap {
       dataResponseSubs = dataResponse
         .where((data) => data[0] == tapFlag)
         .listen((data) {
+          // Halo (firmware 0.8.8+) detects multi-taps natively: one message
+          // per gesture carrying a kind byte (1=single, 2=double, 3=triple),
+          // so no timing aggregation is needed.
+          if (data.length >= 2 && data[1] >= 1 && data[1] <= 3) {
+            _log.finer('native tap kind: ${data[1]}');
+            _controller!.add(data[1]);
+            return;
+          }
+
+          // Frame sends a bare flag byte per tap: aggregate by timing.
           int tapTime = DateTime.now().millisecondsSinceEpoch;
           // debounce taps that occur too close to the prior tap
           if (tapTime - lastTapTime < 40) {

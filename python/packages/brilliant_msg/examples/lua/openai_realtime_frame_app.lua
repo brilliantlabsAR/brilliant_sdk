@@ -93,6 +93,7 @@ handlers[START_PLAYBACK_MSG] = function(parsed_data)
 	-- value carries the speaker volume (1..100; 0 -> default 100)
 	local vol = parsed_data.value
 	if vol == nil or vol < 1 or vol > 100 then vol = 100 end
+	-- LC3 duration is in units of 10 microseconds: 1000 = 10 ms frames (750 = 7.5 ms)
 	pcall(frame.speaker.start, {encoder="lc3", sample_rate=16000, channels=1, duration=1000, bitrate=32000, volume=vol})
 end
 

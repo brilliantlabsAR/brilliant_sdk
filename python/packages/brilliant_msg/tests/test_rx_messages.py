@@ -353,6 +353,19 @@ class TestRxTap:
         rx = RxTap()
         rx.handle_data(bytes([0x09]))   # queue is None; should log and return
 
+    async def test_native_kind_emitted_immediately(self):
+        # Halo firmware 0.8.8+ sends one message per gesture with a kind byte
+        rx = RxTap(threshold=0.05)
+        rx.queue = asyncio.Queue()
+
+        rx.handle_data(bytes([0x09, 0x02]))  # native double tap
+        count = await asyncio.wait_for(rx.queue.get(), timeout=0.5)
+        assert count == 2
+
+        rx.handle_data(bytes([0x09, 0x03]))  # native triple tap, no debounce
+        count = await asyncio.wait_for(rx.queue.get(), timeout=0.5)
+        assert count == 3
+
 
 # ---------------------------------------------------------------------------
 # BrilliantMsg handler dispatch  (async)

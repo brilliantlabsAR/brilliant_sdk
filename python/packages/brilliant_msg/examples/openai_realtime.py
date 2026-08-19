@@ -99,8 +99,9 @@ BARGE_RMS = 400.0          # AC-RMS a mic read must clear to barge OVER a live r
 BARGE_CONFIRM_FRAMES = 3   # consecutive above-threshold reads to open the mic gate
 BARGE_HANGOVER_MS = 400.0  # sub-threshold audio after which the open gate re-closes
 
-# glasses display: monospace 9pt, ~21 chars fit across the 256px width
-HALO_CHARS_PER_LINE = 21
+# glasses display: the default Dogica 8px font is monospace at 8px per
+# character, and text starts at x=15, so (256 - 15) // 8 = 30 chars per line
+HALO_CHARS_PER_LINE = 30
 
 
 def mic_start_payload(gain: int, aec: bool, voice: bool) -> bytes:

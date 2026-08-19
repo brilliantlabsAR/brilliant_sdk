@@ -71,7 +71,9 @@ export class RxTap {
      * This method is typically called by a `BrilliantMsg` instance when a tap event is received.
      * It debounces rapid taps and counts taps within a defined threshold.
      * The accumulated tap count is placed onto the `queue` when the threshold timer expires.
-     * @param data A Uint8Array containing the tap event data (usually just the msgCode byte).
+     * @param data A Uint8Array containing the tap event data: the msgCode byte,
+     *             optionally followed by a kind byte (1=single, 2=double,
+     *             3=triple) on Halo firmware 0.8.8+.
      */
     public handleData(data: Uint8Array): void {
         if (!this.queue) {
@@ -79,6 +81,14 @@ export class RxTap {
             return;
         }
 
+        // Halo (firmware 0.8.8+) detects multi-taps natively: one message per
+        // gesture carrying the kind, so no timing aggregation is needed.
+        if (data.length >= 2 && data[1] >= 1 && data[1] <= 3) {
+            this.queue.put(data[1]);
+            return;
+        }
+
+        // Frame sends a bare flag byte per tap: aggregate by timing.
         const currentTime = Date.now(); // Use milliseconds for timing
 
         // Debounce taps that occur too close together (40ms)

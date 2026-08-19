@@ -142,7 +142,7 @@ provides-extras = ["examples", "tests", "docs"]
 
 [[package]]
 name = "brilliant-msg"
-version = "7.0.0"
+version = "7.1.0"
 source = { editable = "packages/brilliant_msg" }
 dependencies = [
     { name = "brilliant-ble" },

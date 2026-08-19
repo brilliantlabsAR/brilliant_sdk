@@ -1,3 +1,13 @@
+## 4.1.0
+
+True-up against Halo firmware 0.8.8.
+
+* Added the missing `tap.lua`/`tap.min.lua` and `sprite_coords.lua`/`sprite_coords.min.lua` device libraries (present in the Python and webbluetooth SDKs)
+* `tap.lua` forwards Halo's native tap kind (`'single'`/`'double'`/`'triple'`) as a payload byte (1/2/3); on Frame the bare flag byte is still sent per tap
+* `RxTap` emits the native kind directly when present (Halo 0.8.8 fires one callback per gesture, so timing aggregation would have under-counted); timing aggregation remains the Frame fallback
+* `plain_text.lua` synced with the Halo-aware version: on Halo the palette offset maps to the firmware default palette's RGB value (Halo's `frame.display.text` takes an RGB color)
+* Sprite wire-format comments corrected to include the `compressed` byte
+
 ## 4.0.0
 
 * First release of `brilliant_msg`, renamed from `frame_msg`; replace `frame_msg` with `brilliant_msg` in `pubspec.yaml` and update imports from `package:frame_msg/` to `package:brilliant_msg/`

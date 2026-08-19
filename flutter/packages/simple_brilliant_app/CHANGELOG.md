@@ -1,3 +1,12 @@
+## 9.1.0
+
+True-up against Halo firmware 0.8.8.
+
+* `TextUtils` gains Halo helpers (`wrapTextHalo`, `getTextWidthHalo`, `haloCharWidth`, `haloLineHeight`) for the monospace Dogica 8px font; the existing width table documents itself as Frame metrics
+* Templates rewritten off the removed `data.parsers`/`data.app_data` API onto the current queue API (`data.process_raw_items()` returning `{flag, raw}` pairs), with Halo-aware display calls; template tap handler forwards the native tap kind
+* `image_gen_pollinations` and `vision_api` examples wrap text with Halo metrics at 256px (was Frame metrics at 256/640px)
+* `realtime_openai` example wraps at 30 chars/line for Dogica 8px (was 21 for the old FreeMono font)
+
 ## 9.0.1
 
 * Renamed `examples/` directory to `example/` to follow pub.dev layout conventions

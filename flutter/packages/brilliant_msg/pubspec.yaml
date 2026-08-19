@@ -1,6 +1,6 @@
 name: brilliant_msg
 description: "Application-level library for passing rich objects between a host program and Brilliant Labs Frame such as images, streamed audio, IMU data and rasterized text."
-version: 4.0.0
+version: 4.1.0
 homepage:
 repository: https://github.com/brilliantLabsAR/brilliant_sdk
 

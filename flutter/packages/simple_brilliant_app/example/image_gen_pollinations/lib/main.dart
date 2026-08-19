@@ -130,7 +130,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
           _stopListening();
           // send final query text to Halo/Frame
           if (_finalResult != _prevText) {
-            var text = TxPlainText(text: TextUtils.wrapText(_finalResult, 256, 4).join('\n'));
+            var text = TxPlainText(text: TextUtils.wrapTextHalo(_finalResult, 256).join('\n'));
             await frame!.sendMessage(0x0a, text.pack());
             _prevText = _finalResult;
           }
@@ -198,7 +198,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
           _log.fine('Partial result: $_partialResult, ${result.alternates}');
           if (_partialResult != _prevText) {
             // send partial result to Halo/Frame
-            var text = TxPlainText(text: TextUtils.wrapText(_partialResult, 256, 4).join('\n'));
+            var text = TxPlainText(text: TextUtils.wrapTextHalo(_partialResult, 256).join('\n'));
             await frame!.sendMessage(0x0a, text.pack());
             _prevText = _partialResult;
           }

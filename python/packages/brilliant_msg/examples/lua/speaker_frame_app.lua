@@ -37,6 +37,7 @@ function app_loop()
 						if frame.HARDWARE_VERSION ~= 'Frame' then
 							if msg.value == 1 then
 								print("Starting speaker")
+								-- LC3 duration is in units of 10 microseconds: 1000 = 10 ms frames (750 = 7.5 ms)
 								frame.speaker.start{encoder='lc3', sample_rate=8000, duration=1000, channels=1, bitrate=32000, volume=50}
 							else
 								print("Stopping speaker")

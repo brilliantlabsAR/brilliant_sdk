@@ -16,24 +16,30 @@ async def set_palette(f: BrilliantBle, palette_data: bytes):
             await f.send_lua(f"frame.display.assign_color({i//3},{r},{g},{b})print(0)", await_print=True)
     return 
 
+# Halo firmware default palette (stored as RGB since 0.8.8)
+HALO_DEFAULT_PALETTE = [
+    (0, 0, 0),        # 0 VOID
+    (255, 255, 255),  # 1 WHITE
+    (128, 128, 128),  # 2 GREY
+    (255, 0, 0),      # 3 RED
+    (255, 192, 203),  # 4 PINK
+    (101, 67, 33),    # 5 DARKBROWN
+    (150, 75, 0),     # 6 BROWN
+    (255, 165, 0),    # 7 ORANGE
+    (255, 255, 0),    # 8 YELLOW
+    (0, 100, 0),      # 9 DARKGREEN
+    (0, 255, 0),      # 10 GREEN
+    (144, 238, 144),  # 11 LIGHTGREEN
+    (25, 25, 112),    # 12 NIGHTBLUE
+    (0, 0, 205),      # 13 SEABLUE
+    (135, 206, 235),  # 14 SKYBLUE
+    (240, 248, 255),  # 15 CLOUDBLUE
+]
+
 async def restore_default_palette(frame: BrilliantBle):
     # Set the palette back to the firmware default
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(0, 0, 4, 4);print(0)", await_print=True) # VOID
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(1, 15, 4, 4);print(0)", await_print=True) # WHITE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(2, 7, 4, 4);print(0)", await_print=True) # GREY
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(3, 5, 3, 6);print(0)", await_print=True) # RED
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(4, 9, 3, 5);print(0)", await_print=True) # PINK
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(5, 2, 2, 5);print(0)", await_print=True) # DARKBROWN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(6, 4, 2, 5);print(0)", await_print=True) # BROWN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(7, 9, 2, 5);print(0)", await_print=True) # ORANGE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(8, 13, 2, 4);print(0)", await_print=True) # YELLOW
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(9, 4, 4, 3);print(0)", await_print=True) # DARKGREEN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(10, 6, 2, 3);print(0)", await_print=True) # GREEN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(11, 10, 1, 3);print(0)", await_print=True) # LIGHTGREEN
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(12, 1, 5, 2);print(0)", await_print=True) # NIGHTBLUE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(13, 4, 5, 2);print(0)", await_print=True) # SEABLUE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(14, 8, 5, 2);print(0)", await_print=True) # SKYBLUE
-    await frame.send_lua(f"frame.display.assign_color_ycbcr(15, 13, 4, 3);print(0)", await_print=True) # CLOUDBLUE
+    for i, (r, g, b) in enumerate(HALO_DEFAULT_PALETTE):
+        await frame.send_lua(f"frame.display.assign_color({i},{r},{g},{b});print(0)", await_print=True)
     print("Default palette set.")
 
 async def main():

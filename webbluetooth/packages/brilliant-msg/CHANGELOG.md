@@ -1,3 +1,17 @@
+## 2.1.0
+
+True-up against Halo firmware 0.8.8.
+
+* `tap.lua` forwards Halo's native tap kind (`'single'`/`'double'`/`'triple'`) as a payload byte (1/2/3); on Frame the bare flag byte is still sent per tap
+* `RxTap` emits the native kind directly when present (Halo 0.8.8 fires one callback per gesture, so timing aggregation would have under-counted); timing aggregation remains the Frame fallback
+* `CircularTextLayout` docs use Halo's real display size (256×256, was 640×400)
+* Sprite wire-format comments corrected to include the `compressed` byte
+
+## 2.0.0
+
+* First release of `brilliant-msg`, renamed from `frame-msg`; update imports accordingly
+* Adds support for Brilliant Labs Halo in addition to Brilliant Labs Frame
+
 ## 1.1.0
 
 * Added Halo device support

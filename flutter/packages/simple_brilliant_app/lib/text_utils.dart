@@ -1,5 +1,12 @@
 class TextUtils {
+  // Frame's default variable-width font metrics. Halo's default font is
+  // Dogica 8px, a monospace pixel font — use the halo* members for Halo.
   static const _lineHeight = 60;
+
+  /// Halo: every Dogica glyph advances 8px (at the default 8px font size),
+  /// and lines advance 10px.
+  static const haloCharWidth = 8;
+  static const haloLineHeight = 10;
 
   static const Map<int, int> charWidthMapping = {
     0x000020: 13,
@@ -203,6 +210,53 @@ class TextUtils {
     0x0F000F: 76,
     0x0F0010: 70
   };
+
+  /// Text width on Halo's monospace Dogica font. [fontSize] is the
+  /// frame.display.set_font size (a multiple of 8; default 8).
+  static int getTextWidthHalo(String text, {int fontSize = 8}) {
+    return text.length * (fontSize ~/ 8) * haloCharWidth;
+  }
+
+  /// Word-wrap [text] to [maxWidth] pixels using Halo's monospace metrics.
+  static List<String> wrapTextHalo(String text, int maxWidth,
+      {int fontSize = 8}) {
+    final charsPerLine = maxWidth ~/ ((fontSize ~/ 8) * haloCharWidth);
+    List<String> output = List.empty(growable: true);
+
+    for (String line in text.split("\n")) {
+      String trimmedLine = line.trim();
+      if (trimmedLine.isEmpty) {
+        continue;
+      } else if (trimmedLine.length <= charsPerLine) {
+        output.add(trimmedLine);
+      } else {
+        String thisLine = "";
+        for (String word in trimmedLine.split(" ")) {
+          // hard-break words longer than a whole line
+          while (word.length > charsPerLine) {
+            if (thisLine.isNotEmpty) {
+              output.add(thisLine);
+              thisLine = "";
+            }
+            output.add(word.substring(0, charsPerLine));
+            word = word.substring(charsPerLine);
+          }
+          if (thisLine.isEmpty) {
+            thisLine = word;
+          } else if (thisLine.length + 1 + word.length <= charsPerLine) {
+            thisLine += " $word";
+          } else {
+            output.add(thisLine);
+            thisLine = word;
+          }
+        }
+        if (thisLine.isNotEmpty) {
+          output.add(thisLine.trim());
+        }
+      }
+    }
+    return output;
+  }
 
   static int getTextWidth(String text, int charSpacing) {
     int width = 0;

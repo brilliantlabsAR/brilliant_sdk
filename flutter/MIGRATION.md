@@ -234,7 +234,7 @@ import 'package:brilliant_msg/brilliant_msg.dart';
 final layout = RectangularTextLayout(width: 640, height: 400, fontSize: 36);
 
 // For Halo's circular display
-final layout = CircularTextLayout(width: 640, height: 400, fontSize: 36);
+final layout = CircularTextLayout(width: 256, height: 256, fontSize: 24);
 
 final page = TxTextPage(layout: layout, text: 'Hello from Halo!');
 final pageData = await page.rasterizeNextPage();

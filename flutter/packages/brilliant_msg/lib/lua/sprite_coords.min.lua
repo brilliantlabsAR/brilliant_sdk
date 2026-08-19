@@ -1,0 +1,1 @@
+local a={}function a.parse_sprite_coords(b)local c={}c.code=string.byte(b,1)c.x=string.byte(b,2)<<8|string.byte(b,3)c.y=string.byte(b,4)<<8|string.byte(b,5)c.offset=string.byte(b,6)return c end;return a

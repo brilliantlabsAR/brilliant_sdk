@@ -2,7 +2,7 @@
 local _M = {}
 
 -- Parse the sprite message raw data. Unpack the header fields.
--- width(Uint16), height(Uint16), bpp(Uint8), numColors(Uint8), palette (Uint8 r, Uint8 g, Uint8 b)*numColors, data (length width x height x bpp/8)
+-- width(Uint16), height(Uint16), compressed(Uint8), bpp(Uint8), numColors(Uint8), palette (Uint8 r, Uint8 g, Uint8 b)*numColors, data (length width x height x bpp/8)
 function _M.parse_sprite(data)
 	local sprite = {}
 	sprite.width = string.byte(data, 1) << 8 | string.byte(data, 2)

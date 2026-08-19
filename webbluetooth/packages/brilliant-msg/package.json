@@ -1,6 +1,6 @@
 {
   "name": "brilliant-msg",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
   "main": "dist/brilliant-msg.umd.js",
   "module": "dist/brilliant-msg.es.js",

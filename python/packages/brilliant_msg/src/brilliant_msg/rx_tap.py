@@ -45,12 +45,20 @@ class RxTap:
         Process an incoming Tap message
 
         Args:
-            data: A single byte with the tap_flag prefix
+            data: The tap_flag byte, optionally followed by a kind byte
+                (1=single, 2=double, 3=triple) on Halo firmware 0.8.8+
         """
         if not self.queue:
             _log.warning("Received data but queue not initialized - call start() first")
             return
 
+        # Halo (firmware 0.8.8+) detects multi-taps natively: one message per
+        # gesture carrying the kind, so no timing aggregation is needed.
+        if len(data) >= 2 and 1 <= data[1] <= 3:
+            self.queue.put_nowait(data[1])
+            return
+
+        # Frame sends a bare flag byte per tap: aggregate by timing.
         current_time = time.time()
 
         # Debounce taps that occur too close together (40ms)

@@ -19,7 +19,7 @@ class TextPagination {
     // Replace the last line in originalLines and recompute mutable wrapped lines
     if (_originalLines.isNotEmpty) {
       _originalLines[_originalLines.length - 1] = newLastLine;
-      _mutableWrappedLines = TextUtils.wrapText(newLastLine, 640, 4);
+      _mutableWrappedLines = TextUtils.wrapTextHalo(newLastLine, 256);
     }
   }
 
@@ -34,7 +34,7 @@ class TextPagination {
     _originalLines.add(newLine);
 
     // Set the new line as the mutable wrapped lines
-    _mutableWrappedLines = TextUtils.wrapText(newLine, 640, 4);
+    _mutableWrappedLines = TextUtils.wrapTextHalo(newLine, 256);
   }
 
   List<String> getCurrentPage() {
