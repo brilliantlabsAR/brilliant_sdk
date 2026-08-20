@@ -1,5 +1,6 @@
 // Unit tests for MagCalibration + CompassHeading. No device or test framework
-// required: run with `npm test` (node --test) after `npm run build`.
+// required: run with `npm test` (node --test) — the pretest script builds the
+// dist bundle these tests import (and the linked brilliant-ble, if needed).
 // Mirrors the Flutter example's test/mag_calibration_test.dart and the Python
 // tests/test_calibration.py guards so all three SDKs stay in lockstep.
 import { test } from 'node:test';

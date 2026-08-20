@@ -24,6 +24,7 @@
     "preview": "vite preview",
     "dev:demo": "vite --config example/vite.config.ts",
     "docs:api": "typedoc --out example/dist/api src",
+    "pretest": "node scripts/pretest.mjs",
     "test": "node --test"
   },
   "keywords": [],

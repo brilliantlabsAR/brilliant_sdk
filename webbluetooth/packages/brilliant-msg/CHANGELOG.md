@@ -6,6 +6,7 @@ True-up against Halo firmware 0.8.8.
 * `RxTap` emits the native kind directly when present (Halo 0.8.8 fires one callback per gesture, so timing aggregation would have under-counted); timing aggregation remains the Frame fallback
 * `CircularTextLayout` docs use Halo's real display size (256×256, was 640×400)
 * Sprite wire-format comments corrected to include the `compressed` byte
+* `npm test` now builds the dist bundle it tests (and the linked `brilliant-ble`, if needed) via a `pretest` script — previously the mag-calibration tests failed in a fresh checkout with "MagCalibration is not a constructor"
 
 ## 2.0.0
 
