@@ -13,7 +13,7 @@ async def main():
     b = BrilliantBle()
     name = await b.connect(name=args.name, print_response_handler=lambda s: print(s))
     fw = await b.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
-    tag = await b.send_lua("print(frame.GIT_TAG)", await_print=True)
+    tag = await b.send_lua("print(frame.GIT_TAG == '' and 'untagged' or frame.GIT_TAG)", await_print=True)
     batt = await b.send_lua("print(frame.battery_level())", await_print=True)
     print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
     
@@ -44,9 +44,10 @@ async def main():
     await b.send_lua("frame.display.text('The quick brown fox jumped', 50, 150, 0xFFFFFF)")
     await b.send_lua("frame.display.text('over the lazy dog.', 50, 200, 0xFFFFFF)")
 
-    # Change font and scaling
-    await b.send_lua("frame.display.set_font(0, 12, 2)")
+    # Change font and scaling (sizes must be multiples of 8 since fw 0.8.8)
+    await b.send_lua("frame.display.set_font(1, 16, 1)")
     await b.send_lua("frame.display.text('Big Bold!', 30, 100, 0x00FF00)")
+    await b.send_lua("frame.display.set_font(0, 8, 1)")
 
     # --- Drawing primitives ---
     await b.send_lua("frame.display.set_pixel(10, 10, 0x00FFFF)")  # Cyan pixel
