@@ -5,6 +5,7 @@ True-up against Halo firmware 0.8.8 (`frame.FIRMWARE_VERSION` now reports
 
 ### Breaking
 
+* Lua runtime upgraded from 5.3 to **Lua 5.4** (`lupa.lua54`), matching the firmware's vendored Lua 5.4.6
 * `frame.on_wakeup()` removed (removed from firmware in 0.8.8). `standby()` resumes in place; `light_sleep()` restarts the Lua VM and re-runs the entry script from the top on wake
 * `frame.sleep()` with no argument (or 0) now deep-sleeps: the emulator stops, matching the firmware's shutdown behavior
 * `frame.imu.tap_callback` handlers now receive the gesture kind (`'single'`/`'double'`/`'triple'`); `inject_imu_tap()` takes an optional kind and fires one callback per gesture

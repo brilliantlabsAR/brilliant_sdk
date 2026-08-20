@@ -34,7 +34,7 @@ The SDK is organized in layers:
 
 **`brilliant_sdk`** — Meta-package that installs both `brilliant_ble` and `brilliant_msg` as a single dependency.
 
-**`halo_emulator`** — Lua 5.3 emulator (via `lupa`) for testing Halo apps without hardware. Not published to PyPI.
+**`halo_emulator`** — Lua 5.4 emulator (via `lupa`) for testing Halo apps without hardware. Not published to PyPI.
 
 ## Key Design Patterns
 

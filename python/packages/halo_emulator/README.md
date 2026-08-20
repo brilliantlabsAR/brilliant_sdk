@@ -4,11 +4,11 @@ A Python package that emulates the [Brilliant Labs Halo](https://brilliant.xyz/)
 
 ## Overview
 
-Halo glasses run user scripts in an on-device **Lua 5.3 VM** and expose a rich `frame.*` API covering display, Bluetooth, IMU, buttons, file I/O, audio, compression, and system control. The emulator embeds the same Lua 5.3 runtime ([lupa](https://github.com/scoder/lupa)) and replaces all `frame.*` calls with Python stubs, rendering display output to a 256×256 pixel buffer.
+Halo glasses run user scripts in an on-device **Lua 5.4 VM** and expose a rich `frame.*` API covering display, Bluetooth, IMU, buttons, file I/O, audio, compression, and system control. The emulator embeds the same Lua 5.4 runtime ([lupa](https://github.com/scoder/lupa)) and replaces all `frame.*` calls with Python stubs, rendering display output to a 256×256 pixel buffer.
 
 Key features:
 
-- **Full Lua 5.3 runtime** — run unmodified Lua scripts
+- **Full Lua 5.4 runtime** — run unmodified Lua scripts
 - **Virtual 256×256 display** — all drawing primitives, palette, text, and bitmap ops
 - **Event injection** — trigger BLE data, button presses, and IMU taps from Python
 - **Test-friendly** — inspect the framebuffer as a PIL Image and capture BLE sends

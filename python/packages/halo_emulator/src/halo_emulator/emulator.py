@@ -31,7 +31,7 @@ class HaloEmulator:
     """
     Halo device emulator.
 
-    Runs a user Lua 5.3 script in an embedded VM (via lupa) with all
+    Runs a user Lua 5.4 script in an embedded VM (via lupa) with all
     ``frame.*`` API calls stubbed out. Python can inject events and
     inspect outputs for testing or interactive development.
 

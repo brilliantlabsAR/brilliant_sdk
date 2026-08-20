@@ -2,7 +2,7 @@
 
 A multi-platform SDK for building applications that communicate with [Brilliant Labs](https://brilliant.xyz/) smart glasses — **Halo** and **Frame**.
 
-Devices run user scripts in an on-device **Lua 5.3 VM** and expose the `frame.*` API for display, Bluetooth, IMU, audio, file I/O, and more. The SDK handles the host side: BLE transport, message framing, and rich data types (images, text, audio, sensor data).
+Devices run user scripts in an on-device **Lua 5.4 VM** and expose the `frame.*` API for display, Bluetooth, IMU, audio, file I/O, and more. The SDK handles the host side: BLE transport, message framing, and rich data types (images, text, audio, sensor data).
 
 ---
 
@@ -56,7 +56,7 @@ All three SDKs share the same two-layer architecture:
 ├──────────────────────────────────────────────────────────┤
 │  Bluetooth LE                                            │
 ├──────────────────────────────────────────────────────────┤
-│  Device (Halo / Frame)  —  Lua 5.3 VM + frame.* API      │
+│  Device (Halo / Frame)  —  Lua 5.4 VM + frame.* API      │
 └──────────────────────────────────────────────────────────┘
 ```
 

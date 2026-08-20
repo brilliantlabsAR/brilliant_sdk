@@ -1,11 +1,11 @@
-"""Build the lupa Lua 5.3 runtime and register all frame.* stubs."""
+"""Build the lupa Lua 5.4 runtime and register all frame.* stubs."""
 from __future__ import annotations
 
 import threading
 from pathlib import Path
 from typing import Any
 
-import lupa.lua53 as lupa
+import lupa.lua54 as lupa
 
 from halo_emulator.display import DisplayBuffer
 from halo_emulator.event_queue import EventQueue
@@ -36,7 +36,7 @@ def build_lua_runtime(
     sandbox_dir: Path,
 ) -> lupa.LuaRuntime:
     """
-    Create a Lua 5.3 runtime and populate the global `frame` table with all
+    Create a Lua 5.4 runtime and populate the global `frame` table with all
     Python stub implementations. Returns the ready-to-use LuaRuntime.
     """
     rt = lupa.LuaRuntime(unpack_returned_tuples=True, encoding="latin-1")
