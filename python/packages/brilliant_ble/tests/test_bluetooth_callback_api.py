@@ -21,7 +21,7 @@ async def main():
 
     await bluetooth.send_reset_signal()
     fw = await bluetooth.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
-    tag = await bluetooth.send_lua("print(frame.GIT_TAG)", await_print=True)
+    tag = await bluetooth.send_lua("print(frame.GIT_TAG == '' and 'untagged' or frame.GIT_TAG)", await_print=True)
     batt = await bluetooth.send_lua("print(frame.battery_level())", await_print=True)
     print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
     await bluetooth.send_lua("function ble_event(d)frame.bluetooth.send(d)end")

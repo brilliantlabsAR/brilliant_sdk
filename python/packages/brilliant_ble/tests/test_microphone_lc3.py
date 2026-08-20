@@ -132,7 +132,7 @@ async def main():
     b = BrilliantBle()
     name = await b.connect(name=args.name, data_response_handler=receive_data)
     fw = await b.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
-    tag = await b.send_lua("print(frame.GIT_TAG)", await_print=True)
+    tag = await b.send_lua("print(frame.GIT_TAG == '' and 'untagged' or frame.GIT_TAG)", await_print=True)
     batt = await b.send_lua("print(frame.battery_level())", await_print=True)
     print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
 

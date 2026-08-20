@@ -20,7 +20,7 @@ async def main():
     try:
         name = await frame.connect(name=args.name)
         fw = await frame.send_lua("print(frame.FIRMWARE_VERSION)", await_print=True)
-        tag = await frame.send_lua("print(frame.GIT_TAG)", await_print=True)
+        tag = await frame.send_lua("print(frame.GIT_TAG == '' and 'untagged' or frame.GIT_TAG)", await_print=True)
         batt = await frame.send_lua("print(frame.battery_level())", await_print=True)
         print(f"{name} | firmware {fw} | git {tag} | battery {batt}%")
 
