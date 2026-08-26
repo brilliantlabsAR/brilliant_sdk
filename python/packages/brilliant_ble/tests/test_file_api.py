@@ -180,6 +180,16 @@ async def main():
     test = TestBluetooth()
     await test.initialize(args.name)
 
+    # Clear anything a previous interrupted run of THIS test may have left in
+    # the root: a leftover test.lua/test2.lua or the /this tree would be
+    # counted into `base` below, and since the steps that follow overwrite
+    # rather than re-create them, the +1/-1 delta assertions would then be off
+    # by one. remove() of an absent path is a no-op here (the _probe pcall
+    # swallows it), so this is safe on a clean device.
+    for leftover in ("test.lua", "test2.lua",
+                     "/this/is/some/path", "/this/is/some", "/this/is", "/this"):
+        await test._probe(f"frame.file.remove('{leftover}')")
+
     # Entry count before this test adds anything. Asserting on deltas rather
     # than on absolute counts keeps the test valid on a device that already
     # holds recordings from the microphone or AEC harnesses.
