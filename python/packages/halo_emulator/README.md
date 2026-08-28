@@ -242,7 +242,7 @@ the entry script from the top on wake (check `frame.wakeup_source()` there);
 `sleep()` with no argument deep-sleeps and stops the emulator.
 `frame.on_wakeup()` was removed in firmware 0.8.8 and is not provided.
 
-Constants: `HARDWARE_VERSION` (`"EMULATOR"`), `FIRMWARE_VERSION` (`"0.8.8-emulator"`), `GIT_TAG`, `SE_REVISION`
+Constants: `HARDWARE_VERSION` (`"EMULATOR"`), `FIRMWARE_VERSION` (`"0.8.9-emulator"`), `GIT_TAG`, `SE_REVISION`
 
 ### Time — `frame.time.*`
 `utc`, `zone`, `date`
@@ -307,8 +307,10 @@ sfxr presets (`pickup`, `laser`, `explosion`, `powerup`, `hit`, `jump`, `blip`)
 and options (`sample_rate`, `duration_ms`, `volume`, `seed`) are validated and
 timed exactly as on firmware, but no audio is synthesized.
 
-### Speaker — `frame.speaker.*` *(no-op)*
-`start`, `play`, `volume`, `stop` — accepted but produce no audio output.
+### Speaker — `frame.speaker.*` *(no audio output)*
+`start`, `play`, `volume`, `stop` — config and stream state are validated as
+on firmware 0.8.9, including the per-stream `gain` (0-12) and `budget`
+(10-100) loudness fields, but no audio is produced.
 
 ### Microphone — `frame.microphone.*` *(no audio capture)*
 `start`, `read`, `gain`, `stop`, `status`, `aec`, `voice`, `diag`, `aad_callback` —

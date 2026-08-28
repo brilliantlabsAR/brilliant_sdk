@@ -1,4 +1,4 @@
-"""Firmware 0.8.8 parity tests: palette, fonts, require, time, tap, sound, mic."""
+"""Firmware 0.8.9 parity tests: palette, fonts, require, time, tap, sound, mic, speaker."""
 from __future__ import annotations
 
 import time
@@ -285,6 +285,57 @@ def test_sound_api(emulator):
         emulator.execute_lua("frame.sound.play('blip', {sample_rate=44100})")
 
 
+# ---------------------------------------------------------------- speaker
+
+def test_speaker_start_validation(emulator):
+    emulator.connect()
+    emulator.execute_lua(
+        "frame.speaker.start{encoder='lc3', sample_rate=16000, duration=1000, "
+        "channels=1, bitrate=32000, volume=50}"
+    )
+    # 0.8.9 per-stream loudness fields; start() while streaming reconfigures
+    emulator.execute_lua("frame.speaker.start{gain=12, budget=100}")
+    # any encoder other than 'lc3' falls back to pcm, as on firmware
+    emulator.execute_lua("frame.speaker.start{encoder='mp3'}")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start()")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start{sample_rate=44100}")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start{channels=3}")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start{bit_depth=8}")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start{encoder='lc3', duration=500}")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start{encoder='lc3', bitrate=100000}")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start{volume=101}")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start{gain=13}")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.start{budget=5}")
+
+
+def test_speaker_play_and_volume_semantics(emulator):
+    emulator.connect()
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.play('\\x00\\x01')")
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.volume(80)")
+    emulator.execute_lua("frame.speaker.start{volume=30}")
+    assert emulator.execute_lua("return frame.speaker.volume()") == 30
+    emulator.execute_lua("frame.speaker.play('')")
+    emulator.execute_lua("frame.speaker.volume(80)")
+    assert emulator.execute_lua("return frame.speaker.volume()") == 80
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.volume(101)")
+    emulator.execute_lua("frame.speaker.stop()")
+    emulator.execute_lua("frame.speaker.stop()")  # no-op when already stopped
+    with pytest.raises(Exception):
+        emulator.execute_lua("frame.speaker.play('\\x00')")
+
+
 # ---------------------------------------------------------------- microphone
 
 def test_microphone_read_semantics(emulator):
@@ -337,4 +388,4 @@ def test_empty_send_transmits_nothing(emulator):
 
 def test_firmware_version_marker(emulator):
     emulator.connect()
-    assert emulator.execute_lua("return frame.FIRMWARE_VERSION") == "0.8.8-emulator"
+    assert emulator.execute_lua("return frame.FIRMWARE_VERSION") == "0.8.9-emulator"
