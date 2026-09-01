@@ -56,7 +56,7 @@ def build_lua_runtime(
     # ---- constants ----
     frame.HARDWARE_VERSION = "EMULATOR"
     # Firmware version whose behavior this emulator mirrors
-    frame.FIRMWARE_VERSION = "0.8.8-emulator"
+    frame.FIRMWARE_VERSION = "0.8.9-emulator"
     frame.GIT_TAG = "emulator"
     frame.SE_REVISION = "0.0.0"
 
@@ -130,7 +130,7 @@ def build_lua_runtime(
     comp_tbl.decompress = compression.decompress
     frame.compression = comp_tbl
 
-    # ---- speaker (no-op) ----
+    # ---- speaker (no audio output) ----
     spk_tbl = rt.table()
     spk_tbl.start = speaker.start
     spk_tbl.play = speaker.play
