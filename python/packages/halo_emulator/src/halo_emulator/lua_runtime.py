@@ -56,7 +56,7 @@ def build_lua_runtime(
     # ---- constants ----
     frame.HARDWARE_VERSION = "EMULATOR"
     # Firmware version whose behavior this emulator mirrors
-    frame.FIRMWARE_VERSION = "0.8.8-emulator"
+    frame.FIRMWARE_VERSION = "0.8.12-emulator"
     frame.GIT_TAG = "emulator"
     frame.SE_REVISION = "0.0.0"
 
@@ -189,18 +189,17 @@ def build_lua_runtime(
     g.frame = frame
 
     # ---- require() override — load modules from sandbox_dir ----
-    # Standard Lua semantics, as firmware 0.8.8: cache-first via
-    # package.loaded, return the module's own value, and cache `true`
-    # for a module that returns nothing.
+    # As on firmware: load and run the file on every call, returning the
+    # module's first result (nil if it returns nothing). Deliberately not
+    # memoised in package.loaded -- apps are started by require()-ing their
+    # main module, so a cache would stop a cleanly-exited app from being
+    # started again, and a module re-uploaded mid-session would keep running
+    # the old copy. A module required from two places is loaded twice.
     sandbox_path = str(sandbox_dir).replace("\\", "/")
     rt.execute(f"""
 local _sandbox_root = '{sandbox_path}'
 local _original_require = require
 require = function(modname)
-    local cached = package.loaded[modname]
-    if cached ~= nil then
-        return cached
-    end
     -- Try path-separated form first: data.min -> data/min.lua
     local full_path = _sandbox_root .. '/' .. modname:gsub('%.', '/') .. '.lua'
     local f = io.open(full_path, 'r')
@@ -215,12 +214,7 @@ require = function(modname)
         f:close()
         local chunk, err = load(src, modname, 't')
         if chunk then
-            local result = chunk()
-            if result == nil then
-                result = true
-            end
-            package.loaded[modname] = result
-            return result
+            return (chunk())
         else
             error(err)
         end

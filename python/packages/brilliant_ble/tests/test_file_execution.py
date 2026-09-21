@@ -138,12 +138,10 @@ async def main():
         await test.upload_file_from_string(LOOP_MAIN, "main.lua")
 
         ## Run it with require() and break execution after some time.
-        ## The runtime already require()s 'main' at boot and require() memoises
-        ## in package.loaded, so requiring it again would return the cached
-        ## value and never execute the file just uploaded. Clear the entry
-        ## first -- the same escape hatch a user needs after re-uploading a
-        ## module mid-session.
-        await test.send_lua("package.loaded['main'] = nil require('main')")
+        ## require() re-reads the file on every call (no package.loaded cache),
+        ## so this runs the main.lua just uploaded even though the runtime
+        ## already require()d 'main' at boot.
+        await test.send_lua("require('main')")
         await test.expect_prints("test", seconds=3, at_least=2)
         await test.send_break_signal()
         await test.expect_silence("test", seconds=3)
