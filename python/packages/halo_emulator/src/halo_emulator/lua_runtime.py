@@ -221,6 +221,12 @@ require = function(modname)
     end
     return _original_require(modname)
 end
+-- The firmware has no package library (no searchers, no path, and since
+-- 0.8.12 no loaded cache), so an app that touches package.loaded errors on
+-- the device. Hide lupa's stock table so the emulator errors the same way.
+-- The stdlib fallback above keeps working: standard require() reads its
+-- package table from an upvalue and the registry, not from this global.
+package = nil
 """)
 
     return rt
