@@ -172,6 +172,13 @@ def test_require_valueless_module_returns_nil(emulator):
     assert emulator.execute_lua("return x") == 1
 
 
+def test_package_global_absent_as_on_firmware(emulator):
+    emulator.connect()
+    assert emulator.execute_lua("return package") is None
+    # the stdlib fallback path must survive losing the global
+    assert emulator.execute_lua("return require('string').rep('a', 2)") == "aa"
+
+
 def test_require_returns_first_value_only(emulator):
     (emulator._sandbox_dir / "multi.lua").write_text("return 1, 2, 3\n")
     emulator.connect()

@@ -5,8 +5,9 @@ Tracks Halo firmware 0.8.12 (`frame.FIRMWARE_VERSION` now reports
 
 ### Changed
 
-* `require()` no longer caches modules in `package.loaded` and the `package`
-  global is gone, tracking the firmware change that reverts 0.8.8's cache:
+* `require()` no longer caches modules in `package.loaded`, and the `package`
+  global is hidden (`nil`, as on firmware, which has no package library),
+  tracking the firmware change that reverts 0.8.8's cache:
   the file is loaded and run on every call, so `start_frame_app()` can
   re-run an app that exited cleanly and a rewritten module takes effect on
   the next `require()`. A module that returns nothing now yields `nil`
