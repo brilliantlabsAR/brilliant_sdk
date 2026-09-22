@@ -144,22 +144,39 @@ def test_power_save_getter():
 
 # ---------------------------------------------------------------- require
 
-def test_require_caches_and_returns_module_value(tmp_path, emulator):
+def test_require_reruns_module_and_returns_its_value(tmp_path, emulator):
     (emulator._sandbox_dir / "mymod.lua").write_text(
         "counter = (counter or 0) + 1\nreturn {value = 42}\n"
     )
     emulator.connect()
     assert emulator.execute_lua("return require('mymod').value") == 42
-    # Second require comes from package.loaded: the chunk must not re-run
+    # No package.loaded cache on firmware: every require re-runs the chunk,
+    # which is what lets an app that exited cleanly be started again.
     emulator.execute_lua("require('mymod')")
-    assert emulator.execute_lua("return counter") == 1
-    assert emulator.execute_lua("return package.loaded['mymod'].value") == 42
+    assert emulator.execute_lua("return counter") == 2
 
 
-def test_require_valueless_module_cached_as_true(emulator):
+def test_require_picks_up_a_rewritten_module(emulator):
+    mod = emulator._sandbox_dir / "mymod.lua"
+    mod.write_text("return 1\n")
+    emulator.connect()
+    assert emulator.execute_lua("return require('mymod')") == 1
+    mod.write_text("return 2\n")
+    assert emulator.execute_lua("return require('mymod')") == 2
+
+
+def test_require_valueless_module_returns_nil(emulator):
     (emulator._sandbox_dir / "sidefx.lua").write_text("x = 1\n")
     emulator.connect()
-    assert emulator.execute_lua("return require('sidefx')") is True
+    assert emulator.execute_lua("return require('sidefx')") is None
+    assert emulator.execute_lua("return x") == 1
+
+
+def test_require_returns_first_value_only(emulator):
+    (emulator._sandbox_dir / "multi.lua").write_text("return 1, 2, 3\n")
+    emulator.connect()
+    assert emulator.execute_lua("return select('#', require('multi'))") == 1
+    assert emulator.execute_lua("return require('multi')") == 1
 
 
 # ---------------------------------------------------------------- time
@@ -337,4 +354,4 @@ def test_empty_send_transmits_nothing(emulator):
 
 def test_firmware_version_marker(emulator):
     emulator.connect()
-    assert emulator.execute_lua("return frame.FIRMWARE_VERSION") == "0.8.8-emulator"
+    assert emulator.execute_lua("return frame.FIRMWARE_VERSION") == "0.8.12-emulator"

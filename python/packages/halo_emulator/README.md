@@ -242,7 +242,7 @@ the entry script from the top on wake (check `frame.wakeup_source()` there);
 `sleep()` with no argument deep-sleeps and stops the emulator.
 `frame.on_wakeup()` was removed in firmware 0.8.8 and is not provided.
 
-Constants: `HARDWARE_VERSION` (`"EMULATOR"`), `FIRMWARE_VERSION` (`"0.8.8-emulator"`), `GIT_TAG`, `SE_REVISION`
+Constants: `HARDWARE_VERSION` (`"EMULATOR"`), `FIRMWARE_VERSION` (`"0.8.12-emulator"`), `GIT_TAG`, `SE_REVISION`
 
 ### Time — `frame.time.*`
 `utc`, `zone`, `date`
@@ -250,7 +250,7 @@ Constants: `HARDWARE_VERSION` (`"EMULATOR"`), `FIRMWARE_VERSION` (`"0.8.8-emulat
 ### File — `frame.file.*`
 `open`, `remove`, `remove_all`, `rename`, `listdir`, `mkdir`
 
-File operations are sandboxed to the `sandbox_dir`. `require()` is overridden to load modules from the sandbox directory, with standard Lua semantics as on the firmware: modules are cached in `package.loaded`, `require()` returns the module's own value (or `true` for a module that returns nothing), and `package.loaded['mod'] = nil` forces a re-read.
+File operations are sandboxed to the `sandbox_dir`. `require()` is overridden to load modules from the sandbox directory, with the firmware's semantics: the file is loaded and run on **every** call (there is no `package.loaded` cache, and no `package` global), and `require()` returns the module's first return value (`nil` for a module that returns nothing). This is what lets `start_frame_app()` re-run an app that has already exited, and what makes a re-uploaded module take effect immediately. It also means a module `require()`d from two places is loaded twice — require stateful modules such as `data.min` (which registers the Bluetooth receive callback) once, from the app's main module, and pass them down.
 
 ### Button — `frame.button.*`
 `single(func)`, `double(func)`, `long(func)` — register/clear callbacks
