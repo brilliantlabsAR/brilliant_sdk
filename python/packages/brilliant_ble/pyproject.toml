@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "brilliant-ble"
 version = "3.3.0"
 dependencies = [
-    "bleak >= 0.22.3, < 1.0.0",
+    "bleak >= 0.22.3, < 4.0.0",
 ]
 
 authors = [
@@ -14,7 +14,7 @@ authors = [
 ]
 description = "Low-level library for Bluetooth LE connection to Brilliant Labs Frame and Halo devices"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: BSD License",
