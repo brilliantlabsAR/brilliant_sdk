@@ -1,7 +1,10 @@
+import argparse
 import unittest
 import asyncio
 import os
 import sys
+
+import pytest
 
 from brilliant_ble import BrilliantBle
 
@@ -9,12 +12,19 @@ LUA_DIR = os.path.join(os.path.dirname(__file__), "lua")
 
 
 class TestBluetooth(unittest.IsolatedAsyncioTestCase):
+    # Exact BLE name of the device under test; the nearest device if None
+    device_name = None
+
+    @pytest.fixture(autouse=True)
+    def _use_device_name(self, device_name):
+        self.device_name = device_name
+
     async def test_connect_disconnect(self):
         b = BrilliantBle()
 
         self.assertFalse(b.is_connected())
 
-        device_name = await b.connect()
+        device_name = await b.connect(name=self.device_name)
         self.assertTrue(b.is_connected())
 
         await b.disconnect()
@@ -28,7 +38,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_send_lua(self):
         b = BrilliantBle()
-        await b.connect()
+        await b.connect(name=self.device_name)
 
         self.assertEqual(await b.send_lua("print('hi')", await_print=True), "hi")
 
@@ -42,7 +52,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_send_data(self):
         b = BrilliantBle()
-        await b.connect()
+        await b.connect(name=self.device_name)
         self.assertIsNone(await b.send_break_signal())
 
         await b.send_lua(
@@ -63,7 +73,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_mtu(self):
         b = BrilliantBle()
-        await b.connect()
+        await b.connect(name=self.device_name)
         self.assertIsNone(await b.send_break_signal())
 
         max_lua_length = b.max_lua_payload()
@@ -81,7 +91,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_upload_from_file(self):
         b = BrilliantBle()
-        await b.connect()
+        await b.connect(name=self.device_name)
         self.assertIsNone(await b.send_break_signal())
 
         self.assertIsNone(await b.upload_file(os.path.join(LUA_DIR, "test.lua"), "test.lua"))
@@ -95,7 +105,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_upload_from_string(self):
         b = BrilliantBle()
-        await b.connect()
+        await b.connect(name=self.device_name)
         self.assertIsNone(await b.send_break_signal())
 
         lua_file = """
@@ -127,4 +137,12 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--name",
+        default=None,
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+    )
+    args, rest = parser.parse_known_args()
+    TestBluetooth.device_name = args.name
+    unittest.main(argv=[sys.argv[0]] + rest)
