@@ -12,7 +12,7 @@ LUA_DIR = os.path.join(os.path.dirname(__file__), "lua")
 
 
 class TestBluetooth(unittest.IsolatedAsyncioTestCase):
-    # Exact BLE name of the device under test; the nearest device if None
+    # Exact BLE name of the device under test; the first device found if None
     device_name = None
 
     @pytest.fixture(autouse=True)
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--name",
         default=None,
-        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the first device found',
     )
     args, rest = parser.parse_known_args()
     TestBluetooth.device_name = args.name

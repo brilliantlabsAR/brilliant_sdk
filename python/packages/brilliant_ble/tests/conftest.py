@@ -52,7 +52,7 @@ def pytest_addoption(parser):
         "--name",
         default=None,
         help='exact BLE device name for device tests, e.g. "Halo AB" or "Frame 4F"; '
-             "defaults to the nearest device",
+             "defaults to the first device found",
     )
 
 
