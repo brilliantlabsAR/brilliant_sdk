@@ -68,7 +68,7 @@ end
 app_loop()
 ```
 
-Run: `python app.py` (nearest device) — add `--name`-style targeting via
+Run: `python app.py` (first device found) — add `--name`-style targeting via
 `connect(name=...)`.
 
 ## Read next

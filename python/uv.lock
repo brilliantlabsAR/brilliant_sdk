@@ -109,7 +109,7 @@ wheels = [
 
 [[package]]
 name = "brilliant-ble"
-version = "3.2.0"
+version = "3.3.0"
 source = { editable = "packages/brilliant_ble" }
 dependencies = [
     { name = "bleak" },

@@ -9,6 +9,23 @@ from enum import Enum
 from . import _smp
 from ._smp import OtaError, SmpClient
 
+class NotConnectedError(ConnectionError, ValueError):
+    """
+    Raised when an operation needs a connected device but the BLE link is
+    down, either because connect() was never called or the link dropped.
+
+    Subclasses ValueError as well as ConnectionError because send_message()
+    raised ValueError for this case before NotConnectedError existed.
+    """
+
+    def __init__(self, message="Not connected to a device"):
+        super().__init__(message)
+
+
+# Placed on a response queue at disconnect to wake a waiting send_lua/send_data
+_DISCONNECTED = object()
+
+
 class BrilliantDeviceType(Enum):
     FRAME = "Frame"
     HALO = "Halo"
@@ -98,9 +115,37 @@ class BrilliantBle:
         """
         return self._name
 
-    def _disconnect_handler(self, _):
+    def _disconnect_handler(self, client):
+        # Bleak fires this on every drop, and disconnect() calls it as well, so
+        # ignore a repeat call or a late callback from a previous connection
+        if client is None or client is not self._client:
+            return
+
+        # Clear only connection-scoped state; the user's handlers are kept
+        self._client = None
+        self._tx_characteristic = None
+        self._rx_characteristic = None
+        self._audio_tx_characteristic = None
+        self._type = BrilliantDeviceType.UNKNOWN
+        self._name = None
+
+        # Wake anything awaiting a response so it fails now, not at its timeout
+        if self._awaiting_print_response:
+            self._awaiting_print_response = False
+            self._print_response.put_nowait(_DISCONNECTED)
+        if self._awaiting_data_response:
+            self._awaiting_data_response = False
+            self._data_response.put_nowait(_DISCONNECTED)
+
         self._user_disconnect_handler()
-        self.__init__()
+
+    def _connected_client(self):
+        """
+        Returns the BleakClient, or raises NotConnectedError if the link is down.
+        """
+        if not self.is_connected():
+            raise NotConnectedError()
+        return self._client
 
     async def _notification_handler(self, _, data):
         if data[0] == 1:
@@ -160,6 +205,12 @@ class BrilliantBle:
         self._user_print_response_handler = print_response_handler
         self._user_data_response_handler = data_response_handler
 
+        # Discard anything left over from a previous connection
+        self._awaiting_print_response = False
+        self._awaiting_data_response = False
+        self._print_response = asyncio.Queue()
+        self._data_response = asyncio.Queue()
+
         # Create a scanner with a filter for our service UUID and optional name
         device = await BleakScanner.find_device_by_filter(
             lambda d, _: d.name is not None and (name is None or d.name == name),
@@ -218,11 +269,13 @@ class BrilliantBle:
 
     async def disconnect(self):
         """
-        Disconnects from the device.
+        Disconnects from the device. The handlers passed to connect() are kept.
         """
-        if (self._client is not None):
-            await self._client.disconnect()
-        self._disconnect_handler(None)
+        client = self._client
+        if client is not None:
+            await client.disconnect()
+        # In case Bleak didn't already call it; a no-op if it did
+        self._disconnect_handler(client)
 
     def is_connected(self):
         """
@@ -236,29 +289,29 @@ class BrilliantBle:
     def max_lua_payload(self):
         """
         Returns the maximum length of a Lua string which may be transmitted.
+
+        Raises NotConnectedError if not connected.
         """
-        try:
-            return min(self._client.mtu_size, 512) - 3
-        except AttributeError:
-            return 0
+        return min(self._connected_client().mtu_size, 512) - 3
 
     def max_data_payload(self):
         """
         Returns the maximum length of a raw bytearray which may be transmitted.
+
+        Raises NotConnectedError if not connected.
         """
-        try:
-            return min(self._client.mtu_size, 512) - 4
-        except AttributeError:
-            return 0
+        return min(self._connected_client().mtu_size, 512) - 4
 
     async def _transmit(self, data, show_me=False, await_bt_response=True):
         if show_me:
             print(data)  # TODO make this print nicer
 
-        if len(data) > self._client.mtu_size - 3:
+        client = self._connected_client()
+
+        if len(data) > client.mtu_size - 3:
             raise Exception("payload length is too large")
 
-        await self._client.write_gatt_char(self._tx_characteristic, data, response=await_bt_response)
+        await client.write_gatt_char(self._tx_characteristic, data, response=await_bt_response)
 
     async def send_lua(self, string: str, show_me=False, await_print=False, timeout=5):
         """
@@ -269,6 +322,9 @@ class BrilliantBle:
         occurs, or a timeout (in seconds).
 
         If `show_me=True`, the exact bytes send to the device will be printed.
+
+        Raises NotConnectedError if not connected, or if the link drops while
+        awaiting the response.
         """
 
         # set the awaiting status before we transmit
@@ -278,9 +334,12 @@ class BrilliantBle:
 
         if await_print:
             try:
-                return await asyncio.wait_for(self._print_response.get(), timeout=timeout)
+                response = await asyncio.wait_for(self._print_response.get(), timeout=timeout)
             except asyncio.TimeoutError:
                 raise Exception("device didn't respond")
+            if response is _DISCONNECTED:
+                raise NotConnectedError("Disconnected while awaiting a print response")
+            return response
 
     async def send_data(self, data: bytearray, show_me=False, await_data=False, timeout=5, await_bt_response=True):
         """
@@ -291,6 +350,9 @@ class BrilliantBle:
         occurs, or a timeout (in seconds).
 
         If `show_me=True`, the exact bytes send to the device will be printed.
+
+        Raises NotConnectedError if not connected, or if the link drops while
+        awaiting the response.
         """
         # set the awaiting status before we transmit
         self._awaiting_data_response = await_data
@@ -299,9 +361,12 @@ class BrilliantBle:
 
         if await_data:
             try:
-                return await asyncio.wait_for(self._data_response.get(), timeout=timeout)
+                response = await asyncio.wait_for(self._data_response.get(), timeout=timeout)
             except asyncio.TimeoutError:
                 raise Exception("device didn't respond")
+            if response is _DISCONNECTED:
+                raise NotConnectedError("Disconnected while awaiting a data response")
+            return response
 
     async def send_audio(self, data: bytearray, await_bt_response=False):
         """
@@ -313,12 +378,15 @@ class BrilliantBle:
         Ensure that whole LC3 frames fit within MTU if sending LC3,
         or even numbers of samples are provided in the case of PCM
         If data exceeds a single packet payload (mtu-3) the audio packet is silently dropped
+
+        Raises NotConnectedError if not connected.
         """
-        mtu = self._client.mtu_size - 3
+        client = self._connected_client()
+        mtu = client.mtu_size - 3
         if len(data) > mtu:
             return
         # stream audio as write-without-response (response=False)
-        await self._client.write_gatt_char(self._audio_tx_characteristic, data, response=await_bt_response)
+        await client.write_gatt_char(self._audio_tx_characteristic, data, response=await_bt_response)
 
     async def drain_print_channel(self, quiet=0.25, max_total=1.5):
         """
@@ -339,8 +407,11 @@ class BrilliantBle:
         while loop.time() - start < max_total:
             self._awaiting_print_response = True
             try:
-                await asyncio.wait_for(self._print_response.get(), timeout=quiet)
+                response = await asyncio.wait_for(self._print_response.get(), timeout=quiet)
             except asyncio.TimeoutError:
+                break
+            if response is _DISCONNECTED:
+                # nothing more will arrive; the next send raises NotConnectedError
                 break
         self._awaiting_print_response = False
 
@@ -350,6 +421,8 @@ class BrilliantBle:
         machine.
 
         If `show_me=True`, the exact bytes send to the device will be printed.
+
+        Raises NotConnectedError if not connected.
         """
         await self._transmit(bytearray(b"\x04"), show_me=show_me)
         # need to give it a moment after the Lua VM reset before it can handle any requests
@@ -361,6 +434,8 @@ class BrilliantBle:
         This is only applicable to Halo devices.
 
         If `show_me=True`, the exact bytes send to the device will be printed.
+
+        Raises NotConnectedError if not connected.
         """
         await self._transmit(bytearray(b"\x05"), show_me=show_me)
         # need to give it a moment after the Lua VM reset before it can handle any requests
@@ -372,6 +447,8 @@ class BrilliantBle:
         executing Lua script.
 
         If `show_me=True`, the exact bytes send to the device will be printed.
+
+        Raises NotConnectedError if not connected.
         """
         await self._transmit(bytearray(b"\x03"), show_me=show_me)
         # need to give it a moment after the break before it can handle any requests
@@ -570,6 +647,7 @@ class BrilliantBle:
 
         Raises:
             ValueError: If msg_code is not in range 0-255 or payload size exceeds 65535
+            NotConnectedError: If not connected, or the link drops during the send
 
         Note:
             First packet format: [msg_code(1), size_high(1), size_low(1), data(...)]
@@ -583,8 +661,8 @@ class BrilliantBle:
         # Validation
         if not 0 <= msg_code <= 255:
             raise ValueError(f"Message code must be 0-255, got {msg_code}")
-        if self.is_connected() is False:
-            raise ValueError("Cannot send message: Not connected to any device")
+        if not self.is_connected():
+            raise NotConnectedError("Cannot send message: Not connected to any device")
 
         total_size = len(payload)
         if total_size > MAX_TOTAL_SIZE:
