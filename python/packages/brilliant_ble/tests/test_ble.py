@@ -15,12 +15,17 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
     # Exact BLE name of the device under test; the first device found if None
     device_name = None
 
+    # Each test registers b.disconnect as a cleanup: a failing test must still
+    # release the link, or the device stops advertising and every later test
+    # fails to find it
+
     @pytest.fixture(autouse=True)
     def _use_device_name(self, device_name):
         self.device_name = device_name
 
     async def test_connect_disconnect(self):
         b = BrilliantBle()
+        self.addAsyncCleanup(b.disconnect)
 
         self.assertFalse(b.is_connected())
 
@@ -38,6 +43,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_send_lua(self):
         b = BrilliantBle()
+        self.addAsyncCleanup(b.disconnect)
         await b.connect(name=self.device_name)
 
         self.assertEqual(await b.send_lua("print('hi')", await_print=True), "hi")
@@ -52,11 +58,16 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_send_data(self):
         b = BrilliantBle()
+        self.addAsyncCleanup(b.disconnect)
         await b.connect(name=self.device_name)
         self.assertIsNone(await b.send_break_signal())
 
+        # Wait for the callback to be registered: send_lua returns once the
+        # write completes, before the device runs the chunk, and data that
+        # arrives first is dropped ("Data received but no callback registered")
         await b.send_lua(
-            "frame.bluetooth.receive_callback((function(d)frame.bluetooth.send(d)end))"
+            "frame.bluetooth.receive_callback((function(d)frame.bluetooth.send(d)end))print(0)",
+            await_print=True,
         )
 
         self.assertEqual(await b.send_data(b"test", await_data=True), b"test")
@@ -64,7 +75,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(await b.send_data(b"test"))
         await asyncio.sleep(0.1)
 
-        await b.send_lua("frame.bluetooth.receive_callback(nil)")
+        await b.send_lua("frame.bluetooth.receive_callback(nil)print(0)", await_print=True)
 
         with self.assertRaises(Exception):
             await b.send_data(b"test", await_data=True)
@@ -73,6 +84,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_mtu(self):
         b = BrilliantBle()
+        self.addAsyncCleanup(b.disconnect)
         await b.connect(name=self.device_name)
         self.assertIsNone(await b.send_break_signal())
 
@@ -91,6 +103,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_upload_from_file(self):
         b = BrilliantBle()
+        self.addAsyncCleanup(b.disconnect)
         await b.connect(name=self.device_name)
         self.assertIsNone(await b.send_break_signal())
 
@@ -105,6 +118,7 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_upload_from_string(self):
         b = BrilliantBle()
+        self.addAsyncCleanup(b.disconnect)
         await b.connect(name=self.device_name)
         self.assertIsNone(await b.send_break_signal())
 
