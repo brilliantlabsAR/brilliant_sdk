@@ -12,6 +12,11 @@ The genuine pytest modules remain collected. Of those, the ones that need a
 real device are skipped unless BRILLIANT_DEVICE=1 is set:
 
     BRILLIANT_DEVICE=1 uv run pytest packages/brilliant_ble/tests/
+
+Pass --name with the exact BLE name to pick the device when more than one is
+in range, as for the standalone scripts:
+
+    BRILLIANT_DEVICE=1 uv run pytest packages/brilliant_ble/tests/ --name "Halo AB"
 """
 
 import os
@@ -23,7 +28,7 @@ import pytest
 TESTS_DIR = Path(__file__).parent
 
 # Genuine pytest modules that talk to a real device over BLE.
-DEVICE_TEST_MODULES = {"test_ble"}
+DEVICE_TEST_MODULES = {"test_ble", "test_disconnect_device"}
 
 RUN_DEVICE_TESTS = os.environ.get("BRILLIANT_DEVICE") == "1"
 
@@ -40,6 +45,20 @@ collect_ignore = [
 _skip_device = pytest.mark.skip(
     reason="needs a Brilliant device over BLE; set BRILLIANT_DEVICE=1 to run"
 )
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--name",
+        default=None,
+        help='exact BLE device name for device tests, e.g. "Halo AB" or "Frame 4F"; '
+             "defaults to the first device found",
+    )
+
+
+@pytest.fixture
+def device_name(request):
+    return request.config.getoption("--name")
 
 
 def pytest_collection_modifyitems(config, items):

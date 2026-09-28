@@ -292,7 +292,7 @@ def _write_csv(path: str, samples: list[Sample]) -> None:
 async def main():
     parser = argparse.ArgumentParser(description="Halo/Frame IMU axis & magnitude diagnostic.")
     parser.add_argument("--name", default=None,
-                        help='exact BLE device name, e.g. "Halo AB"; defaults to the nearest device')
+                        help='exact BLE device name, e.g. "Halo AB"; defaults to the first device found')
     parser.add_argument("--spin-seconds", type=float, default=15.0,
                         help="duration of the 360° magnetometer spin capture")
     args = parser.parse_args()

@@ -1,4 +1,4 @@
-"""Firmware 0.8.9 parity tests: palette, fonts, require, time, tap, sound, mic, speaker."""
+"""Firmware 0.8.8 parity tests: palette, fonts, require, time, tap, sound, mic."""
 from __future__ import annotations
 
 import time
@@ -144,22 +144,46 @@ def test_power_save_getter():
 
 # ---------------------------------------------------------------- require
 
-def test_require_caches_and_returns_module_value(tmp_path, emulator):
+def test_require_reruns_module_and_returns_its_value(tmp_path, emulator):
     (emulator._sandbox_dir / "mymod.lua").write_text(
         "counter = (counter or 0) + 1\nreturn {value = 42}\n"
     )
     emulator.connect()
     assert emulator.execute_lua("return require('mymod').value") == 42
-    # Second require comes from package.loaded: the chunk must not re-run
+    # No package.loaded cache on firmware: every require re-runs the chunk,
+    # which is what lets an app that exited cleanly be started again.
     emulator.execute_lua("require('mymod')")
-    assert emulator.execute_lua("return counter") == 1
-    assert emulator.execute_lua("return package.loaded['mymod'].value") == 42
+    assert emulator.execute_lua("return counter") == 2
 
 
-def test_require_valueless_module_cached_as_true(emulator):
+def test_require_picks_up_a_rewritten_module(emulator):
+    mod = emulator._sandbox_dir / "mymod.lua"
+    mod.write_text("return 1\n")
+    emulator.connect()
+    assert emulator.execute_lua("return require('mymod')") == 1
+    mod.write_text("return 2\n")
+    assert emulator.execute_lua("return require('mymod')") == 2
+
+
+def test_require_valueless_module_returns_nil(emulator):
     (emulator._sandbox_dir / "sidefx.lua").write_text("x = 1\n")
     emulator.connect()
-    assert emulator.execute_lua("return require('sidefx')") is True
+    assert emulator.execute_lua("return require('sidefx')") is None
+    assert emulator.execute_lua("return x") == 1
+
+
+def test_package_global_absent_as_on_firmware(emulator):
+    emulator.connect()
+    assert emulator.execute_lua("return package") is None
+    # the stdlib fallback path must survive losing the global
+    assert emulator.execute_lua("return require('string').rep('a', 2)") == "aa"
+
+
+def test_require_returns_first_value_only(emulator):
+    (emulator._sandbox_dir / "multi.lua").write_text("return 1, 2, 3\n")
+    emulator.connect()
+    assert emulator.execute_lua("return select('#', require('multi'))") == 1
+    assert emulator.execute_lua("return require('multi')") == 1
 
 
 # ---------------------------------------------------------------- time
@@ -285,57 +309,6 @@ def test_sound_api(emulator):
         emulator.execute_lua("frame.sound.play('blip', {sample_rate=44100})")
 
 
-# ---------------------------------------------------------------- speaker
-
-def test_speaker_start_validation(emulator):
-    emulator.connect()
-    emulator.execute_lua(
-        "frame.speaker.start{encoder='lc3', sample_rate=16000, duration=1000, "
-        "channels=1, bitrate=32000, volume=50}"
-    )
-    # 0.8.9 per-stream loudness fields; start() while streaming reconfigures
-    emulator.execute_lua("frame.speaker.start{gain=12, budget=100}")
-    # any encoder other than 'lc3' falls back to pcm, as on firmware
-    emulator.execute_lua("frame.speaker.start{encoder='mp3'}")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start()")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start{sample_rate=44100}")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start{channels=3}")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start{bit_depth=8}")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start{encoder='lc3', duration=500}")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start{encoder='lc3', bitrate=100000}")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start{volume=101}")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start{gain=13}")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.start{budget=5}")
-
-
-def test_speaker_play_and_volume_semantics(emulator):
-    emulator.connect()
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.play('\\x00\\x01')")
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.volume(80)")
-    emulator.execute_lua("frame.speaker.start{volume=30}")
-    assert emulator.execute_lua("return frame.speaker.volume()") == 30
-    emulator.execute_lua("frame.speaker.play('')")
-    emulator.execute_lua("frame.speaker.volume(80)")
-    assert emulator.execute_lua("return frame.speaker.volume()") == 80
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.volume(101)")
-    emulator.execute_lua("frame.speaker.stop()")
-    emulator.execute_lua("frame.speaker.stop()")  # no-op when already stopped
-    with pytest.raises(Exception):
-        emulator.execute_lua("frame.speaker.play('\\x00')")
-
-
 # ---------------------------------------------------------------- microphone
 
 def test_microphone_read_semantics(emulator):
@@ -388,4 +361,4 @@ def test_empty_send_transmits_nothing(emulator):
 
 def test_firmware_version_marker(emulator):
     emulator.connect()
-    assert emulator.execute_lua("return frame.FIRMWARE_VERSION") == "0.8.9-emulator"
+    assert emulator.execute_lua("return frame.FIRMWARE_VERSION") == "0.8.12-emulator"

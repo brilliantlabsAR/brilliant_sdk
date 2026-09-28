@@ -1,3 +1,11 @@
+## 3.3.0
+
+* New `NotConnectedError`, raised when an operation needs a connected device but the link is down (never connected, or dropped). `send_lua()`, `send_data()`, `send_audio()`, `send_message()`, `send_reset_signal()`, `send_break_signal()`, `send_remove_signal()`, `max_lua_payload()` and `max_data_payload()` now raise it instead of `AttributeError: 'NoneType' object has no attribute 'mtu_size'`. It subclasses both `ConnectionError` and `ValueError`, so existing `except ValueError` around `send_message()` still catches it. Teardown code that may run after a drop can catch it deliberately: `except NotConnectedError: pass`
+* `max_lua_payload()` and `max_data_payload()` raise `NotConnectedError` when disconnected rather than silently returning `0`
+* A disconnect no longer resets the whole `BrilliantBle` object: only connection state (client, characteristics, `name`, `type`) is cleared, and the handlers passed to `connect()` are kept. Previously the disconnect handler wiped itself as it fired
+* The user `disconnect_handler` is called once per disconnect; `disconnect()` no longer runs the internal handler a second time, and a late callback from an earlier connection is ignored
+* A `send_lua(await_print=True)` or `send_data(await_data=True)` waiting when the link drops now raises `NotConnectedError` straight away instead of waiting out its timeout and raising "device didn't respond". `drain_print_channel()` returns straight away
+
 ## 3.2.0
 
 * New `drain_print_channel(quiet=0.25, max_total=1.5)` — discards unsolicited print output already arriving on the channel (such as the `interrupted`/reboot banner produced by a break or reset) so the next `send_lua(await_print=True)` receives a clean response rather than the stray banner. Bounded so it never hangs: returns after `quiet` seconds of silence, or `max_total` at the latest

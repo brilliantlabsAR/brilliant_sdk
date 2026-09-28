@@ -18,7 +18,7 @@ async def main():
     parser.add_argument(
         "--name",
         default=None,
-        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the nearest device',
+        help='exact BLE device name, e.g. "Halo AB" or "Frame 4F"; defaults to the first device found',
     )
     args = parser.parse_args()
     frame = BrilliantMsg()
