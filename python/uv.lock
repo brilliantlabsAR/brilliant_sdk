@@ -395,7 +395,7 @@ wheels = [
 
 [[package]]
 name = "halo-emulator"
-version = "2.1.0"
+version = "2.2.0"
 source = { editable = "packages/halo_emulator" }
 dependencies = [
     { name = "lupa" },

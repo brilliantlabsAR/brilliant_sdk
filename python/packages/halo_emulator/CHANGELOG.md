@@ -1,3 +1,16 @@
+## 2.2.0
+
+### Changed
+
+* `frame.speaker` is no longer a pure no-op: `start()` validates its config
+  as firmware does since 0.8.9 — sample rate 8000/16000, channels 1/2, bit depth
+  16 only, LC3 duration 750/1000 and bitrate a multiple of 8000 up to 96000,
+  volume 0-100, and the per-stream `gain` (0-12) and `budget` (10-100)
+  loudness fields added in 0.8.9. `play()` errors when the speaker is not
+  started, `volume(v)` errors when not started or out of range (it clamped
+  before), and `stop()` stays a no-op when already stopped. Still no audio
+  output
+
 ## 2.1.0
 
 Tracks Halo firmware 0.8.12 (`frame.FIRMWARE_VERSION` now reports
