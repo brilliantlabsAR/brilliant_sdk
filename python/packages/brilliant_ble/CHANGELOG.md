@@ -1,3 +1,7 @@
+## 3.3.1
+
+* Widened the `bleak` requirement from `>= 0.22.3, < 1.0.0` to `>= 0.22.3, < 4`. Every `bleak` release below 1.0 caps `requires-python` below 3.14, so on Python 3.14 the old pin could not be satisfied and `pip install brilliant-ble` failed with `ResolutionImpossible` (#47). None of the `bleak` APIs this package uses changed between 0.22 and 3.0. Older Pythons can still resolve 0.22.3
+
 ## 3.3.0
 
 * New `NotConnectedError`, raised when an operation needs a connected device but the link is down (never connected, or dropped). `send_lua()`, `send_data()`, `send_audio()`, `send_message()`, `send_reset_signal()`, `send_break_signal()`, `send_remove_signal()`, `max_lua_payload()` and `max_data_payload()` now raise it instead of `AttributeError: 'NoneType' object has no attribute 'mtu_size'`. It subclasses both `ConnectionError` and `ValueError`, so existing `except ValueError` around `send_message()` still catches it. Teardown code that may run after a drop can catch it deliberately: `except NotConnectedError: pass`
