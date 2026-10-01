@@ -30,7 +30,7 @@ classifiers = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
-    "pytest-asyncio>=0.23",
+    "pytest-asyncio>=0.23.5",
     "brilliant-msg>=7.0.0",
 ]
 video = [
