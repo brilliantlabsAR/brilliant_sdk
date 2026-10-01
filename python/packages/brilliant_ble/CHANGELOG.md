@@ -1,3 +1,8 @@
+## 3.3.2
+
+* `requires-python` raised from `>=3.7` to `>=3.10`, matching `brilliant-msg`, `brilliant-sdk` and `halo-emulator`. The old floor was never accurate: `bleak` 0.22.3 needs Python 3.8, and on 3.8/3.9 a `BrilliantBle()` created outside the running event loop fails, because `asyncio.Queue` binds to a loop at construction before 3.10. No code changes
+* The `tests` extra now includes `pytest-asyncio>=0.23.5`, which the async device tests need, and gives its other dependencies minimum versions: `aioconsole>=0.2.0` (older releases use `asyncio.coroutine`, removed in Python 3.11), `numpy>=2.2.3` and `lc3py>=1.1.3`, matching `brilliant-msg`
+
 ## 3.3.1
 
 * Widened the `bleak` requirement from `>= 0.22.3, < 1.0.0` to `>= 0.22.3, < 4`. Every `bleak` release below 1.0 caps `requires-python` below 3.14, so on Python 3.14 the old pin could not be satisfied and `pip install brilliant-ble` failed with `ResolutionImpossible` (#47). None of the `bleak` APIs this package uses changed between 0.22 and 3.0. Older Pythons can still resolve 0.22.3
