@@ -20,7 +20,7 @@ async def main():
     parser.add_argument(
         "--name",
         default=None,
-        help='exact BLE device name, e.g. "Halo AB"; defaults to the nearest device',
+        help='exact BLE device name, e.g. "Halo AB"; defaults to the first device found',
     )
     args = parser.parse_args()
     halo = BrilliantBle()

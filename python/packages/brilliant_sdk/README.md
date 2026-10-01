@@ -23,5 +23,5 @@ from brilliant_sdk import BrilliantBle, BrilliantMsg, TxPlainText
 
 ## Packages
 
-- **[brilliant-ble](../brilliant_ble/README.md)** — low-level Bluetooth LE connection library
-- **[brilliant-msg](../brilliant_msg/README.md)** — message types and protocol handlers
+- **[brilliant-ble](../brilliant_ble/)** — low-level Bluetooth LE connection library
+- **[brilliant-msg](../brilliant_msg/)** — message types and protocol handlers
