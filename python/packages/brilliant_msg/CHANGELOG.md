@@ -1,3 +1,8 @@
+## 7.1.2
+
+* Widened the Pillow requirement from `>=11.1.0,<12.0.0` to `>=11.1.0,<13.0.0`, so `brilliant-msg` installs alongside Pillow 12
+* `__version__` is now read from the installed package metadata. 7.1.1 reported `"7.0.0"`
+
 ## 7.1.1
 
 * Raised the `brilliant-ble` floor to `>=3.2.0`. 7.1.0's `connect()` calls `BrilliantBle.drain_print_channel()`, which only exists from `brilliant-ble` 3.2.0 — under the previous `>=3.0.0` floor a fresh install could resolve 3.1.1 and fail with `AttributeError` on connect. No other changes
