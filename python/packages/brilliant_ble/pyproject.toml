@@ -4,9 +4,9 @@ build-backend = "hatchling.build"
 
 [project]
 name = "brilliant-ble"
-version = "3.3.0"
+version = "3.3.1"
 dependencies = [
-    "bleak >= 0.22.3, < 1.0.0",
+    "bleak >= 0.22.3, < 4",
 ]
 
 authors = [
