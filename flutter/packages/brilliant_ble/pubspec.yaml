@@ -1,6 +1,6 @@
 name: brilliant_ble
 description: 'Low level BLE communication for the Brilliant Labs Frame using Flutter Blue Plus'
-version: 5.1.0
+version: 5.2.0
 # homepage:
 repository: https://github.com/brilliantLabsAR/brilliant_sdk
 

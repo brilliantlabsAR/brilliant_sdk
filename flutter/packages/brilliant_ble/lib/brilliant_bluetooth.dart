@@ -93,20 +93,35 @@ class BrilliantBluetooth {
     }
   }
 
-  static Future<BrilliantDevice> connect(BrilliantScannedDevice scanned) async {
+  /// Connects to a device found by [scan].
+  ///
+  /// [timeout] limits bringing up the BLE link, which normally takes well
+  /// under a second. A link that never comes up almost always means the
+  /// device refused this host: Halo drops a host it has no bond for unless it
+  /// is in pairing mode, and iOS/macOS hide that refusal and silently retry.
+  /// So if this fails, suggest the user puts the device in pairing mode
+  /// (Halo: hold the button for 5 s) and, if the phone still lists the device
+  /// as paired, forgets it in Bluetooth settings first.
+  static Future<BrilliantDevice> connect(
+    BrilliantScannedDevice scanned, {
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
     try {
       _log.info("Connecting");
 
       await FlutterBluePlus.stopScan();
 
+      // flutter_blue_plus ignores timeout when autoConnect is set, so the
+      // wait for the connected state below enforces it on iOS
       await scanned.device.connect(
+        timeout: timeout,
         autoConnect: Platform.isIOS ? true : false,
         mtu: null,
       );
 
       final connectionState = await scanned.device.connectionState
           .firstWhere((event) => event == BluetoothConnectionState.connected)
-          .timeout(const Duration(seconds: 3));
+          .timeout(timeout);
 
       if (connectionState == BluetoothConnectionState.connected) {
         return await enableServices(scanned.device);

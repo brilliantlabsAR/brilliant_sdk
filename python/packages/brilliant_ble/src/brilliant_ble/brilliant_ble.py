@@ -184,6 +184,7 @@ class BrilliantBle:
         print_response_handler=lambda _: None,
         data_response_handler=lambda _: None,
         disconnect_handler=lambda: None,
+        connect_timeout=5,
     ):
         """
         Connects to the first Halo/Frame device discovered,
@@ -199,6 +200,15 @@ class BrilliantBle:
 
         `disconnect_handler` can be provided to be called to run
         upon a disconnect.
+
+        `timeout` limits the scan for the device. `connect_timeout` limits
+        bringing up the BLE link once it is found, which normally takes well
+        under a second. A link that never comes up almost always means the
+        device refused this host: Halo drops a host it has no bond for unless
+        it is in pairing mode, and macOS/iOS hide that refusal and silently
+        retry. If connecting fails, put the device in pairing mode (Halo: hold
+        the button for 5 s) and, if the host still lists the device as paired,
+        forget it in the host's Bluetooth settings first.
         """
 
         self._user_disconnect_handler = disconnect_handler
@@ -221,9 +231,11 @@ class BrilliantBle:
         if not device:
             raise Exception("No matching device found")
 
+        # Bleak's timeout bounds only the link coming up, not service discovery
         self._client = BleakClient(
             device,
             disconnected_callback=self._disconnect_handler,
+            timeout=connect_timeout,
             winrt=dict(use_cached_services=False)
         )
 
@@ -232,7 +244,14 @@ class BrilliantBle:
             # Workaround to acquire MTU size because Bleak doesn't do it automatically when using BlueZ backend
             if self._client._backend.__class__.__name__ == "BleakClientBlueZDBus":
                 await self._client._backend._acquire_mtu()
+        except asyncio.TimeoutError:
+            await self._abort_connect()
+            # Same type as before connect_timeout existed, now with a hint
+            raise asyncio.TimeoutError(
+                f"Error connecting: {device.name} did not accept the connection "
+                f"within {connect_timeout} s. Is it paired with this host?") from None
         except BleakError as ble_error:
+            await self._abort_connect()
             raise Exception(f"Error connecting: {ble_error}")
 
         service = self._client.services.get_service(
@@ -262,10 +281,27 @@ class BrilliantBle:
                 self._notification_handler,
             )
         except Exception as ble_error:
+            await self._abort_connect()
             raise Exception(f"Error subscribing for notifications: {ble_error}")
 
         self._name = device.name
         return device.name
+
+    async def _abort_connect(self):
+        """
+        Drops a connection attempt that failed part-way, without calling the
+        user's disconnect handler (the attempt never reached connected).
+        """
+        client, self._client = self._client, None
+        self._tx_characteristic = None
+        self._rx_characteristic = None
+        self._audio_tx_characteristic = None
+        self._type = BrilliantDeviceType.UNKNOWN
+        if client is not None:
+            try:
+                await client.disconnect()
+            except Exception:
+                pass
 
     async def disconnect(self):
         """

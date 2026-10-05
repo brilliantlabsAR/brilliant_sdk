@@ -1,3 +1,7 @@
+## 5.2.0
+
+* `BrilliantBluetooth.connect()` takes a new optional `timeout` (default 5 s) limiting how long the BLE link may take to come up. Previously Android and macOS used flutter_blue_plus's default of 35 s, and iOS a fixed 3 s. A link that never comes up almost always means the device refused this host: Halo drops a host it has no bond for unless it is in pairing mode, and iOS/macOS hide that refusal and silently retry. When `connect()` fails, apps can suggest the user puts Halo in pairing mode (hold the button for 5 s) and, if the phone still lists it as paired, forgets it in Bluetooth settings. `reconnect()` is unchanged
+
 ## 5.1.0
 
 * New `BrilliantDevice.drainPrintChannel()` — discards unsolicited print output already arriving on the channel (such as the `interrupted`/reboot banner produced by a break or reset) so the next `sendString(awaitResponse: true)` receives a clean response rather than the stray banner. Bounded so it never hangs: returns after `quiet` of silence, or `maxTotal` at the latest
