@@ -233,11 +233,34 @@ class BrilliantBluetooth {
     }
   }
 
+  /// Bonds with [device] on Android, tolerating a spurious failure.
+  ///
+  /// When Android finds its stored keys no longer work (the device cleared its
+  /// bonds), it re-pairs by itself after a consent dialog. On success it reports
+  /// the bond state as none, bonding then bonded within a few milliseconds, and
+  /// a createBond() call waiting on that sequence sees the transient "none" and
+  /// throws "failed to create bond" although bonding succeeded. So on failure,
+  /// briefly wait for the bonded state before giving up.
+  static Future<void> _createBond(BluetoothDevice device) async {
+    try {
+      await device.createBond();
+    } catch (error, stackTrace) {
+      final bonded = await device.bondState
+          .firstWhere((state) => state == BluetoothBondState.bonded)
+          .timeout(const Duration(seconds: 2))
+          .then((_) => true, onError: (_) => false);
+      if (!bonded) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
+      _log.info("createBond reported failure but the device is bonded: $error");
+    }
+  }
+
   static Future<BrilliantDevice> enableServices(BluetoothDevice device) async {
     if (Platform.isAndroid) {
       // TODO in future Halo should be paired as well, but for now we only pair Frame
       // try to avoid the double pop-up on Android
-      await device.createBond();
+      await _createBond(device);
       await device.requestMtu(517);
       await device.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
       await device.setPreferredPhy(txPhy: (Phy.le2m.mask | Phy.le1m.mask), rxPhy: (Phy.le2m.mask | Phy.le1m.mask), option: PhyCoding.noPreferred);
@@ -272,7 +295,7 @@ class BrilliantBluetooth {
 
         // try to avoid the double pop-up on Android
         if (Platform.isAndroid) {
-          await device.createBond();
+          await _createBond(device);
         }
 
         for (var characteristic in service.characteristics) {
