@@ -1,3 +1,8 @@
+## 3.4.0
+
+* `connect()` takes a new `connect_timeout` (default 5 s) limiting how long the BLE link may take to come up once the device is found; `timeout` still limits the scan. Previously Bleak's default of 30 s applied. A link that never comes up almost always means the device refused this host: Halo drops a host it has no bond for unless it is in pairing mode, and macOS/iOS hide that refusal and silently retry, so `connect()` used to hang for the full 30 s. It now raises `TimeoutError` after 5 s with a message asking whether the device is paired with this host. Apps can respond by suggesting the user puts Halo in pairing mode (hold the button for 5 s) and, if the host still lists it as paired, forgets it in Bluetooth settings. Pass a longer `connect_timeout` if needed
+* A `connect()` that fails after the link came up (for example, a declined pairing prompt) now disconnects that link, and does so without calling `disconnect_handler`
+
 ## 3.3.2
 
 * `requires-python` raised from `>=3.7` to `>=3.10`, matching `brilliant-msg`, `brilliant-sdk` and `halo-emulator`. The old floor was never accurate: `bleak` 0.22.3 needs Python 3.8, and on 3.8/3.9 a `BrilliantBle()` created outside the running event loop fails, because `asyncio.Queue` binds to a loop at construction before 3.10. No code changes
