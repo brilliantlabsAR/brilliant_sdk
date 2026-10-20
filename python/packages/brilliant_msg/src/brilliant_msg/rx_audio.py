@@ -29,8 +29,14 @@ class RxAudio:
         self.streaming = streaming
 
         self.queue: Optional[asyncio.Queue] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._audio_buffer = BytesIO()
         self._raw_offset = 0
+
+    def _get_loop(self) -> "asyncio.AbstractEventLoop":
+        """The attach()-time event loop, else the running loop (direct-wired usage)."""
+        loop = getattr(self, "_loop", None)
+        return loop if loop is not None else asyncio.get_running_loop()
 
     def handle_data(self, data: bytes) -> None:
         """
@@ -46,14 +52,17 @@ class RxAudio:
         flag = data[0]
         chunk = data[1:]
 
+        # Queue puts are routed through the attach()-time event loop so they
+        # are safe from any thread (the emulator invokes handlers from its
+        # Lua thread, where asyncio.create_task would fail silently)
         if self.streaming:
             if len(chunk) > 0:
                 # In streaming mode, immediately queue each chunk
-                asyncio.create_task(self.queue.put(bytes(chunk)))
+                self._get_loop().call_soon_threadsafe(self.queue.put_nowait, bytes(chunk))
 
             if flag == self.final_chunk_flag:
                 # Signal end of stream with None
-                asyncio.create_task(self.queue.put(None))
+                self._get_loop().call_soon_threadsafe(self.queue.put_nowait, None)
 
         else:
             # In single-clip mode, accumulate chunks
@@ -67,9 +76,9 @@ class RxAudio:
                 self._raw_offset = 0
 
                 # Queue the complete audio clip
-                asyncio.create_task(self.queue.put(complete_audio))
+                self._get_loop().call_soon_threadsafe(self.queue.put_nowait, complete_audio)
                 # Signal end with None
-                asyncio.create_task(self.queue.put(None))
+                self._get_loop().call_soon_threadsafe(self.queue.put_nowait, None)
 
     async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
@@ -82,6 +91,7 @@ class RxAudio:
             A None value indicates end of stream/clip.
         """
         self.queue = asyncio.Queue()
+        self._loop = asyncio.get_running_loop()
         self._audio_buffer = BytesIO()
         self._raw_offset = 0
 

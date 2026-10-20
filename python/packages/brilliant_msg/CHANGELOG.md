@@ -1,3 +1,7 @@
+## Unreleased
+
+* Every `Rx*` receiver now hands data to its queue through the event loop captured in `attach()` (`call_soon_threadsafe`) instead of calling `asyncio.create_task()` inside `handle_data()`. The Halo emulator invokes data handlers from its Lua thread, where `create_task()` has no running loop, so every IMU/tap/audio/photo/metering message was silently dropped. Receivers wired directly from the running loop keep working: the loop is resolved on demand
+
 ## 7.1.2
 
 * Widened the Pillow requirement from `>=11.1.0,<12.0.0` to `>=11.1.0,<13.0.0`, so `brilliant-msg` installs alongside Pillow 12
