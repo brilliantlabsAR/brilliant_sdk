@@ -45,7 +45,8 @@ changes between SDKs.
   with host **and** Lua source inline (the fastest single file to learn the
   message pairing from).
 - Live demos + TypeDoc: https://brilliantlabsar.github.io/brilliant_sdk/
-- TS-only conveniences: `TxTextPage` + `CircularTextLayout`/`RectangularTextLayout`,
-  `RxClick`/`ClickType`, `MagCalibration`, `CompassHeading`, `AsyncQueue`.
+- TS-only conveniences: `CompassHeading`, `AsyncQueue`. `TxTextPage` +
+  `CircularTextLayout`/`RectangularTextLayout`, `RxClick`/`ClickType` and
+  `MagCalibration` exist in all three SDKs.
 - No test suite here — `npm run build` per package is the check; validate Lua
   with the Python `halo-emulator`.

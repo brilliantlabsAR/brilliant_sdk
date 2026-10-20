@@ -12,6 +12,7 @@ import stdSpriteMinLua from './lua/sprite.min.lua?raw';
 import stdSpriteCoordsMinLua from './lua/sprite_coords.min.lua?raw';
 import stdTapMinLua from './lua/tap.min.lua?raw';
 import stdTextSpriteBlockMinLua from './lua/text_sprite_block.min.lua?raw';
+import stdTextPageMinLua from './lua/text_page.min.lua?raw';
 
 /**
  * Enum representing the available standard Lua libraries that can be uploaded.
@@ -28,6 +29,7 @@ export enum StdLua {
     SpriteCoordsMin = "stdSpriteCoordsMin",
     TapMin = "stdTapMin",
     TextSpriteBlockMin = "stdTextSpriteBlockMin",
+    TextPageMin = "stdTextPageMin",
 }
 
 // Internal mapping from the enum to the actual Lua content and target filename
@@ -48,6 +50,7 @@ const standardLuaLibrarySources: Record<StdLua, StdLibDetails> = {
     [StdLua.SpriteCoordsMin]: { content: stdSpriteCoordsMinLua, targetFileName: 'sprite_coords.min.lua' },
     [StdLua.TapMin]: { content: stdTapMinLua, targetFileName: 'tap.min.lua' },
     [StdLua.TextSpriteBlockMin]: { content: stdTextSpriteBlockMinLua, targetFileName: 'text_sprite_block.min.lua' },
+    [StdLua.TextPageMin]: { content: stdTextPageMinLua, targetFileName: 'text_page.min.lua' },
 };
 
 

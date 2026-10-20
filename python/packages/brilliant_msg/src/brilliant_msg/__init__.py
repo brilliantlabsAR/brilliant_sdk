@@ -18,10 +18,18 @@ from .tx_manual_exp_settings import TxManualExpSettings
 from .tx_plain_text import TxPlainText
 from .tx_sprite import TxSprite
 from .tx_sprite_coords import TxSpriteCoords
+from .tx_text_page import (
+    TxTextPage,
+    PageData,
+    TextLayout,
+    RectangularTextLayout,
+    CircularTextLayout,
+)
 from .tx_text_sprite_block import TxTextSpriteBlock
 
 from .rx_audio import RxAudio
 from .rx_auto_exp_result import RxAutoExpResult
+from .rx_click import RxClick, ClickType
 from .rx_imu import RxIMU
 from .rx_metering_data import RxMeteringData
 from .rx_photo import RxPhoto

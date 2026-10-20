@@ -87,7 +87,9 @@ uv run pytest packages/brilliant_msg/tests/
 
 The test suite covers all Tx message packing (TxCode, TxPlainText, TxSpriteCoords,
 TxCaptureSettings, TxAutoExpSettings, TxSprite bit-packing and factory methods,
-TxImageSpriteBlock, TxTextSpriteBlock) and Rx message parsing (RxAudio WAV
+TxImageSpriteBlock, TxTextSpriteBlock, TxTextPage with RectangularTextLayout and
+CircularTextLayout) and Rx message parsing (RxAudio WAV
 conversion, RxMeteringData, RxAutoExpResult, RxIMU including IMUData pitch/roll
-and SensorBuffer smoothing, RxTap, and BrilliantMsg handler dispatch). No hardware
+and SensorBuffer smoothing, RxTap, RxClick, thread-safe queue delivery from a
+non-loop thread, and BrilliantMsg handler dispatch). No hardware
 is required.

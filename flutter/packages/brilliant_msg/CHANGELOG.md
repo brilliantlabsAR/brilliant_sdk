@@ -1,3 +1,7 @@
+## Unreleased
+
+* Added the device-side `text_page.lua` / `text_page.min.lua` library. It renders `TxTextPage` pages at their per-line x/y offsets, so `CircularTextLayout` pages follow Halo's round display; `text_sprite_block.lua` stacks lines by `line_height` and ignores those offsets. Add `packages/brilliant_msg/lua/text_page.min.lua` to your app's `assets:` to upload it. Device-side Lua is now identical across the Python, Flutter and WebBluetooth SDKs (`tools/check_lua_parity.py`)
+
 ## 4.1.0
 
 True-up against Halo firmware 0.8.8.

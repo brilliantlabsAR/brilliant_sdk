@@ -1,5 +1,8 @@
 ## Unreleased
 
+* New `RxClick` (with `ClickType`) receiving Halo button clicks (`SINGLE`/`DOUBLE`/`LONG`, message code `0x0B` by default), matching the Flutter and WebBluetooth SDKs
+* New `TxTextPage` with `RectangularTextLayout` and `CircularTextLayout`: lays text out along the chords of Halo's round display and rasterizes one 1-bit `TxSprite` per line. The page header is byte-identical to the Flutter and WebBluetooth `TxTextPage`
+* New device-side `text_page.lua` / `text_page.min.lua` (added to all three SDKs) that renders `TxTextPage` pages at their per-line offsets. `text_sprite_block.lua` stacks lines by `line_height` and ignores per-line x/y, so circular pages drawn through it never followed the circle
 * Every `Rx*` receiver now hands data to its queue through the event loop captured in `attach()` (`call_soon_threadsafe`) instead of calling `asyncio.create_task()` inside `handle_data()`. The Halo emulator invokes data handlers from its Lua thread, where `create_task()` has no running loop, so every IMU/tap/audio/photo/metering message was silently dropped. Receivers wired directly from the running loop keep working: the loop is resolved on demand
 
 ## 7.1.2

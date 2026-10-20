@@ -1,3 +1,7 @@
+## Unreleased
+
+* Added the device-side `text_page.lua` / `text_page.min.lua` library (`StdLua.TextPageMin`). It renders `TxTextPage` pages at their per-line x/y offsets, so `CircularTextLayout` pages follow Halo's round display; `text_sprite_block.lua` stacks lines by `line_height` and ignores those offsets. Device-side Lua is now identical across the Python, Flutter and WebBluetooth SDKs (`tools/check_lua_parity.py`)
+
 ## 3.0.0
 
 * `brilliant-ble` is no longer bundled into this package's output — it is now an

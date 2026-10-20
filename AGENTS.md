@@ -91,8 +91,6 @@ language. Its README documents the REPL, test-writing API, and the supported
 
 | API | Python | Flutter | WebBluetooth |
 |---|---|---|---|
-| `RxClick` | — | ✓ | ✓ |
-| `TxTextPage` + `RectangularTextLayout`/`CircularTextLayout` | — | ✓ | ✓ |
 | `TxSpriteCoords` | ✓ | — | ✓ |
 | Mag calibration / heading helpers | ✓ (`brilliant_msg.calibration`, `.heading`) | in `imu_compass` example only | ✓ (`mag-calibration.ts`, `compass-heading.ts`) |
 | `halo_emulator` | ✓ | — | — |
