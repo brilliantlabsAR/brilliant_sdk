@@ -16,6 +16,11 @@ local app_data_queue = {}
 local app_data_queue_len = 0
 local app_data_queue_head = 0
 
+-- Frame's Lua heap is small, so it collects in full around each message.
+-- Halo has the room to leave this to the incremental collector, and a full
+-- collection per message costs it several milliseconds per image strip.
+local collect_garbage = frame.HARDWARE_VERSION == 'Frame' and function() collectgarbage('collect') end or function() end
+
 -- Data Handler: called when data arrives, must execute quickly.
 -- Update the app_data_accum item based on the contents of the current packet
 -- The first byte of the packet indicates the message type, and the item's key
@@ -59,11 +64,11 @@ function _M.update_app_data_accum(data)
 
                 -- if all bytes are received, concat and enqueue the completed message
                 if item.recv_bytes == item.size then
-                    collectgarbage('collect')
+                    collect_garbage()
                     app_data_queue_len = app_data_queue_len + 1
                     app_data_queue[app_data_queue_len] = {msg_flag, table.concat(item.chunk_table)}
                     for k, v in pairs(item.chunk_table) do item.chunk_table[k] = nil end
-                    collectgarbage('collect')
+                    collect_garbage()
                     item.size = 0
                     item.recv_bytes = 0
                     item.num_chunks = 0
@@ -111,7 +116,7 @@ function _M.process_raw_items()
     local items_len = 0
     rc, err = pcall(
         function()
-            collectgarbage('collect')
+            collect_garbage()
 
             -- Re-check the tail on every pass: a message that completes while
             -- this loop runs is appended past where it started. (Copying a
