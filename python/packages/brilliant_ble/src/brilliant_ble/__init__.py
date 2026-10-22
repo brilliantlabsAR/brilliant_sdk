@@ -8,6 +8,7 @@ from .brilliant_ble import BrilliantDeviceType
 from .brilliant_ble import NotConnectedError
 from .brilliant_ble import OtaError
 from .brilliant_ble import chunk_lua_string
+from .brilliant_ble import ble_write_size
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 

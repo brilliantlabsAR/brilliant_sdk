@@ -26,6 +26,32 @@ class NotConnectedError(ConnectionError, ValueError):
 _DISCONNECTED = object()
 
 
+# Link-layer data PDUs carry at most 251 bytes, and the first PDU of an ATT
+# write also carries the 4-byte L2CAP and 3-byte ATT headers
+_LL_PDU_PAYLOAD: Final = 251
+_ATT_WRITE_OVERHEAD: Final = 7
+
+# data.lua's per-packet ACK is the data payload b"\x01\x00\x00" (b"\x01\x00\x01"
+# on failure), which arrives behind the notification's own 0x01 data marker
+_DATA_ACK_LEN: Final = 4
+
+# Default size of Halo's data receive queue (frame.bluetooth.receive_buffer_size())
+_HALO_RECEIVE_BUFFER_SIZE: Final = 4096
+
+
+def ble_write_size(max_write: int) -> int:
+    """
+    Returns the largest ATT write value, at most max_write bytes, that exactly
+    fills whole link-layer packets (251k - 7 bytes: 244, 495, ...). A write
+    that overruns a packet boundary by a few bytes spends a whole extra packet
+    of airtime on them. Returns max_write when not even one packet fits.
+    """
+    packets = (max_write + _ATT_WRITE_OVERHEAD) // _LL_PDU_PAYLOAD
+    if packets == 0:
+        return max_write
+    return packets * _LL_PDU_PAYLOAD - _ATT_WRITE_OVERHEAD
+
+
 class BrilliantDeviceType(Enum):
     FRAME = "Frame"
     HALO = "Halo"
@@ -99,6 +125,18 @@ class BrilliantBle:
         self._user_print_response_handler = lambda: None
         self._type = BrilliantDeviceType.UNKNOWN
         self._name = None
+        # send_message() flow control: packets sent but not yet acknowledged
+        self._acks_outstanding = 0
+        self._ack_event = asyncio.Event()
+        self._ack_failed = False
+        self.receive_buffer_size = _HALO_RECEIVE_BUFFER_SIZE
+        """
+        Size in bytes of the device's data receive queue. send_message() keeps
+        no more packets unacknowledged than fit in it, which is what keeps a
+        slow device-side handler from losing data. Set it to match a device
+        app that calls frame.bluetooth.receive_buffer_size(); larger values
+        allow faster sends.
+        """
 
     @property
     def type(self):
@@ -128,6 +166,9 @@ class BrilliantBle:
         self._audio_tx_characteristic = None
         self._type = BrilliantDeviceType.UNKNOWN
         self._name = None
+        self._acks_outstanding = 0
+        self._ack_failed = False
+        self._ack_event.set()
 
         # Wake anything awaiting a response so it fails now, not at its timeout
         if self._awaiting_print_response:
@@ -152,7 +193,14 @@ class BrilliantBle:
             # Use memoryview to avoid copying
             data_view = memoryview(data)[1:]
 
-            if self._awaiting_data_response:
+            if (self._acks_outstanding > 0 and len(data) == _DATA_ACK_LEN
+                    and data[1] == 1 and data[2] == 0):
+                # A send_message() ACK: count it rather than handing it to send_data()
+                self._acks_outstanding -= 1
+                if data[3] != 0:
+                    self._ack_failed = True
+                self._ack_event.set()
+            elif self._awaiting_data_response:
                 self._awaiting_data_response = False
                 await self._data_response.put(data_view)
 
@@ -309,6 +357,7 @@ class BrilliantBle:
         """
         client = self._client
         if client is not None:
+            await self._settle_acks()
             await client.disconnect()
         # In case Bleak didn't already call it; a no-op if it did
         self._disconnect_handler(client)
@@ -338,6 +387,24 @@ class BrilliantBle:
         """
         return min(self._connected_client().mtu_size, 512) - 4
 
+    async def _wait_write_without_response_ready(self, client, timeout=5):
+        """
+        On macOS/iOS, waits until CoreBluetooth can take another write without
+        response. CoreBluetooth silently discards such writes while its queue
+        is full, and Bleak does not wait on its own. Other backends queue or
+        block instead, so this returns at once there.
+        """
+        peripheral = getattr(getattr(client, "_backend", None), "_peripheral", None)
+        can_send = getattr(peripheral, "canSendWriteWithoutResponse", None)
+        if can_send is None:
+            return
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout
+        while not can_send():
+            if loop.time() > deadline:
+                raise Exception("device didn't respond")
+            await asyncio.sleep(0.001)
+
     async def _transmit(self, data, show_me=False, await_bt_response=True):
         if show_me:
             print(data)  # TODO make this print nicer
@@ -347,7 +414,61 @@ class BrilliantBle:
         if len(data) > client.mtu_size - 3:
             raise Exception("payload length is too large")
 
+        if not await_bt_response:
+            await self._wait_write_without_response_ready(client)
+
         await client.write_gatt_char(self._tx_characteristic, data, response=await_bt_response)
+
+    async def _await_acks(self, max_outstanding, timeout=5):
+        """
+        Waits until at most max_outstanding send_message() packets are
+        unacknowledged. Raises if the device reported a failed packet, stops
+        acknowledging for timeout seconds, or disconnects.
+        """
+        while True:
+            # A failed packet usually means the device app has stopped, so
+            # report it now rather than wait for ACKs that won't come
+            if self._ack_failed:
+                self._ack_failed = False
+                self._acks_outstanding = 0
+                raise Exception("device failed to process a message (see its print output)")
+            if self._acks_outstanding <= max_outstanding:
+                return
+            self._ack_event.clear()
+            try:
+                await asyncio.wait_for(self._ack_event.wait(), timeout=timeout)
+            except asyncio.TimeoutError:
+                if self._ack_failed:
+                    continue
+                # Starting again from zero: ACKs for these packets that still
+                # turn up would be counted against later ones. Only a device
+                # that stopped acknowledging gets here, normally followed by
+                # a break or reset that discards its queue anyway.
+                self._acks_outstanding = 0
+                raise Exception("device didn't respond")
+            if not self.is_connected():
+                raise NotConnectedError("Disconnected while awaiting a data response")
+
+    async def wait_for_acks(self, timeout=5):
+        """
+        Waits until the device has acknowledged every packet send_message()
+        has sent, i.e. its data handler has taken them all in.
+
+        send_message() returns once its last packet is on the way, so that
+        consecutive messages stream back to back. Every other call that talks
+        to the device waits for this first, so data is always processed
+        before, say, a break signal; call it directly to wait for that point.
+        """
+        await self._await_acks(0, timeout)
+
+    async def _settle_acks(self):
+        # Before a control signal: wait briefly, but a stuck device app is
+        # exactly what break/reset/remove are for, so never fail on it
+        try:
+            await self._await_acks(0, timeout=1)
+        except Exception:
+            self._acks_outstanding = 0
+            self._ack_failed = False
 
     async def send_lua(self, string: str, show_me=False, await_print=False, timeout=5):
         """
@@ -362,6 +483,8 @@ class BrilliantBle:
         Raises NotConnectedError if not connected, or if the link drops while
         awaiting the response.
         """
+
+        await self.wait_for_acks()
 
         # set the awaiting status before we transmit
         self._awaiting_print_response = await_print
@@ -390,6 +513,8 @@ class BrilliantBle:
         Raises NotConnectedError if not connected, or if the link drops while
         awaiting the response.
         """
+        await self.wait_for_acks()
+
         # set the awaiting status before we transmit
         self._awaiting_data_response = await_data
 
@@ -422,6 +547,8 @@ class BrilliantBle:
         if len(data) > mtu:
             return
         # stream audio as write-without-response (response=False)
+        if not await_bt_response:
+            await self._wait_write_without_response_ready(client)
         await client.write_gatt_char(self._audio_tx_characteristic, data, response=await_bt_response)
 
     async def drain_print_channel(self, quiet=0.25, max_total=1.5):
@@ -460,6 +587,7 @@ class BrilliantBle:
 
         Raises NotConnectedError if not connected.
         """
+        await self._settle_acks()
         await self._transmit(bytearray(b"\x04"), show_me=show_me)
         # need to give it a moment after the Lua VM reset before it can handle any requests
         await asyncio.sleep(0.2)
@@ -473,6 +601,7 @@ class BrilliantBle:
 
         Raises NotConnectedError if not connected.
         """
+        await self._settle_acks()
         await self._transmit(bytearray(b"\x05"), show_me=show_me)
         # need to give it a moment after the Lua VM reset before it can handle any requests
         await asyncio.sleep(0.2)
@@ -486,6 +615,7 @@ class BrilliantBle:
 
         Raises NotConnectedError if not connected.
         """
+        await self._settle_acks()
         await self._transmit(bytearray(b"\x03"), show_me=show_me)
         # need to give it a moment after the break before it can handle any requests
         await asyncio.sleep(0.2)
@@ -684,10 +814,20 @@ class BrilliantBle:
         Raises:
             ValueError: If msg_code is not in range 0-255 or payload size exceeds 65535
             NotConnectedError: If not connected, or the link drops during the send
+            Exception: If the device stops acknowledging packets, or reports
+                that it failed to process one
 
         Note:
             First packet format: [msg_code(1), size_high(1), size_low(1), data(...)]
             Other packets format: [msg_code(1), data(...)]
+
+            The device side must acknowledge every packet the way data.lua
+            does (data payload 01 00 00). On Halo, send_message() returns
+            once its last packet is on the way, so a failure in that last
+            stretch is raised by the next call that talks to the device
+            (see wait_for_acks()). A Halo app whose own receive callback
+            sends no such ACK therefore fails on the next call rather than
+            in send_message().
         """
         # Constants
         HEADER_SIZE: Final = 3  # msg_code + 2 bytes size
@@ -704,12 +844,42 @@ class BrilliantBle:
         if total_size > MAX_TOTAL_SIZE:
             raise ValueError(f"Payload size {total_size} exceeds maximum {MAX_TOTAL_SIZE} bytes")
 
+        if self._type == BrilliantDeviceType.HALO:
+            # Halo: writes without response, filling whole link-layer packets,
+            # paced by a window over data.lua's per-packet ACKs. Halo queues
+            # each packet (less its marker byte, plus a 2-byte length) until
+            # the Lua handler takes it, and silently drops a write without
+            # response that doesn't fit, so never have more packets
+            # unacknowledged than the queue holds. Messages stream back to
+            # back; the ACKs still outstanding are collected by the next
+            # call that needs them (see wait_for_acks()).
+            write_size = ble_write_size(min(self._connected_client().mtu_size - 3, 512))
+            packet_size = write_size - 1
+            window = max(1, self.receive_buffer_size // (packet_size + 2))
+
+            async def send_packet(packet):
+                await self._await_acks(window - 1)
+                # Counted before the write: its ACK can arrive during the await
+                self._acks_outstanding += 1
+                try:
+                    await self._transmit(b"\x01" + bytes(packet), show_me=show_me, await_bt_response=False)
+                except Exception:
+                    self._acks_outstanding -= 1
+                    raise
+        else:
+            # Frame: one packet at a time, each written with response and
+            # acknowledged by data.lua before the next
+            packet_size = self.max_data_payload()
+
+            async def send_packet(packet):
+                await self.send_data(packet, show_me=show_me, await_data=True)
+
         # Calculate maximum chunk sizes
-        max_first_chunk = self.max_data_payload() - HEADER_SIZE
-        max_chunk_size = self.max_data_payload() - SUBSEQUENT_HEADER_SIZE
+        max_first_chunk = packet_size - HEADER_SIZE
+        max_chunk_size = packet_size - SUBSEQUENT_HEADER_SIZE
 
         # Pre-allocate buffer for maximum sized packets
-        buffer = bytearray(self.max_data_payload())
+        buffer = bytearray(packet_size)
 
         # Send first chunk
         first_chunk_size = min(max_first_chunk, total_size)
@@ -717,7 +887,7 @@ class BrilliantBle:
         buffer[1] = total_size >> 8
         buffer[2] = total_size & 0xFF
         buffer[HEADER_SIZE:HEADER_SIZE + first_chunk_size] = payload[:first_chunk_size]
-        await self.send_data(memoryview(buffer)[:HEADER_SIZE + first_chunk_size], show_me=show_me, await_data=True)
+        await send_packet(memoryview(buffer)[:HEADER_SIZE + first_chunk_size])
         sent_bytes = first_chunk_size
 
         # Send remaining chunks
@@ -734,5 +904,5 @@ class BrilliantBle:
                     payload[sent_bytes:sent_bytes + chunk_size]
 
                 # Send only the used portion of the buffer
-                await self.send_data(memoryview(buffer)[:SUBSEQUENT_HEADER_SIZE + chunk_size], show_me=show_me, await_data=True)
+                await send_packet(memoryview(buffer)[:SUBSEQUENT_HEADER_SIZE + chunk_size])
                 sent_bytes += chunk_size

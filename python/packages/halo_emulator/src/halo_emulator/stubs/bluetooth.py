@@ -10,6 +10,8 @@ class BluetoothStub:
         self._address_str: str = "AA:BB:CC:DD:EE:FF"
         self._max_len: int = 243  # typical BLE MTU minus overhead
         self._receive_cb: Callable | None = None
+        self._receive_buffer_size: int = 4096
+        self._interval_ms: float = 30.0
         self._sent: list[bytes] = []
         self._send_listeners: list[Callable[[bytes], None]] = []
 
@@ -43,6 +45,27 @@ class BluetoothStub:
     def receive_callback(self, func: Callable | None) -> None:
         """Called by Lua to register its incoming-data handler."""
         self._receive_cb = func
+
+    def receive_buffer_size(self, size: object = None) -> int:
+        """Get or set the data receive queue size (firmware range 1024-65536)."""
+        if size is not None:
+            size = int(size)
+            if not 1024 <= size <= 65536:
+                raise ValueError("size must be between 1024 and 65536 bytes")
+            self._receive_buffer_size = size
+        return self._receive_buffer_size
+
+    def connection_interval(self, ms: object = None) -> float | None:
+        """Get the connection interval, or request one (granted at once here)."""
+        if ms is None:
+            return self._interval_ms if self._connected else None
+        ms = float(ms)
+        if not 7.5 <= ms <= 1000:  # NaN fails too
+            raise ValueError("interval must be between 7.5 and 1000 ms")
+        if not self._connected:
+            raise RuntimeError("not connected")
+        self._interval_ms = ms
+        return None
 
     # ---- called from Python (event dispatch) ----
 
