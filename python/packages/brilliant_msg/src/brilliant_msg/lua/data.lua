@@ -7,9 +7,14 @@ local _M = {}
 local app_data_accum = {}
 _M.app_data_accum = app_data_accum
 
--- ordered queue of completed messages {msg_flag, block_data} in arrival order
+-- ordered queue of completed messages {msg_flag, block_data} in arrival order.
+-- The data handler appends at the tail (app_data_queue_len) and
+-- process_raw_items() takes from the head; each only ever advances its own
+-- index, because the handler can run between any two instructions of
+-- process_raw_items()
 local app_data_queue = {}
 local app_data_queue_len = 0
+local app_data_queue_head = 0
 
 -- Data Handler: called when data arrives, must execute quickly.
 -- Update the app_data_accum item based on the contents of the current packet
@@ -108,13 +113,15 @@ function _M.process_raw_items()
         function()
             collectgarbage('collect')
 
-            for i = 1, app_data_queue_len do
+            -- Re-check the tail on every pass: a message that completes while
+            -- this loop runs is appended past where it started. (Copying a
+            -- fixed range and then resetting the queue lost such messages.)
+            while app_data_queue_head < app_data_queue_len do
+                app_data_queue_head = app_data_queue_head + 1
                 items_len = items_len + 1
-                items[items_len] = app_data_queue[i]
-                app_data_queue[i] = nil
+                items[items_len] = app_data_queue[app_data_queue_head]
+                app_data_queue[app_data_queue_head] = nil
             end
-
-            app_data_queue_len = 0
         end
     )
     if rc == false then
