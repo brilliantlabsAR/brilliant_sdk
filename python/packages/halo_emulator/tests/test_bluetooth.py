@@ -73,3 +73,23 @@ end
 
     sent = emulator.get_bluetooth_sent()
     assert sent == [b"\x01"], "Emulator should report as connected"
+
+
+def test_ble_receive_buffer_size_and_connection_interval(emulator, tmp_path):
+    """The firmware's receive_buffer_size() / connection_interval() surface."""
+    lua = """
+local s = {}
+s[#s + 1] = frame.bluetooth.receive_buffer_size()
+s[#s + 1] = frame.bluetooth.receive_buffer_size(16384)
+s[#s + 1] = tostring(pcall(frame.bluetooth.receive_buffer_size, 100))
+s[#s + 1] = frame.bluetooth.connection_interval()
+frame.bluetooth.connection_interval(15)
+s[#s + 1] = frame.bluetooth.connection_interval()
+s[#s + 1] = tostring(pcall(frame.bluetooth.connection_interval, 0/0))
+frame.bluetooth.send(table.concat(s, ','))
+"""
+    (tmp_path / "main.lua").write_text(lua)
+    emulator.start()
+    emulator.wait(timeout=3.0)
+
+    assert emulator.get_bluetooth_sent() == [b"4096,16384,false,30.0,15.0,false"]

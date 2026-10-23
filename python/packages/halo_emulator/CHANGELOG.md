@@ -1,3 +1,11 @@
+## 2.3.0
+
+### Added
+
+* `frame.bluetooth.receive_buffer_size([bytes])` and
+  `frame.bluetooth.connection_interval([ms])`, with firmware's argument ranges.
+  The emulator grants a requested interval at once
+
 ## 2.2.0
 
 ### Changed

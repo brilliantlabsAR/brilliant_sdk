@@ -1,3 +1,9 @@
+## 3.0.1
+
+* `data.lua`: a message that finished arriving while `process_raw_items()` was running could be lost. The item counter was reset after copying a fixed range, so an item queued by a receive callback during the copy was orphaned. With messages arriving back to back this dropped the last strip of about 1 image in 50. The queue now has a separate head and tail and never drops an item
+* `data.lua`: the full `collectgarbage('collect')` after each batch of messages now runs on Frame only. On Halo it cost tens of milliseconds per image; Lua's incremental collector keeps the heap bounded (it peaked at 85 KB streaming 128x128 images, was 62 KB)
+* Progressive sprite examples: on Halo, draw only the strip that just arrived. Halo keeps its framebuffer between draws, so redrawing every strip received so far is only needed on Frame
+
 ## 3.0.0
 
 * `brilliant-ble` is no longer bundled into this package's output — it is now an

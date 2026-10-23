@@ -113,6 +113,8 @@ def build_lua_runtime(
     bt_tbl.max_length = bluetooth.max_length
     bt_tbl.send = bluetooth.send
     bt_tbl.receive_callback = bluetooth.receive_callback
+    bt_tbl.receive_buffer_size = bluetooth.receive_buffer_size
+    bt_tbl.connection_interval = bluetooth.connection_interval
     frame.bluetooth = bt_tbl
 
     # ---- imu ----

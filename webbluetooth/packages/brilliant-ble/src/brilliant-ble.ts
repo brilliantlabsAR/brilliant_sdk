@@ -1,3 +1,27 @@
+// Link-layer data PDUs carry at most 251 bytes, and the first PDU of an ATT
+// write also carries the 4-byte L2CAP and 3-byte ATT headers
+const LL_PDU_PAYLOAD = 251;
+const ATT_WRITE_OVERHEAD = 7;
+
+// Default size of Halo's data receive queue (frame.bluetooth.receive_buffer_size())
+const HALO_RECEIVE_BUFFER_SIZE = 4096;
+
+/**
+ * Returns the largest ATT write value, at most maxWrite bytes, that exactly
+ * fills whole link-layer packets (251k - 7 bytes: 244, 495, ...). A write
+ * that overruns a packet boundary by a few bytes spends a whole extra packet
+ * of airtime on them. Returns maxWrite when not even one packet fits.
+ * @param maxWrite The maximum ATT write value length in bytes.
+ * @returns The write size to use, in bytes.
+ */
+export function bleWriteSize(maxWrite: number): number {
+    const packets = Math.floor((maxWrite + ATT_WRITE_OVERHEAD) / LL_PDU_PAYLOAD);
+    if (packets === 0) {
+        return maxWrite;
+    }
+    return packets * LL_PDU_PAYLOAD - ATT_WRITE_OVERHEAD;
+}
+
 export enum BrilliantDeviceType {
     FRAME = "Frame",
     HALO = "Halo",
@@ -30,11 +54,27 @@ export class BrilliantBle {
     // Updated promise and resolve types for data responses
     private dataResponsePromise?: Promise<Uint8Array>;
     private dataResolve?: (value: Uint8Array) => void;
+    private dataReject?: (reason: Error) => void;
 
     // Updated handler types
     private onDataResponse?: (data: Uint8Array) => void | Promise<void>;
     private onPrintResponse?: (data: string) => void | Promise<void>;
     private onDisconnectHandler?: () => void;
+
+    // sendMessage() flow control on Halo: packets sent but not yet acknowledged,
+    // and the waiters to wake on each ACK (true) or on disconnect (false)
+    private acksOutstanding = 0;
+    private ackFailed = false;
+    private ackWaiters = new Set<(progressed: boolean) => void>();
+
+    /**
+     * Size in bytes of the device's data receive queue. On Halo, sendMessage()
+     * keeps no more packets unacknowledged than fit in it, which is what keeps
+     * a slow device-side handler from losing data. Set it to match a device
+     * app that calls frame.bluetooth.receive_buffer_size(); larger values
+     * allow faster sends. Defaults to Halo's 4096 bytes.
+     */
+    public receiveBufferSize = HALO_RECEIVE_BUFFER_SIZE;
 
     /**
      * Creates an instance of BrilliantBle.
@@ -84,6 +124,17 @@ export class BrilliantBle {
         this.rxCharacteristic = undefined;
         this.audioTxCharacteristic = undefined;
         this.deviceType = BrilliantDeviceType.UNKNOWN;
+        // Fail anything awaiting ACKs now, not at its timeout
+        this.acksOutstanding = 0;
+        this.ackFailed = false;
+        this.wakeAckWaiters(false);
+        // and a sendData() awaiting its response
+        if (this.awaitingDataResponse && this.dataReject) {
+            this.awaitingDataResponse = false;
+            this.dataResolve = undefined;
+            this.dataReject(new Error("Disconnected while awaiting a data response"));
+        }
+        this.dataReject = undefined;
         if (this.onDisconnectHandler) {
             this.onDisconnectHandler();
         }
@@ -105,7 +156,16 @@ export class BrilliantBle {
             // This avoids copying the underlying ArrayBuffer.
             const actualData = new Uint8Array(value.buffer, value.byteOffset + 1, value.byteLength - 1);
 
-            if (this.awaitingDataResponse && this.dataResolve) {
+            if (this.acksOutstanding > 0 && value.byteLength === 4 &&
+                value.getUint8(1) === 1 && value.getUint8(2) === 0) {
+                // A sendMessage() ACK from data.lua (01 00 00, or 01 00 01 on
+                // failure): count it rather than handing it to sendData()
+                this.acksOutstanding--;
+                if (value.getUint8(3) !== 0) {
+                    this.ackFailed = true;
+                }
+                this.wakeAckWaiters(true);
+            } else if (this.awaitingDataResponse && this.dataResolve) {
                 this.awaitingDataResponse = false;
                 this.dataResolve(actualData); // Resolve with Uint8Array
             }
@@ -373,8 +433,11 @@ export class BrilliantBle {
      * @returns A promise that resolves once the disconnection process has been initiated, or immediately if already disconnected.
      */
     public async disconnect(): Promise<void> {
-        if (this.device && this.device.gatt?.connected) {
-            this.device.gatt.disconnect();
+        const device = this.device;
+        if (device && device.gatt?.connected) {
+            // the link can drop during the wait, which clears this.device
+            await this.settleAcks();
+            device.gatt?.disconnect();
         } else {
             this.handleDisconnect(); // handleDisconnect is typically called by the 'gattserverdisconnected' event. Calling it here ensures immediate state cleanup if the event is delayed or not fired.
         }
@@ -422,6 +485,87 @@ export class BrilliantBle {
         }
     }
 
+    private wakeAckWaiters(progressed: boolean) {
+        const waiters = [...this.ackWaiters];
+        this.ackWaiters.clear();
+        for (const wake of waiters) {
+            wake(progressed);
+        }
+    }
+
+    /**
+     * Waits until at most maxOutstanding sendMessage() packets are
+     * unacknowledged. Throws if the device reported a failed packet, stops
+     * acknowledging for timeoutMs, or disconnects.
+     */
+    private async awaitAcks(maxOutstanding: number, timeoutMs = 5000): Promise<void> {
+        // A failure ACK means data.lua's handler errored, after which no more
+        // ACKs come: report it as soon as it arrives, not as a timeout, and
+        // clear it so it can't fail a later, unrelated call
+        const throwIfFailed = () => {
+            if (this.ackFailed) {
+                this.ackFailed = false;
+                this.acksOutstanding = 0;
+                throw new Error("Device failed to process a message (see its print output).");
+            }
+        };
+        throwIfFailed();
+        while (this.acksOutstanding > maxOutstanding) {
+            const progressed = await new Promise<boolean | undefined>((resolve) => {
+                const timeoutId = setTimeout(() => {
+                    this.ackWaiters.delete(wake);
+                    resolve(undefined);
+                }, timeoutMs);
+                const wake = (progressed: boolean) => {
+                    clearTimeout(timeoutId);
+                    resolve(progressed);
+                };
+                this.ackWaiters.add(wake);
+            });
+            throwIfFailed();
+            if (progressed === undefined) {
+                // Resetting the count means ACKs that still arrive late are
+                // miscounted against later packets; acceptable, since this
+                // only happens when the device app has stalled or been reset
+                this.acksOutstanding = 0;
+                throw new Error(`Device didn't acknowledge message data within ${timeoutMs}ms.`);
+            }
+            if (!progressed || !this.isConnected()) {
+                throw new Error("Disconnected while awaiting message acknowledgements.");
+            }
+        }
+        throwIfFailed();
+    }
+
+    /**
+     * Waits until the device has acknowledged every packet sendMessage() has
+     * sent, i.e. its data handler has taken them all in.
+     *
+     * On Halo, sendMessage() resolves once its last packet is written, so that
+     * consecutive messages stream back to back. Every other call that talks to
+     * the device waits for this first, so data is always processed before,
+     * say, a break signal; call it directly to wait for that point.
+     * Resolves immediately if nothing is outstanding (always the case on Frame).
+     * @param timeoutMs Fail if no ACK arrives for this long. Defaults to 5000ms.
+     * @throws Error if the device reported a failed packet, stopped acknowledging, or disconnected.
+     */
+    public async waitForAcks(timeoutMs = 5000): Promise<void> {
+        await this.awaitAcks(0, timeoutMs);
+    }
+
+    // Before a control signal or disconnect: wait briefly, but a stuck device
+    // app is exactly what break/reset/remove are for, so never fail on it
+    private async settleAcks(): Promise<void> {
+        try {
+            await this.awaitAcks(0, 1000);
+        } catch {
+            // As after a timeout, late ACKs may then be miscounted, which is
+            // acceptable straight after a break, reset or disconnect
+            this.acksOutstanding = 0;
+            this.ackFailed = false;
+        }
+    }
+
     /**
      * Sends a Lua command string to the Frame device.
      * @param str The Lua command string to send.
@@ -430,7 +574,8 @@ export class BrilliantBle {
      * @param options.awaitPrint If true, waits for a print response from the device. Defaults to false.
      * @param options.timeout The timeout in milliseconds to wait for a print response if `awaitPrint` is true. Defaults to 5000ms.
      * @returns A promise that resolves with the print response string if `awaitPrint` is true, or void otherwise.
-     * @throws Error if the Lua string payload is too large or if a timeout occurs while awaiting a print response.
+     * @throws Error if the Lua string payload is too large or if a timeout occurs while awaiting a print response,
+     * or if earlier sendMessage() data is not acknowledged (see `waitForAcks()`).
      */
     public async sendLua(
         str: string,
@@ -445,6 +590,8 @@ export class BrilliantBle {
         if (encodedString.byteLength > this.getMaxPayload(true)) {
              throw new Error(`Lua string payload (${encodedString.byteLength} bytes) is too large for max Lua payload (${this.getMaxPayload(true)} bytes).`);
         }
+
+        await this.waitForAcks();
 
         if (awaitPrint) {
             if (this.printTimeoutId) clearTimeout(this.printTimeoutId);
@@ -479,7 +626,8 @@ export class BrilliantBle {
      * @param options.timeout The timeout in milliseconds to wait for a data response if `awaitData` is true. Defaults to 5000ms.
      * @param options.awaitBtResponse If true, uses write-with-response at the BLE level. Defaults to true.
      * @returns A promise that resolves with the Uint8Array data response if `awaitData` is true, or void otherwise.
-     * @throws Error if not connected, if TX characteristic is not available, or if the data payload is too large.
+     * @throws Error if not connected, if TX characteristic is not available, or if the data payload is too large,
+     * or if earlier sendMessage() data is not acknowledged (see `waitForAcks()`).
      */
     public async sendData(
         data: Uint8Array, // This is the application payload
@@ -499,6 +647,8 @@ export class BrilliantBle {
             throw new Error(`Data payload (${data.byteLength} bytes) is too large for max data payload (${this.getMaxPayload(false)} bytes).`);
         }
 
+        await this.waitForAcks();
+
         const prefix = new Uint8Array([1]); // 0x01 prefix for raw data
         const combinedData = new Uint8Array(prefix.length + data.byteLength);
         combinedData.set(prefix, 0);
@@ -511,6 +661,7 @@ export class BrilliantBle {
             // Ensure the promise type matches the updated dataResolve type
             this.dataResponsePromise = new Promise<Uint8Array>((resolve, reject) => {
                 this.dataResolve = resolve; // dataResolve expects Uint8Array
+                this.dataReject = reject;
                 dataTimeoutId = setTimeout(() => {
                     if (this.awaitingDataResponse) {
                         this.awaitingDataResponse = false;
@@ -601,6 +752,7 @@ export class BrilliantBle {
      */
     public async sendResetSignal(showMe = false): Promise<void> {
         const signal = new Uint8Array([0x04]);
+        await this.settleAcks();
         await this.transmit(signal, showMe);
         await new Promise(resolve => setTimeout(resolve, 200)); // Short delay
     }
@@ -613,6 +765,7 @@ export class BrilliantBle {
      */
     public async sendRemoveSignal(showMe = false): Promise<void> {
         const signal = new Uint8Array([0x05]);
+        await this.settleAcks();
         await this.transmit(signal, showMe);
         await new Promise(resolve => setTimeout(resolve, 200)); // Short delay
     }
@@ -625,6 +778,7 @@ export class BrilliantBle {
      */
     public async sendBreakSignal(showMe = false): Promise<void> {
         const signal = new Uint8Array([0x03]);
+        await this.settleAcks();
         await this.transmit(signal, showMe);
         await new Promise(resolve => setTimeout(resolve, 200)); // Short delay
     }
@@ -686,11 +840,29 @@ export class BrilliantBle {
      * Sends a multi-packet message to the device.
      * This method handles chunking the payload and sending it in multiple BLE packets
      * according to a specific protocol (message code, total size header, then data chunks).
+     *
+     * On Frame, each packet is written and acknowledged by data.lua before the
+     * next, and the promise resolves once the last packet is acknowledged.
+     *
+     * On Halo, packets are written without response, each filling whole
+     * link-layer packets, with at most `receiveBufferSize / (packet size + 2)`
+     * of them unacknowledged at a time. The promise resolves once the last
+     * packet is written, so consecutive messages stream back to back; the
+     * remaining ACKs are collected by the next call that talks to the device
+     * (or by `waitForAcks()`). `awaitBtResponse` is ignored on Halo.
+     *
+     * The device app must acknowledge every packet with data.lua's ACK (data
+     * payload 01 00 00), as data.lua's own handler does. On Halo, an app whose
+     * receive callback doesn't makes a LATER call throw after its timeout (the
+     * next sendLua or sendData, or a sendMessage once the window is full), not
+     * this one; control signals just wait about a second and carry on.
      * @param msgCode A number (0-255) representing the message type or command.
      * @param payload The Uint8Array data to send as the message payload.
      * @param showMe If true, logs details of each transmitted packet to the console. Defaults to false.
-     * @returns A promise that resolves when all parts of the message have been sent and acknowledged.
-     * @throws Error if msgCode is out of range, payload is too large, or if max payload size is too small for the protocol.
+     * @param awaitBtResponse Frame only: if true, uses write-with-response at the BLE level. Defaults to true.
+     * @returns A promise that resolves when all parts of the message have been sent (and, on Frame, acknowledged).
+     * @throws Error if msgCode is out of range, payload is too large, if max payload size is too small for the protocol,
+     * or if the device fails, stops acknowledging or disconnects mid-message.
      */
     public async sendMessage(msgCode: number, payload: Uint8Array, showMe = false, awaitBtResponse = true): Promise<void> {
         const HEADER_SIZE = 2; // size_high(1), size_low(1)
@@ -704,7 +876,61 @@ export class BrilliantBle {
             throw new Error(`Payload size ${totalPayloadSize} exceeds maximum ${MAX_TOTAL_PAYLOAD_SIZE} bytes`);
         }
 
-        const maxDataPayloadForSend = this.getMaxPayload(false);
+        // Packet size excludes the 0x01 data marker
+        let maxDataPayloadForSend: number;
+        let sendPacket: (packet: Uint8Array) => Promise<void>;
+
+        if (this.deviceType === BrilliantDeviceType.HALO) {
+            // Halo: writes without response, filling whole link-layer packets,
+            // paced by a window over data.lua's per-packet ACKs. Halo queues
+            // each packet (less its marker byte, plus a 2-byte length) until
+            // the Lua handler takes it, and silently drops a write without
+            // response that doesn't fit, so never have more packets
+            // unacknowledged than the queue holds. Messages stream back to
+            // back; the ACKs still outstanding are collected by the next call
+            // that needs them (see waitForAcks()).
+            //
+            // writeValueWithoutResponse() is no flow control. The spec resolves
+            // it once the Write Without Response procedure is done, and that
+            // procedure has no reply, so it only means the platform took the
+            // write. Chromium on macOS calls CoreBluetooth's writeValue and
+            // resolves straight away, without checking
+            // canSendWriteWithoutResponse, so a write made while CoreBluetooth's
+            // queue is full can be silently dropped. On Android and Windows,
+            // Chromium resolves when the OS stack completes the write
+            // (onCharacteristicWrite / WriteValueWithResultAndOptionAsync),
+            // which those stacks pace. The window below bounds the data in
+            // flight either way, and a lost packet stops the ACKs, so it shows
+            // up as a timeout rather than passing unnoticed.
+            const writeSize = bleWriteSize(this.maxPayload);
+            maxDataPayloadForSend = writeSize - 1;
+            const window = Math.max(1, Math.floor(this.receiveBufferSize / (maxDataPayloadForSend + 2)));
+
+            sendPacket = async (packet: Uint8Array) => {
+                await this.awaitAcks(window - 1);
+                const combinedData = new Uint8Array(1 + packet.byteLength);
+                combinedData[0] = 1; // 0x01 prefix for raw data
+                combinedData.set(packet, 1);
+                // Count it before writing: its ACK can arrive during the write
+                this.acksOutstanding++;
+                try {
+                    await this.transmit(combinedData, showMe, false);
+                } catch (error) {
+                    // Never sent, so never acknowledged
+                    this.acksOutstanding = Math.max(0, this.acksOutstanding - 1);
+                    throw error;
+                }
+            };
+        } else {
+            // Frame: one packet at a time, each acknowledged by data.lua
+            // before the next
+            maxDataPayloadForSend = this.getMaxPayload(false);
+
+            sendPacket = async (packet: Uint8Array) => {
+                await this.sendData(packet, {showMe: showMe, awaitData: true, awaitBtResponse: awaitBtResponse});
+            };
+        }
+
         const maxFirstChunkDataSize = maxDataPayloadForSend - 1 - HEADER_SIZE;
         const maxSubsequentChunkDataSize = maxDataPayloadForSend - 1;
 
@@ -720,7 +946,7 @@ export class BrilliantBle {
         firstPacketDataForSendData[2] = totalPayloadSize & 0xFF;
         firstPacketDataForSendData.set(payload.subarray(0, firstChunkActualDataSize), 1 + HEADER_SIZE);
 
-        await this.sendData(firstPacketDataForSendData, {showMe: showMe, awaitData: true, awaitBtResponse: awaitBtResponse});
+        await sendPacket(firstPacketDataForSendData);
         sentBytes += firstChunkActualDataSize;
 
         while (sentBytes < totalPayloadSize) {
@@ -730,7 +956,7 @@ export class BrilliantBle {
             subsequentPacketDataForSendData[0] = msgCode;
             subsequentPacketDataForSendData.set(payload.subarray(sentBytes, sentBytes + currentChunkActualDataSize), 1);
 
-            await this.sendData(subsequentPacketDataForSendData, {showMe: showMe, awaitData: true, awaitBtResponse: awaitBtResponse});
+            await sendPacket(subsequentPacketDataForSendData);
             sentBytes += currentChunkActualDataSize;
         }
     }

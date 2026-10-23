@@ -7,9 +7,19 @@ local _M = {}
 local app_data_accum = {}
 _M.app_data_accum = app_data_accum
 
--- ordered queue of completed messages {msg_flag, block_data} in arrival order
+-- ordered queue of completed messages {msg_flag, block_data} in arrival order.
+-- The data handler appends at the tail (app_data_queue_len) and
+-- process_raw_items() takes from the head; each only ever advances its own
+-- index, because the handler can run between any two instructions of
+-- process_raw_items()
 local app_data_queue = {}
 local app_data_queue_len = 0
+local app_data_queue_head = 0
+
+-- Frame's Lua heap is small, so it collects in full around each message.
+-- Halo has the room to leave this to the incremental collector, and a full
+-- collection per message costs it several milliseconds per image strip.
+local collect_garbage = frame.HARDWARE_VERSION == 'Frame' and function() collectgarbage('collect') end or function() end
 
 -- Data Handler: called when data arrives, must execute quickly.
 -- Update the app_data_accum item based on the contents of the current packet
@@ -54,11 +64,11 @@ function _M.update_app_data_accum(data)
 
                 -- if all bytes are received, concat and enqueue the completed message
                 if item.recv_bytes == item.size then
-                    collectgarbage('collect')
+                    collect_garbage()
                     app_data_queue_len = app_data_queue_len + 1
                     app_data_queue[app_data_queue_len] = {msg_flag, table.concat(item.chunk_table)}
                     for k, v in pairs(item.chunk_table) do item.chunk_table[k] = nil end
-                    collectgarbage('collect')
+                    collect_garbage()
                     item.size = 0
                     item.recv_bytes = 0
                     item.num_chunks = 0
@@ -106,15 +116,17 @@ function _M.process_raw_items()
     local items_len = 0
     rc, err = pcall(
         function()
-            collectgarbage('collect')
+            collect_garbage()
 
-            for i = 1, app_data_queue_len do
+            -- Re-check the tail on every pass: a message that completes while
+            -- this loop runs is appended past where it started. (Copying a
+            -- fixed range and then resetting the queue lost such messages.)
+            while app_data_queue_head < app_data_queue_len do
+                app_data_queue_head = app_data_queue_head + 1
                 items_len = items_len + 1
-                items[items_len] = app_data_queue[i]
-                app_data_queue[i] = nil
+                items[items_len] = app_data_queue[app_data_queue_head]
+                app_data_queue[app_data_queue_head] = nil
             end
-
-            app_data_queue_len = 0
         end
     )
     if rc == false then
