@@ -1,3 +1,9 @@
+## 4.3.0
+
+* `camera.lua`, `audio.lua`: photo and audio packets carry at most 240 data bytes (less if the MTU is smaller), so each notification fits one 251-byte Bluetooth link-layer packet, including over the EATT bearers Android uses. They were sized to the MTU (up to 508 bytes), taking two link-layer packets each. From a Halo dev kit at a 15 ms interval, photos arrived faster this way: iPhone 14 48 vs 42 kB/s, Pixel 7 Pro 80 vs 75 kB/s. Sizes are read per call; `audio.lua` read the MTU once when loaded
+* `camera.lua`: new non-blocking capture: `start_capture(settings)`, then `send_pending(n)` each loop pass until it returns false (`is_sending()` reports a capture in progress), so the loop can do other work between photo packets. `capture_and_send()` still blocks until the photo is sent
+* `RxPhoto` accumulates the image in a `BytesBuilder`; it rebuilt a list of the whole image so far for every packet received
+
 ## 4.2.0
 
 * Added the device-side `text_page.lua` / `text_page.min.lua` library. It renders `TxTextPage` pages at their per-line x/y offsets, so `CircularTextLayout` pages follow Halo's round display; `text_sprite_block.lua` stacks lines by `line_height` and ignores those offsets. Add `packages/brilliant_msg/lua/text_page.min.lua` to your app's `assets:` to upload it. Device-side Lua is now identical across the Python, Flutter and WebBluetooth SDKs (`tools/check_lua_parity.py`)
