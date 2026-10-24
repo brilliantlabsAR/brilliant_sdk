@@ -25,5 +25,9 @@ export default defineConfig({
       },
     },
   },
-  plugins: [dts({ entryRoot: 'src' })],
+  // pathsToAliases: false keeps 'brilliant-ble' as a package import in the
+  // declarations. tsconfig's paths alias (there for TypeDoc) would otherwise be
+  // rewritten into a relative path to the sibling's sources, which does not
+  // exist in an installed package.
+  plugins: [dts({ entryRoot: 'src', pathsToAliases: false })],
 });

@@ -1,9 +1,3 @@
-## Unreleased
-
-### Fixed
-
-* `EmulatorBrilliantMsg.upload_frame_app()` no longer raises `shutil.SameFileError` when the app file already lives in the sandbox directory (for example `HaloEmulator(sandbox_dir="./lua")` with `upload_frame_app("lua/app.lua")`); the copy is skipped
-
 ## 2.3.0
 
 ### Added
@@ -11,6 +5,10 @@
 * `frame.bluetooth.receive_buffer_size([bytes])` and
   `frame.bluetooth.connection_interval([ms])`, with firmware's argument ranges.
   The emulator grants a requested interval at once
+
+### Fixed
+
+* `EmulatorBrilliantMsg.upload_frame_app()` no longer raises `shutil.SameFileError` when the app file already lives in the sandbox directory (for example `HaloEmulator(sandbox_dir="./lua")` with `upload_frame_app("lua/app.lua")`); the copy is skipped
 
 ## 2.2.0
 

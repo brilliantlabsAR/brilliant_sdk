@@ -1,4 +1,4 @@
-## Unreleased
+## 9.1.2
 
 * Teleprompter example: pages are drawn on the device with `text_page.lua` at each line's x/y offset, and on Halo text is laid out with `CircularTextLayout` to fit the round display
 * Teleprompter example: changing the text size or alignment now re-lays out the text and redraws the current page; previously the change only took effect on the next file load
