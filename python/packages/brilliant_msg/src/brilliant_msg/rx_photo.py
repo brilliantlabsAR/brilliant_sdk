@@ -1,9 +1,11 @@
 import asyncio
+import concurrent.futures
 import logging
 from typing import Dict, List, Optional
 import PIL.Image as Image
 import io
 from brilliant_msg import BrilliantMsg
+from brilliant_msg._event_loop import event_loop
 
 logging.basicConfig()
 _log = logging.getLogger("RxPhoto")
@@ -49,11 +51,6 @@ class RxPhoto:
         """Check if we have a stored JPEG header for the given quality and resolution"""
         return f"{quality}_{resolution}" in cls._jpeg_header_map
 
-    def _get_loop(self) -> "asyncio.AbstractEventLoop":
-        """The attach()-time event loop, else the running loop (direct-wired usage)."""
-        loop = getattr(self, "_loop", None)
-        return loop if loop is not None else asyncio.get_running_loop()
-
     def handle_data(self, data: bytes) -> None:
         """
         Process incoming chunks of image data.
@@ -75,7 +72,15 @@ class RxPhoto:
             # Process complete image (thread-safe: the emulator invokes
             # handlers from its Lua thread, where asyncio.create_task would
             # fail silently)
-            asyncio.run_coroutine_threadsafe(self._process_complete_image(), self._get_loop())
+            future = asyncio.run_coroutine_threadsafe(self._process_complete_image(), event_loop(self._loop))
+            future.add_done_callback(self._log_processing_error)
+
+    @staticmethod
+    def _log_processing_error(future: "concurrent.futures.Future") -> None:
+        """Log a failure in _process_complete_image(), which nothing else awaits"""
+        if not future.cancelled() and future.exception() is not None:
+            exc = future.exception()
+            _log.error("Failed to process received image: %s", exc, exc_info=exc)
 
     async def _process_complete_image(self) -> None:
         """Process and queue a complete image once all chunks are received"""

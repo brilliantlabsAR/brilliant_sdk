@@ -3,6 +3,7 @@ import logging
 import time
 from typing import Optional
 from brilliant_msg import BrilliantMsg
+from brilliant_msg._event_loop import event_loop
 
 logging.basicConfig()
 _log = logging.getLogger("RxTap")
@@ -41,11 +42,6 @@ class RxTap:
         except asyncio.CancelledError:
             pass
 
-    def _get_loop(self) -> "asyncio.AbstractEventLoop":
-        """The attach()-time event loop, else the running loop (direct-wired usage)."""
-        loop = getattr(self, "_loop", None)
-        return loop if loop is not None else asyncio.get_running_loop()
-
     def handle_data(self, data: bytes) -> None:
         """
         Process an incoming Tap message
@@ -62,7 +58,7 @@ class RxTap:
         # gesture carrying the kind, so no timing aggregation is needed.
         if len(data) >= 2 and 1 <= data[1] <= 3:
             # thread-safe: the emulator invokes handlers from its Lua thread
-            self._get_loop().call_soon_threadsafe(self.queue.put_nowait, data[1])
+            event_loop(self._loop).call_soon_threadsafe(self.queue.put_nowait, data[1])
             return
 
         # Frame sends a bare flag byte per tap: aggregate by timing.
@@ -79,7 +75,7 @@ class RxTap:
         # Reset the threshold timer (thread-safe: the emulator invokes
         # handlers from its Lua thread, where asyncio.create_task would
         # fail silently)
-        self._get_loop().call_soon_threadsafe(self._reset_threshold_timer)
+        event_loop(self._loop).call_soon_threadsafe(self._reset_threshold_timer)
 
     async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
