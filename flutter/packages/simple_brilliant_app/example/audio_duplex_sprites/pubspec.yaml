@@ -1,0 +1,35 @@
+name: audio_duplex_sprites
+description: "Halo: stream LC3 audio to the speaker and from the microphone while streaming 128x128 4bpp images, reporting whether each stream keeps up"
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image: ^4.5.2
+  logging: ^1.2.0
+  simple_brilliant_app:
+    # Note: We use a path dependency because the example apps & library packages are bundled together.
+    # In *your* app you should use a versioned dependency from pub.dev
+    path: ../../
+  brilliant_ble:
+    path: ../../../brilliant_ble
+  brilliant_msg:
+    path: ../../../brilliant_msg
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - packages/brilliant_msg/lua/data.min.lua
+    - packages/brilliant_msg/lua/image_sprite_block.min.lua
+    - assets/frame_app.lua
+    - assets/female_w1_8k_s16.lc3
+    - assets/koala.jpg

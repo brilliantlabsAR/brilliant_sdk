@@ -11,6 +11,7 @@ Most examples are two files: the host-side Python program here and a device-side
 | Example | Device-side Lua | Description |
 |---|---|---|
 | [`audio_clip.py`](./audio_clip.py) | `audio_frame_app.lua` | Record a 5-second audio clip from the device microphone (RxAudio) and save it as a WAV file. |
+| [`audio_duplex_sprites.py`](./audio_duplex_sprites.py) | `audio_duplex_sprites_frame_app.lua` | Halo-only: stream LC3 audio to the speaker and LC3 microphone audio back to the host while streaming 128x128 4bpp images (TxImageSpriteBlock), reporting whether each stream keeps up. |
 | [`audio_stream.py`](./audio_stream.py) | `audio_frame_app.lua` | Stream microphone audio from the device (RxAudio in streaming mode) and play it live through the computer's speakers with pvspeaker. |
 | [`audio_video_stream.py`](./audio_video_stream.py) | `audio_video_frame_app.lua` | Stream device microphone audio to the computer's speakers (RxAudio) while capturing and showing a photo (RxPhoto) every 5 seconds. |
 | [`auto_exposure.py`](./auto_exposure.py) | `autoexp_frame_app.lua` | Frame-only: step the camera auto-exposure algorithm repeatedly (TxAutoExpSettings/RxAutoExpResult), printing each result and showing a photo taken at each step. |
