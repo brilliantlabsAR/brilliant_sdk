@@ -2,7 +2,9 @@
 local _M = {}
 
 -- Parse the text sprite block message raw data. Unpack the header fields.
--- width(Uint16), max_display_lines(Uint8), lines(Uint8), [x_offset (Uint16), y_offset (Uint16)] * lines
+-- 0xFF, width(Uint16), line_height(Uint16), max_display_lines(Uint8)
+-- Lines are stacked top to bottom by line_height; there are no per-line offsets.
+-- For TxTextPage (e.g. CircularTextLayout on Halo), use text_page.lua instead.
 function _M.parse_text_sprite_block(data, prev)
 	if string.byte(data, 1) == 0xFF then
 		-- new block
