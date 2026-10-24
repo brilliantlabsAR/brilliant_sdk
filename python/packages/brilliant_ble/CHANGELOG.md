@@ -1,3 +1,7 @@
+## 3.5.1
+
+* macOS: a write without response that waits more than `write_without_response_timeout` (new, default 0.1 s; the longest normal wait seen was 12 ms) for CoreBluetooth to have room is sent with response instead, and later writes go with response without waiting for as long as CoreBluetooth still reports no room. macOS can stop reporting `canSendWriteWithoutResponse` for good partway through a long stream, with no `peripheralIsReadyToSendWriteWithoutResponse` callback, while writes with response still succeed in about 30 ms. Long `send_message()` and `send_audio()` streams previously failed with "device didn't respond" after 5 s; they now continue, more slowly. Other platforms are unchanged
+
 ## 3.5.0
 
 * On Halo, `send_message()` streams its packets as writes without response instead of waiting for the device's data acknowledgement after each one. It keeps at most `receive_buffer_size // (packet size + 2)` packets unacknowledged, which is what fits in Halo's receive buffer, so a slow Lua handler cannot make it lose data (tested with a handler taking 50 ms per packet). A 128x128 4bpp `TxImageSpriteBlock` went from about 1.5 s to 0.3 s at the 30 ms connection interval macOS and iOS pick by default, and to about 0.17 s at 15 ms. Frame is unchanged
