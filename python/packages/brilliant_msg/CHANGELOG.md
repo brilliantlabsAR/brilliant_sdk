@@ -1,4 +1,4 @@
-## Unreleased
+## 7.2.0
 
 * New `RxClick` (with `ClickType`) receiving Halo button clicks (`SINGLE`/`DOUBLE`/`LONG`, message code `0x0B` by default), matching the Flutter and WebBluetooth SDKs
 * New `TxTextPage` with `RectangularTextLayout` and `CircularTextLayout`: lays text out along the chords of Halo's round display and rasterizes one 1-bit `TxSprite` per line. The page header is byte-identical to the Flutter and WebBluetooth `TxTextPage`
@@ -6,9 +6,6 @@
 * Every `Rx*` receiver now hands data to its queue through the event loop captured in `attach()` (`call_soon_threadsafe`) instead of calling `asyncio.create_task()` inside `handle_data()`. The Halo emulator invokes data handlers from its Lua thread, where `create_task()` has no running loop, so every IMU/tap/audio/photo/metering message was silently dropped. Receivers wired directly from the running loop keep working: the loop is resolved on demand
 * `TxTextPage`: when not even one line fits the layout, `measure_next_page()` now drops the text so `has_more_text` turns false; previously it stayed true and a paging loop never ended
 * `RxPhoto` logs an error when a completed image fails to process (e.g. a raw image with no stored JPEG header); previously the exception was lost
-
-## 7.1.3
-
 * `data.lua`: a message that finished arriving while `process_raw_items()` was running could be lost. The item counter was reset after copying a fixed range, so an item queued by a receive callback during the copy was orphaned. With messages arriving back to back this dropped the last strip of about 1 image in 50. The queue now has a separate head and tail and never drops an item
 * `data.lua`: the full `collectgarbage('collect')` after each batch of messages now runs on Frame only. On Halo it cost tens of milliseconds per image; Lua's incremental collector keeps the heap bounded (it peaked at 85 KB streaming 128x128 images, was 62 KB)
 * Progressive sprite examples: on Halo, draw only the strip that just arrived. Halo keeps its framebuffer between draws, so redrawing every strip received so far is only needed on Frame

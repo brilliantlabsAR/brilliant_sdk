@@ -1,13 +1,11 @@
-## Unreleased
+## 3.1.0
 
 * Added the device-side `text_page.lua` / `text_page.min.lua` library (`StdLua.TextPageMin`). It renders `TxTextPage` pages at their per-line x/y offsets, so `CircularTextLayout` pages follow Halo's round display; `text_sprite_block.lua` stacks lines by `line_height` and ignores those offsets. Device-side Lua is now identical across the Python, Flutter and WebBluetooth SDKs (`tools/check_lua_parity.py`)
 * `TxTextPage`: when not even one line fits the layout, `measureNextPage()` now drops the text so `hasMoreText` turns false; previously it stayed true and a paging loop never ended
-
-## 3.0.1
-
 * `data.lua`: a message that finished arriving while `process_raw_items()` was running could be lost. The item counter was reset after copying a fixed range, so an item queued by a receive callback during the copy was orphaned. With messages arriving back to back this dropped the last strip of about 1 image in 50. The queue now has a separate head and tail and never drops an item
 * `data.lua`: the full `collectgarbage('collect')` after each batch of messages now runs on Frame only. On Halo it cost tens of milliseconds per image; Lua's incremental collector keeps the heap bounded (it peaked at 85 KB streaming 128x128 images, was 62 KB)
 * Progressive sprite examples: on Halo, draw only the strip that just arrived. Halo keeps its framebuffer between draws, so redrawing every strip received so far is only needed on Frame
+* Type declarations import `brilliant-ble` as a package again. Since 3.0.0 they referenced `../../brilliant-ble/src/index.ts`, a path that exists only in this repository, so TypeScript projects without `skipLibCheck` failed to compile and others saw `BrilliantBle` as `any`
 
 ## 3.0.0
 
