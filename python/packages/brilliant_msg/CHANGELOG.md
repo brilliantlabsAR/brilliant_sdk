@@ -5,6 +5,12 @@
 * New device-side `text_page.lua` / `text_page.min.lua` (added to all three SDKs) that renders `TxTextPage` pages at their per-line offsets. `text_sprite_block.lua` stacks lines by `line_height` and ignores per-line x/y, so circular pages drawn through it never followed the circle
 * Every `Rx*` receiver now hands data to its queue through the event loop captured in `attach()` (`call_soon_threadsafe`) instead of calling `asyncio.create_task()` inside `handle_data()`. The Halo emulator invokes data handlers from its Lua thread, where `create_task()` has no running loop, so every IMU/tap/audio/photo/metering message was silently dropped. Receivers wired directly from the running loop keep working: the loop is resolved on demand
 
+## 7.1.3
+
+* `data.lua`: a message that finished arriving while `process_raw_items()` was running could be lost. The item counter was reset after copying a fixed range, so an item queued by a receive callback during the copy was orphaned. With messages arriving back to back this dropped the last strip of about 1 image in 50. The queue now has a separate head and tail and never drops an item
+* `data.lua`: the full `collectgarbage('collect')` after each batch of messages now runs on Frame only. On Halo it cost tens of milliseconds per image; Lua's incremental collector keeps the heap bounded (it peaked at 85 KB streaming 128x128 images, was 62 KB)
+* Progressive sprite examples: on Halo, draw only the strip that just arrived. Halo keeps its framebuffer between draws, so redrawing every strip received so far is only needed on Frame
+
 ## 7.1.2
 
 * Widened the Pillow requirement from `>=11.1.0,<12.0.0` to `>=11.1.0,<13.0.0`, so `brilliant-msg` installs alongside Pillow 12

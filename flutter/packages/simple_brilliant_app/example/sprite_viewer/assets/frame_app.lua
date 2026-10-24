@@ -74,12 +74,19 @@ function app_loop()
 				local y_offset = (256 - height) // 2 + 1
 				print(string.format("width = %d, height = %d, x_offset = %d, y_offset = %d", isb.width, isb.height, x_offset, y_offset))
 
-				for index = 1, isb.active_sprites do
+				-- Halo's framebuffer keeps what was drawn: after the first draw, only
+				-- the sprite that just arrived needs drawing.
+				local first, last = 1, isb.active_sprites
+				if isb.drawn then
+					first, last = isb.current_sprite_index, isb.current_sprite_index
+				end
+				for index = first, last do
 					local spr = isb.sprites[index]
 					local y_offset_line = isb.sprite_line_height * (index - 1) + y_offset
 
 					frame.display.bitmap(x_offset, y_offset_line + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
 				end
+				isb.drawn = true
 			end
 
 		end
@@ -87,6 +94,10 @@ function app_loop()
 
 	handlers[CLEAR_MSG] = function(item)
 		clear_display()
+		-- the next strip of a block in progress must redraw the whole image
+		if state[IMAGE_SPRITE_BLOCK] ~= nil then
+			state[IMAGE_SPRITE_BLOCK].drawn = nil
+		end
 	end
 
 	while true do

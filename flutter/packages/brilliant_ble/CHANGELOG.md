@@ -1,3 +1,13 @@
+## 5.3.0
+
+* On Halo, `sendMessage()` streams its packets as writes without response instead of waiting for the device's data acknowledgement after each one. It keeps at most `receiveBufferSize // (packet size + 2)` packets unacknowledged, which is what fits in Halo's receive buffer, so a slow Lua handler cannot make it lose data (tested with a handler taking 50 ms per packet). A 128x128 4bpp `TxImageSpriteBlock` went from about 1.5 s to 0.3 s at the 30 ms connection interval macOS and iOS pick by default, and to about 0.17 s at 15 ms. Frame is unchanged
+* `sendMessage()` on Halo can now return before the device has handled its last packets. The new `waitForAcks()` waits for them. `sendString()` and `sendData()` wait for them first, and a failure acknowledgement from the device is raised by the next of these calls rather than by the `sendMessage()` that sent the packet
+* New `receiveBufferSize` (default 4096, the size of Halo's receive buffer). Set it after enlarging the buffer with `frame.bluetooth.receive_buffer_size()` (newer Halo firmware) to allow more packets in flight
+* Writes are sized to fill whole BLE link-layer packets: the new `bleWriteSize()` gives 495 bytes for a 515-byte MTU, rather than 512 bytes that split into three packets, the last nearly empty
+* Data acknowledgements are no longer taken as the response `sendData()` is waiting for. Data response handlers still receive every notification
+* New `isDataAck()` recognises a data acknowledgement notification
+* Measured with a 128x128 4bpp image at a 15 ms interval: iPhone 14 0.79 s to 0.21 s, Pixel 7 Pro 1.13 s to 0.18 s
+
 ## 5.2.0
 
 * `BrilliantBluetooth.connect()` takes a new optional `timeout` (default 5 s) limiting how long the BLE link may take to come up. Previously Android and macOS used flutter_blue_plus's default of 35 s, and iOS a fixed 3 s. A link that never comes up almost always means the device refused this host: Halo drops a host it has no bond for unless it is in pairing mode, and iOS/macOS hide that refusal and silently retry. When `connect()` fails, apps can suggest the user puts Halo in pairing mode (hold the button for 5 s) and, if the phone still lists it as paired, forgets it in Bluetooth settings. `reconnect()` is unchanged

@@ -58,7 +58,14 @@ function app_loop()
 							-- either we have all the sprites, or we want to do progressive/incremental rendering
 							if isb.progressive_render or (isb.active_sprites == isb.total_sprites) then
 
-								for index = 1, isb.active_sprites do
+								-- Frame starts each frame blank, so redraw every sprite received so far.
+								-- Halo's framebuffer keeps what was drawn: after the first draw, only
+								-- the sprite that just arrived needs drawing.
+								local first, last = 1, isb.active_sprites
+								if frame.HARDWARE_VERSION ~= 'Frame' and isb.drawn then
+									first, last = isb.current_sprite_index, isb.current_sprite_index
+								end
+								for index = first, last do
 									local spr = isb.sprites[index]
 									local y_offset = isb.sprite_line_height * (index - 1)
 
@@ -73,6 +80,7 @@ function app_loop()
 										frame.display.bitmap(1, y_offset + 1, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
 									end
 								end
+								isb.drawn = true
 								if frame.HARDWARE_VERSION == 'Frame' then
 									frame.display.show()
 								end

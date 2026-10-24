@@ -1,6 +1,6 @@
 {
   "name": "brilliant-ble",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "dist/brilliant-ble.umd.js",
   "module": "dist/brilliant-ble.es.js",
   "types": "dist/index.d.ts",

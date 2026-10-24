@@ -1,3 +1,13 @@
+## 1.2.0
+
+* On Halo, `sendMessage()` streams its packets as writes without response instead of waiting for the device's data acknowledgement after each one. It keeps at most `receiveBufferSize // (packet size + 2)` packets unacknowledged, which is what fits in Halo's receive buffer, so a slow Lua handler cannot make it lose data (tested with a handler taking 50 ms per packet). A 128x128 4bpp `TxImageSpriteBlock` went from about 1.5 s to 0.3 s at the 30 ms connection interval macOS and iOS pick by default, and to about 0.17 s at 15 ms. Frame is unchanged
+* `sendMessage()` on Halo can now return before the device has handled its last packets. The new `waitForAcks()` waits for them. `sendLua()` and `sendData()` wait for them first, and a failure acknowledgement from the device is raised by the next of these calls rather than by the `sendMessage()` that sent the packet
+* New `receiveBufferSize` (default 4096, the size of Halo's receive buffer). Set it after enlarging the buffer with `frame.bluetooth.receive_buffer_size()` (newer Halo firmware) to allow more packets in flight
+* Writes are sized to fill whole BLE link-layer packets: the new `bleWriteSize()` gives 495 bytes for a 515-byte MTU, rather than 512 bytes that split into three packets, the last nearly empty
+* Data acknowledgements are no longer taken as the response a `sendData()` with `awaitData` is waiting for. Data response handlers still receive every notification
+* `disconnect()` and a dropped link reject a pending `sendData()` response instead of leaving it to time out
+* Measured in Chrome on macOS with a 128x128 4bpp image: 0.36 s at 30 ms, 0.16 s at 15 ms
+
 ## 1.1.0
 
 * New `drainPrintChannel(quietMs = 250, maxTotalMs = 1500)` — discards unsolicited print output already arriving on the channel (such as the `interrupted`/reboot banner produced by a break or reset) so the next awaited response is clean rather than the stray banner. Bounded so it never hangs: resolves after `quietMs` of silence, or `maxTotalMs` at the latest

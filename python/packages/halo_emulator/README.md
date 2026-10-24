@@ -256,7 +256,7 @@ File operations are sandboxed to the `sandbox_dir`. `require()` is overridden to
 `single(func)`, `double(func)`, `long(func)` — register/clear callbacks
 
 ### Bluetooth — `frame.bluetooth.*`
-`is_connected`, `address`, `max_length`, `send`, `receive_callback`
+`is_connected`, `address`, `max_length`, `send`, `receive_callback`, `receive_buffer_size`, `connection_interval`
 
 ### IMU — `frame.imu.*`
 `tap_callback(func)`, `tap_config([options])`, `direction()`, `raw()`, `config(options)`

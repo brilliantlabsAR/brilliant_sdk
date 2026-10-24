@@ -2,6 +2,12 @@
 
 * Added the device-side `text_page.lua` / `text_page.min.lua` library. It renders `TxTextPage` pages at their per-line x/y offsets, so `CircularTextLayout` pages follow Halo's round display; `text_sprite_block.lua` stacks lines by `line_height` and ignores those offsets. Add `packages/brilliant_msg/lua/text_page.min.lua` to your app's `assets:` to upload it. Device-side Lua is now identical across the Python, Flutter and WebBluetooth SDKs (`tools/check_lua_parity.py`)
 
+## 4.1.1
+
+* `data.lua`: a message that finished arriving while `process_raw_items()` was running could be lost. The item counter was reset after copying a fixed range, so an item queued by a receive callback during the copy was orphaned. With messages arriving back to back this dropped the last strip of about 1 image in 50. The queue now has a separate head and tail and never drops an item
+* `data.lua`: the full `collectgarbage('collect')` after each batch of messages now runs on Frame only. On Halo it cost tens of milliseconds per image; Lua's incremental collector keeps the heap bounded (it peaked at 85 KB streaming 128x128 images, was 62 KB)
+* Progressive sprite examples: on Halo, draw only the strip that just arrived. Halo keeps its framebuffer between draws, so redrawing every strip received so far is only needed on Frame
+
 ## 4.1.0
 
 True-up against Halo firmware 0.8.8.

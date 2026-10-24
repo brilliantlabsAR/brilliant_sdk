@@ -1,3 +1,12 @@
+## 3.5.0
+
+* On Halo, `send_message()` streams its packets as writes without response instead of waiting for the device's data acknowledgement after each one. It keeps at most `receive_buffer_size // (packet size + 2)` packets unacknowledged, which is what fits in Halo's receive buffer, so a slow Lua handler cannot make it lose data (tested with a handler taking 50 ms per packet). A 128x128 4bpp `TxImageSpriteBlock` went from about 1.5 s to 0.3 s at the 30 ms connection interval macOS and iOS pick by default, and to about 0.17 s at 15 ms. Frame is unchanged
+* `send_message()` on Halo can now return before the device has handled its last packets. The new `wait_for_acks()` waits for them. `send_lua()` and `send_data()` wait for them first, and a failure acknowledgement from the device is raised by the next of these calls rather than by the `send_message()` that sent the packet
+* New `receive_buffer_size` (default 4096, the size of Halo's receive buffer). Set it after enlarging the buffer with `frame.bluetooth.receive_buffer_size()` (newer Halo firmware) to allow more packets in flight
+* Writes are sized to fill whole BLE link-layer packets: the new `ble_write_size()` gives 495 bytes for a 515-byte MTU, rather than 512 bytes that split into three packets, the last nearly empty
+* Data acknowledgements are no longer taken as the response a `send_data()` with `await_data=True` is waiting for. Data response handlers still receive every notification
+* macOS: writes without response now wait until CoreBluetooth reports `canSendWriteWithoutResponse`. Bleak does not check it, and macOS silently dropped writes from a fast burst. This also applies to `send_audio()`
+
 ## 3.4.0
 
 * `connect()` takes a new `connect_timeout` (default 5 s) limiting how long the BLE link may take to come up once the device is found; `timeout` still limits the scan. Previously Bleak's default of 30 s applied. A link that never comes up almost always means the device refused this host: Halo drops a host it has no bond for unless it is in pairing mode, and macOS/iOS hide that refusal and silently retry, so `connect()` used to hang for the full 30 s. It now raises `TimeoutError` after 5 s with a message asking whether the device is paired with this host. Apps can respond by suggesting the user puts Halo in pairing mode (hold the button for 5 s) and, if the host still lists it as paired, forgets it in Bluetooth settings. Pass a longer `connect_timeout` if needed
