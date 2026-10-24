@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
 
+import 'package:brilliant_ble/brilliant_device.dart';
 import 'package:simple_brilliant_app/simple_brilliant_app.dart';
 import 'package:brilliant_msg/tx/code.dart';
 import 'package:brilliant_msg/tx/text_page.dart';
@@ -64,12 +65,16 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         // Read the file content
         String content = await file.readAsString();
       
-        // var layout = CircularTextLayout(width: 256, height: 256,
-        //                 circleMargin: 60.0,
-        //                 fontSize: _textSizeValues[_textSizeIndex]);
-        var layout = RectangularTextLayout(width: 256, height: 256,
-                        fontSize: _textSizeValues[_textSizeIndex],
-                        textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
+        final textAlign = _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right;
+
+        // Halo's display is round: fit each line to the circle's chord at its height
+        final TextLayout layout = frame!.type == BrilliantDeviceType.halo
+            ? CircularTextLayout(width: 256, height: 256,
+                fontSize: _textSizeValues[_textSizeIndex],
+                textAlign: textAlign)
+            : RectangularTextLayout(width: 256, height: 256,
+                fontSize: _textSizeValues[_textSizeIndex],
+                textAlign: textAlign);
 
         var tp = TxTextPage(
           layout: layout,
@@ -114,7 +119,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     }
   }
 
-  /// create the TextSpriteBlock for the specified text, then send the TSB header and line sprites one by one
+  /// send the page header and then its line sprites one by one
   Future<void> sendTextToFrame(PageData page) async {
     // start by sending a Clear Display message
     await frame!.sendMessage(0x10, TxCode().pack());
@@ -126,12 +131,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
       await page.rasterize();
     }
 
-    // send the TxTextSpriteBlock lines to Frame for display
-    // block header first
+    // send the page to Frame for display
+    // page header (with each line's x/y offset) first
     await frame!.sendMessage(0x20, page.pack());
 
     // send over the lines one by one
-    // note that the sprites have the same message code, so they need to be handled by the text_sprite_block parser
+    // note that the sprites have the same message code, so they need to be handled by the text_page parser
     for (var sprite in page.rasterizedSprites) {
       await frame!.sendMessage(0x20, sprite.pack());
     }

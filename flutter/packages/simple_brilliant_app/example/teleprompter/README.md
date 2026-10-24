@@ -12,6 +12,7 @@ For a sample text file, [mission_korean.txt](assets/mission_korean.txt) (Korean/
 
 * Adjustable text size (16, 32, 48, 64)
 * Left-align, Right-align text (suitable for left-to-right and right-to-left languages, respectively.)
+* On Halo, text is laid out with `CircularTextLayout` so each line fits the round display, and drawn on the device by `text_page.lua` at its own x/y offset
 
 ### Known issues
 
