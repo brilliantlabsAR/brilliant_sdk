@@ -10,6 +10,7 @@ Complete Flutter apps built on `simple_brilliant_app` (which wraps the connect /
 | [`audio_clip`](./audio_clip/) | Record streamed audio clips from the Brilliant Labs Frame into a list for review and playback and Sharing. |
 | [`audio_clip_lc3`](./audio_clip_lc3/) | Record streamed audio clips from the Brilliant Labs Frame into a list for review and playback and Sharing. |
 | [`audio_clip_pcm`](./audio_clip_pcm/) | Record streamed audio clips from the Brilliant Labs Frame into a list for review and playback and Sharing. |
+| [`audio_duplex_sprites`](./audio_duplex_sprites/) | Halo-only: streams LC3 audio to the Halo speaker and LC3 microphone audio back to the phone while streaming 128x128 4bpp images to the display, and reports whether each stream keeps up. |
 | [`ble_throughput`](./ble_throughput/) | Measures Bluetooth Low Energy (BLE) throughput from Frame/Halo to phone. |
 | [`camera`](./camera/) | Connects to Frame, initiates a photo capture and returns the image to the host app for display in a scrollable list. |
 | [`classification_mobilenet`](./classification_mobilenet/) | Takes repeated snapshots on Frame camera, runs image classification through a Mobilenet tensorflow-lite model on the host device and prints the highest probability classes next to the image and to the Frame display. |
