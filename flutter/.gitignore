@@ -1,6 +1,7 @@
 # Miscellaneous
 *.class
 *.lock
+Package.resolved
 *.log
 *.pyc
 *.swp
