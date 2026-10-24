@@ -129,6 +129,13 @@ class BrilliantBle:
         self._acks_outstanding = 0
         self._ack_event = asyncio.Event()
         self._ack_failed = False
+        # macOS: canSendWriteWithoutResponse has stuck False (see _write_without_response_ready())
+        self._write_without_response_stuck = False
+        self.write_without_response_timeout = 0.1
+        """
+        macOS/iOS: seconds a write without response waits for CoreBluetooth to
+        have room before it is sent with response instead.
+        """
         self.receive_buffer_size = _HALO_RECEIVE_BUFFER_SIZE
         """
         Size in bytes of the device's data receive queue. send_message() keeps
@@ -169,6 +176,7 @@ class BrilliantBle:
         self._acks_outstanding = 0
         self._ack_failed = False
         self._ack_event.set()
+        self._write_without_response_stuck = False
 
         # Wake anything awaiting a response so it fails now, not at its timeout
         if self._awaiting_print_response:
@@ -387,23 +395,35 @@ class BrilliantBle:
         """
         return min(self._connected_client().mtu_size, 512) - 4
 
-    async def _wait_write_without_response_ready(self, client, timeout=5):
+    async def _write_without_response_ready(self, client):
         """
         On macOS/iOS, waits until CoreBluetooth can take another write without
-        response. CoreBluetooth silently discards such writes while its queue
+        response, and returns False if the caller should write with response
+        instead. CoreBluetooth silently discards such writes while its queue
         is full, and Bleak does not wait on its own. Other backends queue or
-        block instead, so this returns at once there.
+        block instead, so this returns True at once there.
+
+        macOS can stop reporting canSendWriteWithoutResponse for good partway
+        through a long stream, although writes with response still succeed.
+        After write_without_response_timeout this returns False, and later
+        writes go with response without waiting for as long as it stays stuck.
         """
         peripheral = getattr(getattr(client, "_backend", None), "_peripheral", None)
         can_send = getattr(peripheral, "canSendWriteWithoutResponse", None)
         if can_send is None:
-            return
+            return True
+        if self._write_without_response_stuck:
+            if not can_send():
+                return False
+            self._write_without_response_stuck = False
         loop = asyncio.get_running_loop()
-        deadline = loop.time() + timeout
+        deadline = loop.time() + self.write_without_response_timeout
         while not can_send():
-            if loop.time() > deadline:
-                raise Exception("device didn't respond")
+            if self._write_without_response_stuck or loop.time() > deadline:
+                self._write_without_response_stuck = True
+                return False
             await asyncio.sleep(0.001)
+        return True
 
     async def _transmit(self, data, show_me=False, await_bt_response=True):
         if show_me:
@@ -414,8 +434,8 @@ class BrilliantBle:
         if len(data) > client.mtu_size - 3:
             raise Exception("payload length is too large")
 
-        if not await_bt_response:
-            await self._wait_write_without_response_ready(client)
+        if not await_bt_response and not await self._write_without_response_ready(client):
+            await_bt_response = True
 
         await client.write_gatt_char(self._tx_characteristic, data, response=await_bt_response)
 
@@ -547,8 +567,8 @@ class BrilliantBle:
         if len(data) > mtu:
             return
         # stream audio as write-without-response (response=False)
-        if not await_bt_response:
-            await self._wait_write_without_response_ready(client)
+        if not await_bt_response and not await self._write_without_response_ready(client):
+            await_bt_response = True
         await client.write_gatt_char(self._audio_tx_characteristic, data, response=await_bt_response)
 
     async def drain_print_channel(self, quiet=0.25, max_total=1.5):
