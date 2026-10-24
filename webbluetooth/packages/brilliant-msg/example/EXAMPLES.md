@@ -232,6 +232,377 @@ app_loop()
 ```
 
 
+## audio duplex sprites
+// JavaScript file: audio-duplex-sprites.js
+```javascript
+import { BrilliantMsg, StdLua, TxSprite, TxImageSpriteBlock, TxCode, RxAudio } from 'brilliant-msg';
+import { BrilliantDeviceType, bleWriteSize } from 'brilliant-ble';
+import frameApp from './lua/audio_duplex_sprites_frame_app.lua?raw';
+
+// Phone to Frame flags (match the Lua app)
+const IMAGE_SPRITE_BLOCK_MSG = 0x20;
+const AUDIO_START_MSG = 0x40;
+const AUDIO_STOP_MSG = 0x41;
+
+// LC3 with 10 ms frames: bitrate / 800 bytes per frame (40 bytes at 32 kbps)
+const FRAMES_PER_SECOND = 100;
+
+// the speaker clip: LC3 at 8 kHz, 32 kbps, 10 ms frames
+const SPEAKER_RATE = 8000;
+const SPEAKER_KBPS = 32;
+const SPEAKER_FRAME_BYTES = SPEAKER_KBPS * 1000 / 800;
+const SPEAKER_VOLUME = 80;
+// seconds of speaker audio to keep queued on the device
+const SPEAKER_LEAD = 0.3;
+const MIC_RATE = 16000;
+const MIC_KBPS = 32;
+// ask Halo to request this connection interval (ms); the host decides
+const CONNECTION_INTERVAL_MS = 15;
+const STRIP_HEIGHT = 16;
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Square crops of the koala photo, each numbered so new images are visible on the display
+ */
+async function makeImages(count, size = 128) {
+  const response = await fetch(new URL('./images/koala.jpg', import.meta.url));
+  const src = await createImageBitmap(await response.blob());
+  const side = Math.min(src.width, src.height);
+  const zoom = Math.floor(side * 0.8);
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const blocks = [];
+  for (let n = 0; n < count; n++) {
+    // pan the crop a little each time so every image is different
+    const x = (src.width - side) / 2 + Math.floor((side - zoom) * n / Math.max(1, count - 1));
+    ctx.drawImage(src, x, (src.height - side) / 2, zoom, zoom, 0, 0, size, size);
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillStyle = 'rgb(255, 255, 0)';
+    ctx.fillText(String(n).padStart(2, '0'), 4, 18);
+    const png = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const sprite = await TxSprite.fromImageBytes(new Uint8Array(await png.arrayBuffer()), size * size);
+    blocks.push(new TxImageSpriteBlock({ image: sprite, spriteLineHeight: STRIP_HEIGHT }));
+  }
+  return blocks;
+}
+
+/**
+ * Halo only: streams LC3 audio to the speaker and LC3 microphone audio back while
+ * streaming 128x128 4bpp images to the display, and reports whether each stream keeps up.
+ *
+ * - Speaker: a looped LC3 clip (8 kHz, 32 kbps, 10 ms frames of 40 bytes) written to the
+ *   audio characteristic with sendAudio(), as many frames per write as fill whole
+ *   link-layer packets, paced to stay 300 ms ahead of playback.
+ * - Microphone: LC3 at 16 kHz / 32 kbps, sent back in whole frames as RxAudio chunks.
+ * - Images: 16 numbered 128x128 crops of koala.jpg, quantized to 16 colours and sent back
+ *   to back as the 16-row strips of one updatable TxImageSpriteBlock.
+ *
+ * The device prints its speaker and microphone counters every 2 seconds: a healthy run shows
+ * decoded near 200, and plc, silence and rejected at zero in every window but the first and last.
+ * Streams for 30 seconds; add ?duration=120 to the page URL to stream for longer.
+ */
+export async function run() {
+  const frame = new BrilliantMsg();
+  const durationMs = (Number(new URLSearchParams(window.location.search).get('duration')) || 30) * 1000;
+  let rxAudio;
+
+  try {
+    console.log("Connecting to Halo...");
+    const deviceId = await frame.connect();
+    console.log('Connected to:', deviceId);
+
+    if (frame.ble.type !== BrilliantDeviceType.HALO) {
+      console.log('This example requires a Halo (speaker and LC3 microphone)');
+      return;
+    }
+
+    const maxWrite = parseInt(await frame.ble.sendLua('print(frame.bluetooth.max_length())', { awaitPrint: true }));
+    const framesPerWrite = Math.max(1, Math.floor(bleWriteSize(maxWrite) / SPEAKER_FRAME_BYTES));
+    console.log(`Max write ${maxWrite} bytes | ${framesPerWrite} LC3 frames (${framesPerWrite * SPEAKER_FRAME_BYTES} bytes) per speaker write`);
+
+    await frame.printShortText('Loading...');
+    const blocks = await makeImages(16);
+    const lc3Data = new Uint8Array(await (await fetch(new URL('./audio/female_w1_8k_s16.lc3', import.meta.url))).arrayBuffer());
+    const lc3Frames = [];
+    for (let i = 0; i + SPEAKER_FRAME_BYTES <= lc3Data.length; i += SPEAKER_FRAME_BYTES) {
+      lc3Frames.push(lc3Data.subarray(i, i + SPEAKER_FRAME_BYTES));
+    }
+
+    await frame.uploadStdLuaLibs([StdLua.DataMin, StdLua.ImageSpriteBlockMin]);
+    await frame.uploadFrameApp(frameApp);
+
+    // the device prints its speaker/microphone stats every 2 seconds
+    frame.attachPrintResponseHandler((s) => console.log(s.startsWith('stats') ? `[halo] ${s.substring(6)}` : s));
+    await frame.startFrameApp();
+
+    // microphone: count the LC3 bytes as they arrive (8-bit chunks are one element per byte)
+    rxAudio = new RxAudio({ streaming: true });
+    const micQueue = await rxAudio.attach(frame);
+    let micBytes = 0;
+    const micDone = (async () => {
+      let chunk;
+      while ((chunk = await micQueue.get()) !== null) {
+        micBytes += chunk.length;
+      }
+    })();
+
+    await frame.sendMessage(AUDIO_START_MSG, new Uint8Array([
+      SPEAKER_RATE / 1000, SPEAKER_KBPS, SPEAKER_VOLUME, MIC_RATE / 1000, MIC_KBPS, CONNECTION_INTERVAL_MS]));
+
+    const start = performance.now();
+    const running = () => performance.now() - start < durationMs;
+
+    // speaker: keep SPEAKER_LEAD seconds queued ahead of where playback should be
+    let sent = 0;
+    let writes = 0;
+    let minLead = SPEAKER_LEAD;
+    let maxWriteGap = 0;
+    let lastWrite = 0;
+    const speaker = async () => {
+      const leadFrames = SPEAKER_LEAD * FRAMES_PER_SECOND;
+      while (running()) {
+        const played = (performance.now() - start) * FRAMES_PER_SECOND / 1000;
+        if (sent > 0) minLead = Math.min(minLead, (sent - played) / FRAMES_PER_SECOND);
+        while (sent < played + leadFrames) {
+          const chunk = new Uint8Array(framesPerWrite * SPEAKER_FRAME_BYTES);
+          for (let i = 0; i < framesPerWrite; i++) {
+            chunk.set(lc3Frames[(sent + i) % lc3Frames.length], i * SPEAKER_FRAME_BYTES);
+          }
+          await frame.ble.sendAudio(chunk);
+          sent += framesPerWrite;
+          writes++;
+          const now = performance.now() - start;
+          maxWriteGap = Math.max(maxWriteGap, now - lastWrite);
+          lastWrite = now;
+        }
+        await sleep(10);
+      }
+    };
+
+    // images: the header once, then each image's strips update the block in place
+    let images = 0;
+    let imageBytes = 0;
+    const imageStream = async () => {
+      await frame.sendMessage(IMAGE_SPRITE_BLOCK_MSG, blocks[0].pack());
+      while (running()) {
+        for (const strip of blocks[images % blocks.length].spriteLines) {
+          const packed = strip.pack();
+          await frame.sendMessage(IMAGE_SPRITE_BLOCK_MSG, packed);
+          imageBytes += packed.length;
+        }
+        images++;
+      }
+    };
+
+    await Promise.all([speaker(), imageStream()]);
+    const elapsed = (performance.now() - start) / 1000;
+
+    // let the queued speaker audio play out and the last stats print
+    await sleep(SPEAKER_LEAD * 1000 + 2500);
+    await frame.sendMessage(AUDIO_STOP_MSG, new TxCode({ value: 0 }).pack());
+    await Promise.race([micDone, sleep(3000)]);
+
+    console.log(`--- ${elapsed.toFixed(1)} s ---`);
+    console.log(`speaker: ${sent} frames in ${writes} writes (${(sent * SPEAKER_FRAME_BYTES * 8 / elapsed / 1000).toFixed(1)} kbps), ` +
+      `min lead ${Math.round(minLead * 1000)} ms, longest gap between writes ${Math.round(maxWriteGap)} ms`);
+    console.log(`images: ${images} (${(images / elapsed).toFixed(2)}/s, ${Math.round(imageBytes * 8 / elapsed / 1000)} kbps)`);
+    const micFrames = Math.floor(micBytes / (MIC_KBPS * 1000 / 800));
+    console.log(`mic: ${micFrames} frames (${(micFrames / FRAMES_PER_SECOND).toFixed(1)} s of audio)`);
+  }
+  catch (error) {
+    console.error("Error:", error);
+    if (frame.isConnected()) {
+      try { await frame.sendMessage(AUDIO_STOP_MSG, new TxCode({ value: 0 }).pack()); } catch (e) { }
+    }
+  }
+  finally {
+    if (rxAudio) rxAudio.detach(frame);
+    if (frame.isConnected()) {
+      frame.detachPrintResponseHandler();
+      await frame.stopFrameApp();
+      await frame.disconnect();
+    }
+  }
+}
+```
+
+
+// Corresponding Lua file: lua/audio_duplex_sprites_frame_app.lua
+```lua
+local data = require('data.min')
+local image_sprite_block = require('image_sprite_block.min')
+
+-- Phone to Frame flags
+IMAGE_SPRITE_BLOCK = 0x20
+AUDIO_START_MSG = 0x40
+AUDIO_STOP_MSG = 0x41
+
+-- Frame to Phone flags (RxAudio defaults)
+AUDIO_DATA_NON_FINAL_MSG = 0x05
+AUDIO_DATA_FINAL_MSG = 0x06
+
+-- where the 128x128 image goes on Halo's 256x256 round display
+IMAGE_X = 65
+IMAGE_Y = 65
+
+function clear_display()
+	if frame.HARDWARE_VERSION == 'Frame' then
+		frame.display.text(' ', 1, 1)
+		frame.display.show()
+	else
+		frame.display.clear()
+	end
+end
+
+-- sends a whole notification, retrying while the Bluetooth is busy
+function send(payload)
+	while true do
+		if pcall(frame.bluetooth.send, payload) then
+			return
+		end
+		frame.sleep(0.0025)
+	end
+end
+
+-- Main app loop
+function app_loop()
+	frame.display.power_save(false)
+	clear_display()
+
+	-- accumulator for the image sprite block (persists across loop iterations)
+	local isb = nil
+
+	-- microphone LC3 stream state
+	local mic_on = false
+	local mic_chunk = 0
+	local mic_bytes = 0
+
+	-- speaker/microphone stats are printed every STATS_PERIOD seconds
+	local STATS_PERIOD = 2
+	local stats_due = nil
+	local images_drawn = 0
+
+	-- tell the host program that the frameside app is ready (waiting on await_print)
+	print('Frame app is running')
+
+	while true do
+        rc, err = pcall(
+            function()
+				-- process any raw data items, if ready
+				local items = data.process_raw_items()
+
+				for i = 1, #items do
+					local flag = items[i][1]
+					local raw = items[i][2]
+
+					if flag == IMAGE_SPRITE_BLOCK then
+						-- an updatable block: after the header, strips keep arriving and wrap
+						-- around to the top, so each strip is drawn as it arrives
+						isb = image_sprite_block.parse_image_sprite_block(raw, isb)
+						if isb ~= nil and isb.current_sprite_index > 0 then
+							local spr = isb.sprites[isb.current_sprite_index]
+							local y_offset = isb.sprite_line_height * (isb.current_sprite_index - 1)
+							frame.display.bitmap(IMAGE_X, IMAGE_Y + y_offset, spr.width, 2^spr.bpp, 0, spr.pixel_data, {palette_data=spr.palette_data})
+							if isb.current_sprite_index == isb.total_sprites then
+								images_drawn = images_drawn + 1
+							end
+						end
+
+					elseif flag == AUDIO_START_MSG then
+						-- spk_rate_khz(1), spk_kbps(1), spk_volume(1), mic_rate_khz(1), mic_kbps(1), interval_ms(1)
+						local spk_rate = string.byte(raw, 1) * 1000
+						local spk_bitrate = string.byte(raw, 2) * 1000
+						local volume = string.byte(raw, 3)
+						local mic_rate = string.byte(raw, 4) * 1000
+						local mic_bitrate = string.byte(raw, 5) * 1000
+						local interval = string.byte(raw, 6)
+
+						-- ask for a shorter connection interval while streaming (0: leave it as it is)
+						if interval > 0 then
+							frame.bluetooth.connection_interval(interval)
+						end
+
+						-- LC3 duration is in units of 10 microseconds: 1000 = 10 ms frames
+						frame.speaker.start{encoder='lc3', sample_rate=spk_rate, duration=1000, channels=1, bitrate=spk_bitrate, volume=volume}
+
+						if mic_bitrate > 0 then
+							frame.microphone.start{encoder='lc3', sample_rate=mic_rate, bit_depth=16, duration=1000, bitrate=mic_bitrate}
+							-- read whole LC3 frames, as many as fit in one link-layer packet's
+							-- notification (244 bytes) after the data marker and flag bytes
+							local lc3_frame = mic_bitrate // 800
+							local max_payload = math.min(frame.bluetooth.max_length() - 1, 242)
+							mic_chunk = math.max(1, max_payload // lc3_frame) * lc3_frame
+							-- microphone.read() takes an even number of bytes
+							if mic_chunk % 2 == 1 then mic_chunk = mic_chunk - lc3_frame end
+							mic_on = true
+						end
+
+						frame.speaker.stats(true)
+						mic_bytes = 0
+						images_drawn = 0
+						stats_due = frame.time.utc() + STATS_PERIOD
+
+					elseif flag == AUDIO_STOP_MSG then
+						frame.speaker.stop()
+						if mic_on then
+							frame.microphone.stop()
+						end
+					end
+				end
+
+				-- send the microphone's LC3 frames back as they are encoded
+				if mic_on then
+					for _ = 1, 10 do
+						local lc3 = frame.microphone.read(mic_chunk)
+						if lc3 == nil then
+							-- stopped: flush the end-of-stream marker
+							send(string.char(AUDIO_DATA_FINAL_MSG))
+							mic_on = false
+							break
+						elseif lc3 == '' then
+							break
+						end
+						send(string.char(AUDIO_DATA_NON_FINAL_MSG) .. lc3)
+						mic_bytes = mic_bytes + #lc3
+					end
+				end
+
+				-- periodic stats for the stats window just finished
+				if stats_due ~= nil and frame.time.utc() >= stats_due then
+					local s = frame.speaker.stats(true)
+					print(string.format('stats spk_writes=%d spk_bytes=%d rejected=%d ring=%d peak=%d interval=%g decoded=%d plc=%d silence=%d mic_bytes=%d images=%d',
+						s.ble_writes, s.ble_bytes, s.ble_rejected, s.ring_bytes, s.ring_peak, frame.bluetooth.connection_interval() or 0,
+						s.frames_decoded, s.frames_plc, s.silence_blocks or -1, mic_bytes, images_drawn))
+					mic_bytes = 0
+					images_drawn = 0
+					stats_due = stats_due + STATS_PERIOD
+					if not s.streaming then stats_due = nil end
+				end
+
+				frame.sleep(0.005)
+			end
+		)
+		-- Catch an error (including the break signal) here
+		if rc == false then
+			-- send the error back on the stdout stream and clear the display
+			print(err)
+			pcall(frame.speaker.stop)
+			pcall(frame.microphone.stop)
+			clear_display()
+			break
+		end
+	end
+end
+
+-- run the main app loop
+app_loop()
+```
+
+
 ## audio stream
 // JavaScript file: audio-stream.js
 ```javascript

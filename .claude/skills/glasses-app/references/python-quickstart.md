@@ -74,7 +74,7 @@ Run: `python app.py` (first device found) — add `--name`-style targeting via
 ## Read next
 
 - `python/packages/brilliant_msg/examples/plain_text.py` — this pattern with
-  full commentary; `EXAMPLES.md` in the same directory indexes all 34 examples
+  full commentary; `EXAMPLES.md` in the same directory indexes all 35 examples
   by message type.
 - `python/packages/brilliant_msg/src/brilliant_msg/brilliant_msg.py` (194
   lines) — the whole `BrilliantMsg` API surface.

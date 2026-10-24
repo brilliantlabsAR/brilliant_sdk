@@ -41,7 +41,7 @@ changes between SDKs.
 
 ## Read next
 
-- `webbluetooth/packages/brilliant-msg/example/EXAMPLES.md` — all 18 examples
+- `webbluetooth/packages/brilliant-msg/example/EXAMPLES.md` — all 19 examples
   with host **and** Lua source inline (the fastest single file to learn the
   message pairing from).
 - Live demos + TypeDoc: https://brilliantlabsar.github.io/brilliant_sdk/
