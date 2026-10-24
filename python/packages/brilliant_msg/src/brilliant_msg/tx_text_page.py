@@ -305,8 +305,10 @@ class TxTextPage:
             text = text[end_index:].lstrip()
 
         if not lines and self._remaining_text:
-            # First word too long to fit on any line: consume to prevent loops
-            self._remaining_text = text
+            # Not even one line fits this layout (e.g. it is smaller than a
+            # line): drop the text so has_more_text turns False instead of
+            # every call returning None forever
+            self._remaining_text = ""
             return None
 
         self._remaining_text = text

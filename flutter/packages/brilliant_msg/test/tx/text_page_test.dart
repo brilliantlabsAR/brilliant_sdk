@@ -165,6 +165,17 @@ void main() {
       expect(tsb.remainingText, '');
     });
     
+    test('should drop text when no line fits the layout', () async {
+      // Nothing fits: the text is dropped so a hasMoreText loop terminates.
+      final tsb = TxTextPage(
+        layout: RectangularTextLayout(width: 100, height: 4, fontSize: 32),
+        text: 'Hello World',
+      );
+
+      expect(await tsb.measureNextPage(), isNull);
+      expect(tsb.hasMoreText, false);
+    });
+
     test('should track remaining text', () async {
       final shortText = 'Hello World';
       final tsb = TxTextPage(
