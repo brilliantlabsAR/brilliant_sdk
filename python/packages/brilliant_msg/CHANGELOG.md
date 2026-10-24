@@ -4,6 +4,8 @@
 * New `TxTextPage` with `RectangularTextLayout` and `CircularTextLayout`: lays text out along the chords of Halo's round display and rasterizes one 1-bit `TxSprite` per line. The page header is byte-identical to the Flutter and WebBluetooth `TxTextPage`
 * New device-side `text_page.lua` / `text_page.min.lua` (added to all three SDKs) that renders `TxTextPage` pages at their per-line offsets. `text_sprite_block.lua` stacks lines by `line_height` and ignores per-line x/y, so circular pages drawn through it never followed the circle
 * Every `Rx*` receiver now hands data to its queue through the event loop captured in `attach()` (`call_soon_threadsafe`) instead of calling `asyncio.create_task()` inside `handle_data()`. The Halo emulator invokes data handlers from its Lua thread, where `create_task()` has no running loop, so every IMU/tap/audio/photo/metering message was silently dropped. Receivers wired directly from the running loop keep working: the loop is resolved on demand
+* `TxTextPage`: when not even one line fits the layout, `measure_next_page()` now drops the text so `has_more_text` turns false; previously it stayed true and a paging loop never ended
+* `RxPhoto` logs an error when a completed image fails to process (e.g. a raw image with no stored JPEG header); previously the exception was lost
 
 ## 7.1.3
 
