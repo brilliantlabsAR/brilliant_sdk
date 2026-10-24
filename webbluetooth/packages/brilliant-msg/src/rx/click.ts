@@ -24,6 +24,9 @@ export interface RxClickOptions {
 /**
  * RxClick handles incoming tap/click events from the Frame device.
  * It processes raw BLE data and enqueues typed ClickType values.
+ *
+ * Holding the button for about 2 seconds powers Halo off, so a LONG click
+ * is a press shorter than that.
  */
 export class RxClick {
     private clickFlag: number;

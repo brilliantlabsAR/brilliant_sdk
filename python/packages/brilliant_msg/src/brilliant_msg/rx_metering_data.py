@@ -4,6 +4,7 @@ import struct
 from typing import Optional
 
 from brilliant_msg import BrilliantMsg
+from brilliant_msg._event_loop import event_loop
 
 logging.basicConfig()
 _log = logging.getLogger("RxMeteringData")
@@ -23,11 +24,6 @@ class RxMeteringData:
 
         self.queue: Optional[asyncio.Queue] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
-
-    def _get_loop(self) -> "asyncio.AbstractEventLoop":
-        """The attach()-time event loop, else the running loop (direct-wired usage)."""
-        loop = getattr(self, "_loop", None)
-        return loop if loop is not None else asyncio.get_running_loop()
 
     def handle_data(self, data: bytes) -> None:
         """
@@ -55,7 +51,7 @@ class RxMeteringData:
         # Queue the data
         # Thread-safe: the emulator invokes handlers from its Lua thread,
         # where asyncio.create_task would fail silently
-        self._get_loop().call_soon_threadsafe(self.queue.put_nowait, result)
+        event_loop(self._loop).call_soon_threadsafe(self.queue.put_nowait, result)
 
     async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """

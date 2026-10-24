@@ -12,6 +12,9 @@ enum ClickType {
 }
 
 /// Click data stream, returns the type of Click detected
+///
+/// Holding the button for about 2 seconds powers Halo off, so a long click
+/// is a press shorter than that.
 class RxClick {
 
   // Frame to Phone flags

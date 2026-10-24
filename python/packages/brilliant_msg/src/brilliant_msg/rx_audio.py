@@ -5,6 +5,7 @@ from typing import Optional
 from io import BytesIO
 
 from brilliant_msg import BrilliantMsg
+from brilliant_msg._event_loop import event_loop
 
 logging.basicConfig()
 _log = logging.getLogger("RxAudio")
@@ -33,11 +34,6 @@ class RxAudio:
         self._audio_buffer = BytesIO()
         self._raw_offset = 0
 
-    def _get_loop(self) -> "asyncio.AbstractEventLoop":
-        """The attach()-time event loop, else the running loop (direct-wired usage)."""
-        loop = getattr(self, "_loop", None)
-        return loop if loop is not None else asyncio.get_running_loop()
-
     def handle_data(self, data: bytes) -> None:
         """
         Process incoming audio data packets with either a non-final or a final msg code.
@@ -58,11 +54,11 @@ class RxAudio:
         if self.streaming:
             if len(chunk) > 0:
                 # In streaming mode, immediately queue each chunk
-                self._get_loop().call_soon_threadsafe(self.queue.put_nowait, bytes(chunk))
+                event_loop(self._loop).call_soon_threadsafe(self.queue.put_nowait, bytes(chunk))
 
             if flag == self.final_chunk_flag:
                 # Signal end of stream with None
-                self._get_loop().call_soon_threadsafe(self.queue.put_nowait, None)
+                event_loop(self._loop).call_soon_threadsafe(self.queue.put_nowait, None)
 
         else:
             # In single-clip mode, accumulate chunks
@@ -76,9 +72,9 @@ class RxAudio:
                 self._raw_offset = 0
 
                 # Queue the complete audio clip
-                self._get_loop().call_soon_threadsafe(self.queue.put_nowait, complete_audio)
+                event_loop(self._loop).call_soon_threadsafe(self.queue.put_nowait, complete_audio)
                 # Signal end with None
-                self._get_loop().call_soon_threadsafe(self.queue.put_nowait, None)
+                event_loop(self._loop).call_soon_threadsafe(self.queue.put_nowait, None)
 
     async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """

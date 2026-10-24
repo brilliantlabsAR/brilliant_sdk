@@ -117,6 +117,13 @@ class TestMeasure:
         assert not tx.has_more_text
         assert tx.measure_next_page() is None
 
+    def test_layout_too_small_for_one_line(self):
+        # nothing fits: the text is dropped so a has_more_text loop terminates
+        layout = RectangularTextLayout(width=100, height=4, font_size=8, font_family=FONT)
+        tx = TxTextPage(layout, "hello world")
+        assert tx.measure_next_page() is None
+        assert not tx.has_more_text
+
     def test_long_word_char_broken(self):
         layout = RectangularTextLayout(width=60, height=200, font_size=8, font_family=FONT)
         tx = TxTextPage(layout, "supercalifragilisticexpialidocious")

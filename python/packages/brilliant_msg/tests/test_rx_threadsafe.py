@@ -10,10 +10,11 @@ call_soon_threadsafe(). A receiver wired by hand from inside the running loop
 (queue assigned directly, no attach()) still works via the running-loop fallback.
 """
 import asyncio
+import logging
 import struct
 import threading
 
-from brilliant_msg import ClickType, RxClick, RxIMU, RxMeteringData, RxTap
+from brilliant_msg import ClickType, RxClick, RxIMU, RxMeteringData, RxPhoto, RxTap
 
 
 class _FakeFrame:
@@ -119,4 +120,22 @@ async def test_rx_metering_data_from_foreign_thread():
 
     result = await asyncio.wait_for(queue.get(), timeout=1)
     assert (result['spot_r'], result['matrix_b']) == (1, 6)
+    rx.detach(frame)
+
+
+async def test_rx_photo_logs_processing_errors(caplog):
+    # A raw image with no stored JPEG header fails in _process_complete_image(),
+    # which runs as a future nothing awaits: the error must still be logged.
+    frame = _FakeFrame()
+    rx = RxPhoto(is_raw=True, quality="NO_HEADER_TEST", resolution=999)
+    await rx.attach(frame)
+
+    with caplog.at_level(logging.ERROR, logger="RxPhoto"):
+        _call_from_foreign_thread(rx.handle_data, bytes([rx.final_chunk_flag, 1, 2, 3]))
+        for _ in range(50):
+            if "Failed to process received image" in caplog.text:
+                break
+            await asyncio.sleep(0.01)
+
+    assert "No JPEG header found" in caplog.text
     rx.detach(frame)

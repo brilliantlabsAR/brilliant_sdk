@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:logging/logging.dart';
 
+import 'package:brilliant_ble/brilliant_device.dart';
 import 'package:simple_brilliant_app/simple_brilliant_app.dart';
 import 'package:brilliant_msg/tx/code.dart';
 import 'package:brilliant_msg/tx/text_page.dart';
@@ -30,6 +31,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   int _textSizeIndex = 1;
   final List<int> _textSizeValues = [16, 20, 24, 28, 32, 48, 64];
   Uint8List _pngBytes = Uint8List(0);
+  String _content = '';
   
   MainAppState() {
     Logger.root.level = Level.INFO;
@@ -62,46 +64,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         File file = File(result.files.single.path!);
 
         // Read the file content
-        String content = await file.readAsString();
-      
-        // var layout = CircularTextLayout(width: 256, height: 256,
-        //                 circleMargin: 60.0,
-        //                 fontSize: _textSizeValues[_textSizeIndex]);
-        var layout = RectangularTextLayout(width: 256, height: 256,
-                        fontSize: _textSizeValues[_textSizeIndex],
-                        textAlign: _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right);
+        // (strip out any carriage-return characters if the file is CRLF)
+        _content = (await file.readAsString()).replaceAll(RegExp('\r'), '');
 
-        var tp = TxTextPage(
-          layout: layout,
-          text: content,
-        );
-
-        _pages.clear();
-        while (tp.hasMoreText) {
-          final page = await tp.measureNextPage();
-          if (page != null) {
-            _pages.add(page);
-          }
-        }
-
-        // Update the UI with the text
-        setState(() {
-          // strip out any carriage-return characters if the file is CRLF
-          content = content.replaceAll(RegExp('\r'), '');
-          _currentPage = 0;
-        });
-
-        // rasterize the first page
-        await _pages[_currentPage].rasterize();
-
-        // and create a PNG image of the first page
-        Uint8List bytes = await _pages[_currentPage].toPngBytes();
-        setState(() {
-          _pngBytes = bytes;
-        });
-
-        // and send initial page to Frame
-        await sendTextToFrame(_pages[_currentPage]);
+        // lay out the text into pages and send the first page to Frame
+        _currentPage = 0;
+        await _layoutAndShowPages();
       }
       else {
         currentState = ApplicationState.ready;
@@ -114,7 +82,50 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
     }
   }
 
-  /// create the TextSpriteBlock for the specified text, then send the TSB header and line sprites one by one
+  /// (re)lay out the loaded text with the current text size and alignment,
+  /// then show the current page (e.g. after the settings change)
+  Future<void> _layoutAndShowPages() async {
+    final textAlign = _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right;
+
+    // Halo's display is round: fit each line to the circle's chord at its height
+    final TextLayout layout = frame!.type == BrilliantDeviceType.halo
+        ? CircularTextLayout(width: 256, height: 256,
+            fontSize: _textSizeValues[_textSizeIndex],
+            textAlign: textAlign)
+        : RectangularTextLayout(width: 256, height: 256,
+            fontSize: _textSizeValues[_textSizeIndex],
+            textAlign: textAlign);
+
+    var tp = TxTextPage(
+      layout: layout,
+      text: _content,
+    );
+
+    final List<PageData> pages = [];
+    while (tp.hasMoreText) {
+      final page = await tp.measureNextPage();
+      if (page != null) {
+        pages.add(page);
+      }
+    }
+
+    if (pages.isEmpty) return;
+
+    _pages
+      ..clear()
+      ..addAll(pages);
+    // the page count changes with the text size, so stay within range
+    _currentPage = _currentPage.clamp(0, _pages.length - 1);
+
+    // rasterize the current page and create a PNG image of it
+    await _pages[_currentPage].rasterize();
+    _pngBytes = await _pages[_currentPage].toPngBytes();
+    if (mounted) setState(() {});
+
+    await sendTextToFrame(_pages[_currentPage]);
+  }
+
+  /// send the page header and then its line sprites one by one
   Future<void> sendTextToFrame(PageData page) async {
     // start by sending a Clear Display message
     await frame!.sendMessage(0x10, TxCode().pack());
@@ -126,12 +137,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
       await page.rasterize();
     }
 
-    // send the TxTextSpriteBlock lines to Frame for display
-    // block header first
+    // send the page to Frame for display
+    // page header (with each line's x/y offset) first
     await frame!.sendMessage(0x20, page.pack());
 
     // send over the lines one by one
-    // note that the sprites have the same message code, so they need to be handled by the text_sprite_block parser
+    // note that the sprites have the same message code, so they need to be handled by the text_page parser
     for (var sprite in page.rasterizedSprites) {
       await frame!.sendMessage(0x20, sprite.pack());
     }
@@ -185,7 +196,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   },
                   onChangeEnd: (value) {
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_pages[_currentPage]);
+                      _layoutAndShowPages();
                     }
                   },
                 ),
@@ -198,7 +209,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   setState(() {
                     _textDir = value ?? TextDirection.ltr;
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_pages[_currentPage]);
+                      _layoutAndShowPages();
                     }
                   });
                 },
@@ -211,7 +222,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   setState(() {
                     _textDir = value ?? TextDirection.rtl;
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_pages[_currentPage]);
+                      _layoutAndShowPages();
                     }
                   });
                 },

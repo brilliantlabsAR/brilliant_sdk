@@ -6,6 +6,7 @@ from typing import Optional, Tuple
 from dataclasses import dataclass
 
 from brilliant_msg import BrilliantMsg
+from brilliant_msg._event_loop import event_loop
 
 logging.basicConfig()
 _log = logging.getLogger("RxIMU")
@@ -77,11 +78,6 @@ class RxIMU:
         self._compass_buffer = SensorBuffer(smoothing_samples)
         self._accel_buffer = SensorBuffer(smoothing_samples)
 
-    def _get_loop(self) -> "asyncio.AbstractEventLoop":
-        """The attach()-time event loop, else the running loop (direct-wired usage)."""
-        loop = getattr(self, "_loop", None)
-        return loop if loop is not None else asyncio.get_running_loop()
-
     def handle_data(self, data: bytes) -> None:
         """
         Process incoming IMU data packets.
@@ -116,7 +112,7 @@ class RxIMU:
 
         # Queue the data (thread-safe: the emulator invokes handlers from its
         # Lua thread, where asyncio.create_task would fail silently)
-        self._get_loop().call_soon_threadsafe(self.queue.put_nowait, imu_data)
+        event_loop(self._loop).call_soon_threadsafe(self.queue.put_nowait, imu_data)
 
     async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """

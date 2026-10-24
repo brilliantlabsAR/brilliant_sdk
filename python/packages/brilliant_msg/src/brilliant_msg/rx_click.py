@@ -23,6 +23,9 @@ class RxClick:
     There is no device-side Lua library for clicks: the frame app registers
     frame.button.single/double/long callbacks and sends
     string.char(click_flag) .. string.char(click_type) over Bluetooth.
+
+    Holding the button for about 2 seconds powers Halo off, so a LONG click
+    is a press shorter than that.
     """
 
     def __init__(self, click_flag: int = 0x0B):

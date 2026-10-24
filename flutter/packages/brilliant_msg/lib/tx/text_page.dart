@@ -203,9 +203,10 @@ class TxTextPage {
     }
 
     if (lines.isEmpty && _remainingText.isNotEmpty) {
-      // This can happen if the first word is too long to fit on any line.
-      // To prevent an infinite loop, we consume the text that was attempted.
-      _remainingText = textToLayout;
+      // Not even one line fits this layout (e.g. it is smaller than a line):
+      // drop the text so hasMoreText turns false instead of every call
+      // returning null forever.
+      _remainingText = '';
       return null;
     }
 
