@@ -1,3 +1,7 @@
+## Unreleased
+
+* Added the device-side `text_page.lua` / `text_page.min.lua` library (`StdLua.TextPageMin`). It renders `TxTextPage` pages at their per-line x/y offsets, so `CircularTextLayout` pages follow Halo's round display; `text_sprite_block.lua` stacks lines by `line_height` and ignores those offsets. Device-side Lua is now identical across the Python, Flutter and WebBluetooth SDKs (`tools/check_lua_parity.py`)
+
 ## 3.0.1
 
 * `data.lua`: a message that finished arriving while `process_raw_items()` was running could be lost. The item counter was reset after copying a fixed range, so an item queued by a receive callback during the copy was orphaned. With messages arriving back to back this dropped the last strip of about 1 image in 50. The queue now has a separate head and tail and never drops an item

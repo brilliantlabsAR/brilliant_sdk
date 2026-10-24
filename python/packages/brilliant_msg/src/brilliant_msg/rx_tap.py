@@ -19,16 +19,17 @@ class RxTap:
         self.tap_flag = tap_flag
         self.threshold = threshold
         self.queue: Optional[asyncio.Queue] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._last_tap_time = 0
         self._tap_count = 0
         self._threshold_task: Optional[asyncio.Task] = None
 
-    async def _reset_threshold_timer(self) -> None:
-        """Cancel existing threshold timer and start a new one"""
+    def _reset_threshold_timer(self) -> None:
+        """Cancel existing threshold timer and start a new one (runs on the event loop)"""
         if self._threshold_task and not self._threshold_task.done():
             self._threshold_task.cancel()
 
-        self._threshold_task = asyncio.create_task(self._threshold_timeout())
+        self._threshold_task = asyncio.ensure_future(self._threshold_timeout())
 
     async def _threshold_timeout(self) -> None:
         """Handle threshold timer expiration by sending tap count to queue"""
@@ -39,6 +40,11 @@ class RxTap:
                 self._tap_count = 0
         except asyncio.CancelledError:
             pass
+
+    def _get_loop(self) -> "asyncio.AbstractEventLoop":
+        """The attach()-time event loop, else the running loop (direct-wired usage)."""
+        loop = getattr(self, "_loop", None)
+        return loop if loop is not None else asyncio.get_running_loop()
 
     def handle_data(self, data: bytes) -> None:
         """
@@ -55,7 +61,8 @@ class RxTap:
         # Halo (firmware 0.8.8+) detects multi-taps natively: one message per
         # gesture carrying the kind, so no timing aggregation is needed.
         if len(data) >= 2 and 1 <= data[1] <= 3:
-            self.queue.put_nowait(data[1])
+            # thread-safe: the emulator invokes handlers from its Lua thread
+            self._get_loop().call_soon_threadsafe(self.queue.put_nowait, data[1])
             return
 
         # Frame sends a bare flag byte per tap: aggregate by timing.
@@ -69,8 +76,10 @@ class RxTap:
         self._last_tap_time = current_time
         self._tap_count += 1
 
-        # Reset the threshold timer
-        asyncio.create_task(self._reset_threshold_timer())
+        # Reset the threshold timer (thread-safe: the emulator invokes
+        # handlers from its Lua thread, where asyncio.create_task would
+        # fail silently)
+        self._get_loop().call_soon_threadsafe(self._reset_threshold_timer)
 
     async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
@@ -80,6 +89,7 @@ class RxTap:
             asyncio.Queue that will receive integers representing tap counts
         """
         self.queue = asyncio.Queue()
+        self._loop = asyncio.get_running_loop()
         self._last_tap_time = 0
         self._tap_count = 0
 

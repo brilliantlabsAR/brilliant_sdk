@@ -48,8 +48,8 @@ template `frame_app.lua` for that variant of the app loop.
   apps; `camera`, `imu_compass`, `realtime_openai` are the meatiest.
 - `flutter/packages/simple_brilliant_app/README.md` — features + template
   walkthrough.
-- Flutter-only APIs: `RxClick` (Halo click kinds), `TxTextPage` +
-  `CircularTextLayout` (round-display text). `TxSpriteCoords` does NOT exist
-  in Dart (Python/TS only).
+- `RxClick` (Halo click kinds) and `TxTextPage` + `CircularTextLayout`
+  (round-display text) exist in all three SDKs. `TxSpriteCoords` does NOT
+  exist in Dart (Python/TS only).
 - Run `melos bootstrap` once after cloning the monorepo; `melos test` needs no
   hardware.

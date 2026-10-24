@@ -2,3 +2,7 @@
 
 # Local Claude Code settings (per-developer; the committed skill lives in .claude/skills/)
 .claude/settings.local.json
+
+# Images and animations written by the halo_emulator examples when run with --emulator
+python/packages/halo_emulator/examples/*.png
+python/packages/halo_emulator/examples/*.gif

@@ -22,6 +22,12 @@ class RxMeteringData:
         self.msg_code = msg_code
 
         self.queue: Optional[asyncio.Queue] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+
+    def _get_loop(self) -> "asyncio.AbstractEventLoop":
+        """The attach()-time event loop, else the running loop (direct-wired usage)."""
+        loop = getattr(self, "_loop", None)
+        return loop if loop is not None else asyncio.get_running_loop()
 
     def handle_data(self, data: bytes) -> None:
         """
@@ -47,7 +53,9 @@ class RxMeteringData:
         }
 
         # Queue the data
-        asyncio.create_task(self.queue.put(result))
+        # Thread-safe: the emulator invokes handlers from its Lua thread,
+        # where asyncio.create_task would fail silently
+        self._get_loop().call_soon_threadsafe(self.queue.put_nowait, result)
 
     async def attach(self, frame: BrilliantMsg) -> asyncio.Queue:
         """
@@ -57,6 +65,7 @@ class RxMeteringData:
             asyncio.Queue that will receive metering data objects
         """
         self.queue = asyncio.Queue()
+        self._loop = asyncio.get_running_loop()
 
         # subscribe for notifications
         frame.register_data_response_handler(self, [self.msg_code], self.handle_data)

@@ -30,6 +30,14 @@ RxAutoExpResult
    :show-inheritance:
    :undoc-members:
 
+RxClick
+-------
+
+.. automodule:: brilliant_msg.rx_click
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 RxIMU
 -----
 
@@ -122,6 +130,14 @@ TxSpriteCoords
 --------------
 
 .. automodule:: brilliant_msg.tx_sprite_coords
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+TxTextPage
+----------
+
+.. automodule:: brilliant_msg.tx_text_page
    :members:
    :show-inheritance:
    :undoc-members:

@@ -147,7 +147,10 @@ class EmulatorBrilliantMsg:
         frame_filename: str = "frame_app.lua",
     ) -> None:
         """Copy a Lua app file into the emulator sandbox."""
-        shutil.copy2(local_filename, self._emu._sandbox_dir / frame_filename)
+        src = Path(local_filename).resolve()
+        dst = (self._emu._sandbox_dir / frame_filename).resolve()
+        if src != dst:
+            shutil.copy2(src, dst)
 
     async def start_frame_app(
         self,

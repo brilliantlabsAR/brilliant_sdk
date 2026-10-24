@@ -40,6 +40,7 @@ class RxPhoto:
         self.resolution = resolution
 
         self.queue: Optional[asyncio.Queue] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._image_data: List[int] = []
         self._raw_offset: int = 0
 
@@ -47,6 +48,11 @@ class RxPhoto:
     def has_jpeg_header(cls, quality: str, resolution: int) -> bool:
         """Check if we have a stored JPEG header for the given quality and resolution"""
         return f"{quality}_{resolution}" in cls._jpeg_header_map
+
+    def _get_loop(self) -> "asyncio.AbstractEventLoop":
+        """The attach()-time event loop, else the running loop (direct-wired usage)."""
+        loop = getattr(self, "_loop", None)
+        return loop if loop is not None else asyncio.get_running_loop()
 
     def handle_data(self, data: bytes) -> None:
         """
@@ -66,8 +72,10 @@ class RxPhoto:
         self._raw_offset += len(chunk)
 
         if flag == self.final_chunk_flag:
-            # Process complete image
-            asyncio.create_task(self._process_complete_image())
+            # Process complete image (thread-safe: the emulator invokes
+            # handlers from its Lua thread, where asyncio.create_task would
+            # fail silently)
+            asyncio.run_coroutine_threadsafe(self._process_complete_image(), self._get_loop())
 
     async def _process_complete_image(self) -> None:
         """Process and queue a complete image once all chunks are received"""
@@ -113,6 +121,7 @@ class RxPhoto:
             raise ValueError("Quality and resolution required when handling raw images")
 
         self.queue = asyncio.Queue()
+        self._loop = asyncio.get_running_loop()
         self._image_data = []
         self._raw_offset = 0
 

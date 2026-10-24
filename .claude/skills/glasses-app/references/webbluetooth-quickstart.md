@@ -45,7 +45,10 @@ changes between SDKs.
   with host **and** Lua source inline (the fastest single file to learn the
   message pairing from).
 - Live demos + TypeDoc: https://brilliantlabsar.github.io/brilliant_sdk/
-- TS-only conveniences: `TxTextPage` + `CircularTextLayout`/`RectangularTextLayout`,
-  `RxClick`/`ClickType`, `MagCalibration`, `CompassHeading`, `AsyncQueue`.
+- TS-only convenience: `AsyncQueue`. `TxTextPage` +
+  `CircularTextLayout`/`RectangularTextLayout` and `RxClick`/`ClickType` exist
+  in all three SDKs. `MagCalibration`/`CompassHeading` also exist in Python
+  (`brilliant_msg.calibration`, `.heading`); Flutter has them only inside the
+  `imu_compass` example.
 - No test suite here — `npm run build` per package is the check; validate Lua
   with the Python `halo-emulator`.
