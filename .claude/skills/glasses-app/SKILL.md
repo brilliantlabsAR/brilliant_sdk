@@ -65,7 +65,7 @@ Branch on `frame.HARDWARE_VERSION` in Lua; `BrilliantDeviceType` on the host.
 | Display | 640×400 rectangular | 256×256 round |
 | Draw model | buffered — call `frame.display.show()` | draws immediately — no `show()` |
 | App start | — | call `frame.display.power_save(false)` |
-| Input | tap | button + tap kinds (`'single'`/`'double'`/`'triple'`), `RxClick` |
+| Input | tap | button + tap kinds (`'single'`/`'double'`/`'triple'`), `RxClick` (a ~2 s hold powers Halo off, so long-press is shorter) |
 | Audio out | — | speaker + `frame.sound` sfxr presets |
 | Text | `TxPlainText`, `TxTextSpriteBlock` | same, plus `TxTextPage` with `CircularTextLayout` |
 
