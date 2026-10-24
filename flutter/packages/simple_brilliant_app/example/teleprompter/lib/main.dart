@@ -31,6 +31,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
   int _textSizeIndex = 1;
   final List<int> _textSizeValues = [16, 20, 24, 28, 32, 48, 64];
   Uint8List _pngBytes = Uint8List(0);
+  String _content = '';
   
   MainAppState() {
     Logger.root.level = Level.INFO;
@@ -63,50 +64,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
         File file = File(result.files.single.path!);
 
         // Read the file content
-        String content = await file.readAsString();
-      
-        final textAlign = _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right;
+        // (strip out any carriage-return characters if the file is CRLF)
+        _content = (await file.readAsString()).replaceAll(RegExp('\r'), '');
 
-        // Halo's display is round: fit each line to the circle's chord at its height
-        final TextLayout layout = frame!.type == BrilliantDeviceType.halo
-            ? CircularTextLayout(width: 256, height: 256,
-                fontSize: _textSizeValues[_textSizeIndex],
-                textAlign: textAlign)
-            : RectangularTextLayout(width: 256, height: 256,
-                fontSize: _textSizeValues[_textSizeIndex],
-                textAlign: textAlign);
-
-        var tp = TxTextPage(
-          layout: layout,
-          text: content,
-        );
-
-        _pages.clear();
-        while (tp.hasMoreText) {
-          final page = await tp.measureNextPage();
-          if (page != null) {
-            _pages.add(page);
-          }
-        }
-
-        // Update the UI with the text
-        setState(() {
-          // strip out any carriage-return characters if the file is CRLF
-          content = content.replaceAll(RegExp('\r'), '');
-          _currentPage = 0;
-        });
-
-        // rasterize the first page
-        await _pages[_currentPage].rasterize();
-
-        // and create a PNG image of the first page
-        Uint8List bytes = await _pages[_currentPage].toPngBytes();
-        setState(() {
-          _pngBytes = bytes;
-        });
-
-        // and send initial page to Frame
-        await sendTextToFrame(_pages[_currentPage]);
+        // lay out the text into pages and send the first page to Frame
+        _currentPage = 0;
+        await _layoutAndShowPages();
       }
       else {
         currentState = ApplicationState.ready;
@@ -117,6 +80,49 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
       currentState = ApplicationState.ready;
       if (mounted) setState(() {});
     }
+  }
+
+  /// (re)lay out the loaded text with the current text size and alignment,
+  /// then show the current page (e.g. after the settings change)
+  Future<void> _layoutAndShowPages() async {
+    final textAlign = _textDir == TextDirection.ltr ? TextAlign.left : TextAlign.right;
+
+    // Halo's display is round: fit each line to the circle's chord at its height
+    final TextLayout layout = frame!.type == BrilliantDeviceType.halo
+        ? CircularTextLayout(width: 256, height: 256,
+            fontSize: _textSizeValues[_textSizeIndex],
+            textAlign: textAlign)
+        : RectangularTextLayout(width: 256, height: 256,
+            fontSize: _textSizeValues[_textSizeIndex],
+            textAlign: textAlign);
+
+    var tp = TxTextPage(
+      layout: layout,
+      text: _content,
+    );
+
+    final List<PageData> pages = [];
+    while (tp.hasMoreText) {
+      final page = await tp.measureNextPage();
+      if (page != null) {
+        pages.add(page);
+      }
+    }
+
+    if (pages.isEmpty) return;
+
+    _pages
+      ..clear()
+      ..addAll(pages);
+    // the page count changes with the text size, so stay within range
+    _currentPage = _currentPage.clamp(0, _pages.length - 1);
+
+    // rasterize the current page and create a PNG image of it
+    await _pages[_currentPage].rasterize();
+    _pngBytes = await _pages[_currentPage].toPngBytes();
+    if (mounted) setState(() {});
+
+    await sendTextToFrame(_pages[_currentPage]);
   }
 
   /// send the page header and then its line sprites one by one
@@ -190,7 +196,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   },
                   onChangeEnd: (value) {
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_pages[_currentPage]);
+                      _layoutAndShowPages();
                     }
                   },
                 ),
@@ -203,7 +209,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   setState(() {
                     _textDir = value ?? TextDirection.ltr;
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_pages[_currentPage]);
+                      _layoutAndShowPages();
                     }
                   });
                 },
@@ -216,7 +222,7 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
                   setState(() {
                     _textDir = value ?? TextDirection.rtl;
                     if (currentState == ApplicationState.running) {
-                      sendTextToFrame(_pages[_currentPage]);
+                      _layoutAndShowPages();
                     }
                   });
                 },
