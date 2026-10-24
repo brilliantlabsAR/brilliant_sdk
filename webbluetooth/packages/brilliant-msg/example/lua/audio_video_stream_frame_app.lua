@@ -68,6 +68,11 @@ function app_loop()
 						if msg.value == 1 then
 							audio_data = ''
 							streaming = true
+							-- a 15 ms connection interval doubles throughput on hosts that default
+							-- to 30 ms (frame.bluetooth.connection_interval: Halo firmware 0.8.21+)
+							if frame.bluetooth.connection_interval then
+								frame.bluetooth.connection_interval(15)
+							end
 							audio.start({sample_rate=8000, bit_depth=8})
 							if frame.HARDWARE_VERSION == 'Frame' then
 								frame.display.text("\u{F0010}", 300, 1)
@@ -89,9 +94,11 @@ function app_loop()
 						end
 
 					elseif flag == CAPTURE_SETTINGS_MSG then
-						-- visual indicator of capture and send
+						-- visual indicator of capture
 						show_flash()
-						rc, err = pcall(camera.capture_and_send, camera.parse_capture_settings(raw))
+						-- start the capture: the loop below sends the image a packet at a time,
+						-- each after any audio that is ready, so the photo doesn't stall the audio
+						rc, err = pcall(camera.start_capture, camera.parse_capture_settings(raw))
 						clear_display()
 
 						if rc == false then
@@ -108,7 +115,14 @@ function app_loop()
 					if (sent == nil) then
 						streaming = false
 					end
+				end
 
+				if camera.is_sending() then
+					-- one photo packet per pass, after any audio that is ready, and no
+					-- sleep until the photo is sent: it goes at full speed without
+					-- holding up the audio
+					camera.send_pending(1)
+				elseif streaming then
 					-- 8kHz/8 bit is 8000b/s, which is 33 packets/second, or 1 every 30ms
 					frame.sleep(0.001)
 				else
