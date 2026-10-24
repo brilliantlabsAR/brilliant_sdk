@@ -168,7 +168,27 @@ function _M.send_metering_data()
 	send_data(string.char(METERING_DATA_MSG) .. frame.fpga_read(0x25, 6))
 end
 
--- takes a capture_settings table and sends the image data to the host
+-- Bytes of image data per packet: at most 240, so that with the data marker
+-- and message flag each notification fits in one 251-byte Bluetooth
+-- link-layer packet, including over the EATT bearers Android uses (2 bytes
+-- more overhead than plain ATT); less if the connection's MTU is smaller.
+-- Packets that each fit in one link-layer packet transfer faster than larger
+-- ones split across two. Read per call: the MTU can change after the app starts.
+local function chunk_size()
+	return math.min(frame.bluetooth.max_length() - 1, 240)
+end
+
+-- reads the next chunk of the current image, raw (no jpeg header) or not
+local function read_chunk(raw)
+	if raw then
+		return frame.camera.read_raw(chunk_size())
+	else
+		return frame.camera.read(chunk_size())
+	end
+end
+
+-- takes a capture_settings table and sends the image data to the host,
+-- blocking until the whole image is sent
 function _M.capture_and_send(args)
 	frame.camera.capture { resolution=args.resolution, quality=args.quality, pan=args.pan }
 
@@ -177,24 +197,67 @@ function _M.capture_and_send(args)
 		frame.sleep(0.005)
 	end
 
-	local data = ''
-	local raw = args.raw
-
 	while true do
 		-- skip the 623 byte header if the caller requested raw data
-		if (raw) then
-        	data = frame.camera.read_raw(frame.bluetooth.max_length() - 1)
-		else
-        	data = frame.camera.read(frame.bluetooth.max_length() - 1)
-		end
+		local data = read_chunk(args.raw)
 
-        if (data ~= nil) then
-			send_data(string.char(IMAGE_MSG) .. data)
-		else
+		if (data == nil) then
 			send_data(string.char(IMAGE_FINAL_MSG))
 			break
+		elseif (data ~= '') then
+			send_data(string.char(IMAGE_MSG) .. data)
 		end
 	end
+end
+
+-- Non-blocking alternative to capture_and_send(): start_capture() starts a
+-- capture, then call send_pending() from the app loop until it returns false.
+-- Between calls the loop can keep doing other work, such as sending
+-- microphone audio, so a photo doesn't hold it up for the whole transfer.
+local pending = nil
+
+-- starts a capture with a capture_settings table (from parse_capture_settings)
+function _M.start_capture(args)
+	frame.camera.capture { resolution=args.resolution, quality=args.quality, pan=args.pan }
+	pending = { raw = args.raw, ready = false }
+end
+
+-- true while a capture started with start_capture() is still being sent
+function _M.is_sending()
+	return pending ~= nil
+end
+
+-- Sends up to max_packets packets (default 1) of the image from start_capture(),
+-- once it is ready; until then it sleeps for 1 ms, so a loop calling it
+-- without sleeping doesn't hold the CPU while the image is being processed.
+-- Returns true while there is more to send, and false once the final packet
+-- has been sent (or if no capture is pending).
+function _M.send_pending(max_packets)
+	if pending == nil then
+		return false
+	end
+
+	if not pending.ready then
+		if not frame.camera.image_ready() then
+			frame.sleep(0.001)
+			return true
+		end
+		pending.ready = true
+	end
+
+	for _ = 1, (max_packets or 1) do
+		local data = read_chunk(pending.raw)
+
+		if (data == nil) then
+			send_data(string.char(IMAGE_FINAL_MSG))
+			pending = nil
+			return false
+		elseif (data ~= '') then
+			send_data(string.char(IMAGE_MSG) .. data)
+		end
+	end
+
+	return true
 end
 
 return _M
