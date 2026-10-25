@@ -52,8 +52,11 @@ callbacks in apps.
 
 ## Camera — `frame.camera.*`
 Capture is normally driven from the host via `TxCaptureSettings` + the
-`camera` std lib (`camera.camera_capture_and_send(settings)`), which handles
-exposure/metering options and streams the JPEG back. Manual use:
+`camera` std lib, which handles exposure/metering options and streams the
+JPEG back: `camera.capture_and_send(settings)` blocks until the image is sent;
+`camera.start_capture(settings)` then `camera.send_pending(n)` each loop pass
+(until it returns false) sends it without blocking, so other traffic such as
+mic audio keeps flowing (see the `audio_video` examples). Manual use:
 `frame.camera.capture{...}` / `read(n)` — see the docs-site reference. Halo
 adds libmpix image-processing pipelines (docs site).
 

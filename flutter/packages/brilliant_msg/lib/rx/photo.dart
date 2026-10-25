@@ -59,8 +59,9 @@ class RxPhoto {
     // TODO check for illegal state - attach() already called on this RxPhoto etc?
     // might be possible though after a clean close(), do I want to prevent it?
 
-    // the image data as a list of bytes that accumulates with each packet
-    List<int> imageData = List.empty(growable: true);
+    // the image data, accumulated packet by packet without copying the whole
+    // image on every packet
+    final imageData = BytesBuilder(copy: false);
     int rawOffset = 0;
 
     // if isRaw is true, a jpeg header must be prepended to the raw image data
@@ -73,7 +74,7 @@ class RxPhoto {
       }
 
       // add the jpeg header bytes for this quality level (623 bytes)
-      imageData.addAll(jpegHeaderMap[key]!);
+      imageData.add(jpegHeaderMap[key]!);
     }
 
     // the subscription to the underlying data stream
@@ -89,15 +90,15 @@ class RxPhoto {
               (data) => data[0] == nonFinalChunkFlag || data[0] == finalChunkFlag)
           .listen((data) {
         if (data[0] == nonFinalChunkFlag) {
-          imageData += data.sublist(1);
+          imageData.add(data.sublist(1));
           rawOffset += data.length - 1;
         }
         // the last chunk has a first byte of finalChunkFlag so stop after this
         else if (data[0] == finalChunkFlag) {
-          imageData += data.sublist(1);
+          imageData.add(data.sublist(1));
           rawOffset += data.length - 1;
 
-          Uint8List finalImageBytes = Uint8List.fromList(imageData);
+          Uint8List finalImageBytes = imageData.takeBytes();
 
           // if this image is a full jpeg, save the jpeg header for this quality level and resolution
           // so that it can be prepended to raw images of the same quality level and resolution
