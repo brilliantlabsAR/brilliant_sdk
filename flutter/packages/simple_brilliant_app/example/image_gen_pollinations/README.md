@@ -2,6 +2,8 @@
 
 Listens for an image generation prompt from the user, requests image generation from [Pollinations.ai](https://pollinations.ai/) using its [API](https://github.com/pollinations/pollinations/#readme) and displays the query and the generated image for display in Frame. (Note, image generation can take several seconds depending on load and other factors.)
 
+No API key is needed. The free tier is rate limited per IP address (one image every 45 seconds at the time of writing); over the limit, Pollinations' "retry after" message is shown in the app and on the glasses instead of an image.
+
 Click on the generated image in the phone app to save/share using the device Share mechanism.
 
 Flutter package `speech_to_text` uses platform-provided speech to text capability which uses the phone microphone, not the Frame microphone.
