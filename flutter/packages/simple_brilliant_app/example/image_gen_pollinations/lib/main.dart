@@ -184,7 +184,12 @@ class MainAppState extends State<MainApp> with SimpleFrameAppState {
             }
           }
           else {
-            _log.fine('Error fetching image for "$_finalResult": "$error"');
+            _log.warning('Error fetching image for "$_finalResult": "$error"');
+            // show the error (e.g. free tier rate limit) in the app and on the glasses
+            _finalResult = error!;
+            var text = TxPlainText(text: TextUtils.wrapTextHalo(error, 256).join('\n'));
+            await frame!.sendMessage(0x0a, text.pack());
+            _prevText = error;
             // back to ready state
             currentState = ApplicationState.ready;
             if (mounted) setState(() {});

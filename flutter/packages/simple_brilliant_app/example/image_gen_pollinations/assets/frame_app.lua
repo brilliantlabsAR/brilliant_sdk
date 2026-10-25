@@ -12,6 +12,13 @@ local parsers = {}
 parsers[TEXT_FLAG] = plain_text.parse_plain_text
 parsers[IMAGE_SPRITE_BLOCK] = image_sprite_block.parse_image_sprite_block
 
+-- accumulated image sprite block, passed back to its parser with each new sprite
+local isb_state = nil
+
+-- state shared between the message handlers and the main loop
+local caption = ''
+local drawing_image = false
+
 -- draw the current text on the display
 function print_text(text_string)
     local i = 0
@@ -62,6 +69,11 @@ handlers[TEXT_FLAG] = function(parsed_data)
 end
 
 handlers[IMAGE_SPRITE_BLOCK] = function(parsed_data)
+	-- a sprite arrived without a block header, nothing to draw
+	if parsed_data == nil then
+		return
+	end
+
 	-- first time we are drawing an image, clear the display on Halo. Frame keeps the text
 	if not drawing_image and frame.HARDWARE_VERSION ~= "Frame" then
 		drawing_image = true
@@ -127,8 +139,6 @@ function app_loop()
 	-- clear the display
 	clear_display()
     local last_batt_update = 0
-    local caption = ''
-    local drawing_image = false
 
     print("App started")
 
@@ -147,7 +157,14 @@ function app_loop()
                         local raw = items[i][2]
 
                         if parsers[flag] then
-                            local parsed = parsers[flag](raw)
+                            local parsed
+                            -- the image sprite block accumulates sprites, so pass back the previous block
+                            if flag == IMAGE_SPRITE_BLOCK then
+                                parsed = parsers[flag](raw, isb_state)
+                                isb_state = parsed
+                            else
+                                parsed = parsers[flag](raw)
+                            end
                             if handlers[flag] then
                                 handlers[flag](parsed)
                             end
