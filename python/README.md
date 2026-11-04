@@ -89,6 +89,17 @@ BRILLIANT_DEVICE=1 uv run pytest packages/brilliant_ble/tests/test_ble.py
 uv run python packages/brilliant_ble/tests/test_camera.py --name Halo
 ```
 
+To run every unattended device check in one go (the standalone scripts that
+end on their own, the bounded polling ones, and the pytest device modules):
+
+```bash
+python3 tools/run_device_tests.py --name "Halo AB"
+```
+
+It prints PASS/FAIL per script, keeps each script's output under
+`./device-test-logs`, and exits non-zero if anything failed. The Halo
+firmware's pre-release battery runs it against each release candidate.
+
 ---
 
 ## 📦 Publishing
